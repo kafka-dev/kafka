@@ -1,0 +1,35 @@
+<project name="kafka java examples" default="run-demo">
+   <property name="lib.dir" location="../lib" />
+   <property name="src.dir" location="./src/java" />
+   <property name="build.src.dir" location="./build/java" />
+   <property name="javac.debug" location="true" />
+  
+    <path id="classpath.base">
+      <fileset dir="${lib.dir}"/>
+      <fileset dir="../dist/"/>
+    </path>
+
+    <target name="clean">
+       <delete dir="${build.src.dir}"/>
+       <delete dir="${dist.dir}"/>
+       <mkdir dir="${build.src.dir}"/>
+       <echo message="${ant.version}"/>
+       <echo message="Java version ${ant.java.version}"/>
+    </target>
+
+    <target name="compile" description="compile the java classes" depends="clean">
+        <javac srcdir="${src.dir}"
+            destdir="${build.src.dir}"
+            debug="${javac.debug}"
+            classpathref="classpath.base"/>
+    </target>
+
+    <target name="run-demo" depends="compile" description="--> runs demo">
+        <java fork="true" failonerror="yes" classname="KafkaConsumerProcuderDemo"> 
+             <classpath>
+                <path refid="classpath.base"/>
+                <path location="${build.src.dir}"/>
+            </classpath>
+        </java>
+    </target>
+</project>
