@@ -57,14 +57,19 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
   }
   
   def testProduceAndFetch() {
+    for (compression:Boolean <- List(false, true))
+    {
+      
     // send some messages
-    val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val topic = "test"+compression
+    val sent = new ByteBufferMessageSet(compression, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
-    sent.buffer.rewind
+    sent.serialized.rewind
     var fetched: ByteBufferMessageSet = null
     while(fetched == null || fetched.validBytes == 0)
       fetched = consumer.fetch(topic, 0, 10000)
+      
+    if (compression) sent.enableDeepIteration
     TestUtils.checkEquals(sent.iterator, fetched.iterator)
 
     // send an invalid offset
@@ -78,27 +83,34 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
       case e2 => throw e2
     }
     assertTrue(exceptionThrown)
+    }
+
   }
 
   def testProduceAndMultiFetch() {
+        for (compression:Boolean <- List(false, true))
+    {
+
     // send some messages
-    val topics = List("test1", "test2", "test3");
+    val topics = List("test1"+compression, "test2"+compression, "test3"+compression);
     {
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(compression, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.serialized.rewind
         fetches += new FetchRequest(topic, 0, 0, 10000)
       }
 
       // wait a bit for produced message to be available
       Thread.sleep(200)
       val response = consumer.multifetch(fetches: _*)
-      for((topic, resp) <- topics.zip(response.toList))
+      for((topic, resp) <- topics.zip(response.toList)) {
+        if (compression) messages(topic).enableDeepIteration
     	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      }
     }
 
     {
@@ -119,42 +131,48 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
       }
       assertTrue(exceptionThrown)
     }
+    }
   }
 
   def testMultiProduce() {
-    // send some messages
-    val topics = List("test1", "test2", "test3");
-    val messages = new mutable.HashMap[String, ByteBufferMessageSet]
-    val fetches = new mutable.ArrayBuffer[FetchRequest]
-    var produceList: List[ProducerRequest] = Nil
-    for(topic <- topics) {
-      val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
-      messages += topic -> set
-      produceList ::= new ProducerRequest(topic, 0, set)
-      fetches += new FetchRequest(topic, 0, 0, 10000)
+    for (compression <- List(false, true))
+    {
+      // send some messages
+      val topics = List("test1"+compression, "test2"+compression, "test3"+compression);
+      val messages = new mutable.HashMap[String, ByteBufferMessageSet]
+      val fetches = new mutable.ArrayBuffer[FetchRequest]
+      var produceList: List[ProducerRequest] = Nil
+      for(topic <- topics) {
+        val set = new ByteBufferMessageSet(compression, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        messages += topic -> set
+        produceList ::= new ProducerRequest(topic, 0, set)
+        fetches += new FetchRequest(topic, 0, 0, 10000)
+      }
+      producer.multiSend(produceList.toArray)
+  
+      for (messageSet <- messages.values)
+        messageSet.serialized.rewind
+  
+      // wait a bit for produced message to be available
+      Thread.sleep(200)
+      val response = consumer.multifetch(fetches: _*)
+      for((topic, resp) <- topics.zip(response.toList)) {
+        if (compression) messages(topic).enableDeepIteration
+    	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      }
     }
-    producer.multiSend(produceList.toArray)
-
-    for (messageSet <- messages.values)
-      messageSet.buffer.rewind
-
-    // wait a bit for produced message to be available
-    Thread.sleep(200)
-    val response = consumer.multifetch(fetches: _*)
-    for((topic, resp) <- topics.zip(response.toList))
-  	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
   }
 
   def testGetOffsets() {
     // send some messages
     val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
 
     Thread.sleep(200)
     val now = System.currentTimeMillis
     val actualOffsets = consumer.getOffsetsBefore(topic, 0, now, 10)
-    val expectedOffsets = Array(28L)
+    val expectedOffsets = Array(30L)
     TestUtils.checkEquals(actualOffsets.iterator, expectedOffsets.iterator)
   }
 }

@@ -88,7 +88,7 @@ class SimpleConsumer(val host: String,
           case ioe: java.io.IOException => channel = null; throw ioe;
         }
     }
-    new ByteBufferMessageSet(response._1.buffer, response._2)
+    new ByteBufferMessageSet(response._1.buffer, response._2, true)
   }
 
   def multifetch(fetches: java.util.List[FetchRequest]): MultiFetchResponse = {
@@ -155,6 +155,7 @@ class SimpleConsumer(val host: String,
 
     // this has the side effect of setting the initial position of buffer correctly
     val errorCode: Int = response.buffer.getShort
+    // FIXME: This is too tricky, use buffer.slice here to separate data from control
     (response, errorCode)
   }
 

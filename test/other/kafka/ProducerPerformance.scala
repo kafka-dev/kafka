@@ -29,8 +29,8 @@ import kafka.producer._
 object ProducerPerformance {
   
   def main(args: Array[String]) {
-    if(args.length < 8) {
-      println("USAGE: " + ProducerPerformance.getClass.getName + " kafka.properties host num_messages message_size var/fix batch_size num_threads topic")
+    if(args.length < 9) {
+      println("USAGE: " + ProducerPerformance.getClass.getName + " kafka.properties host num_messages message_size var/fix batch_size num_threads topic compression_enabled")
       System.exit(1)
     }
     
@@ -42,6 +42,7 @@ object ProducerPerformance {
     val batchSize = args(5).toInt
     val numThreads = args(6).toInt
     val topic = args(7)
+    val compressionEnabled = args(8).toBoolean
     val rand = new java.util.Random
     
     val producer = new KafkaProducer(host, config.port, config.socketSendBuffer, 30000, 100000)
@@ -75,7 +76,7 @@ object ProducerPerformance {
               messages(k) = new Message(bytes)
               bytesSent += messages(k).payloadSize
             }
-            val set = new ByteBufferMessageSet(messages: _*)
+            val set = new ByteBufferMessageSet(compressionEnabled, messages: _*)
             val sendStart = System.currentTimeMillis
             try  {
               producer.send(topic, part, set)

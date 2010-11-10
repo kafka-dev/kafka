@@ -117,7 +117,7 @@ class SimpleConsumerTest extends TestCase {
     
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(false, message))
     log.flush()
 
     Thread.sleep(100)
@@ -127,11 +127,11 @@ class SimpleConsumerTest extends TestCase {
     
     val offsets = log.getOffsetsBefore(offsetRequest)
 
-    assertEquals(220L, offsets.head)
+    assertEquals(240L, offsets.head)
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           OffsetRequest.LATEST_TIME, 10)
-    assertEquals(220L, consumerOffsets.head)
+    assertEquals(240L, consumerOffsets.head)
 
     // try to fetch using latest offset
     val messageSet: ByteBufferMessageSet = simpleConsumer.fetch(topic, consumerOffsets.head, 300 * 1024)
@@ -148,7 +148,7 @@ class SimpleConsumerTest extends TestCase {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(false, message))
     log.flush()
 
     Thread.sleep(100)
@@ -157,11 +157,11 @@ class SimpleConsumerTest extends TestCase {
                                           System.currentTimeMillis, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
 
-    assertEquals(220L, offsets.head)
+    assertEquals(240L, offsets.head)
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           System.currentTimeMillis, 10)
-    assertEquals(220L, consumerOffsets.head)
+    assertEquals(240L, consumerOffsets.head)
   }
 
   def testGetOffsetsBeforeEarliestTime() {
@@ -174,7 +174,7 @@ class SimpleConsumerTest extends TestCase {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(false, message))
     log.flush()
 
     Thread.sleep(100)

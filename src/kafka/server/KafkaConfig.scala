@@ -55,7 +55,7 @@ class KafkaConfig(props: Properties) extends ZKConfig(props) {
   val logDir = Utils.getString(props, "log.dir")
   
   /* the maximum size of a single log file */
-  val logFileSize = Utils.getIntInRange(props, "log.file.size", 1*1024*1024*1024, (Message.HeaderSize, Int.MaxValue))
+  val logFileSize = Utils.getIntInRange(props, "log.file.size", 1*1024*1024*1024, (Message.MinHeaderSize, Int.MaxValue))
   
   /* the number of messages to accept without flushing the log to disk */
   val flushInterval = Utils.getIntInRange(props, "log.flush.interval", 1, (1, Int.MaxValue))

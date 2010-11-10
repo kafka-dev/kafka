@@ -41,10 +41,11 @@ object TestRichProducer {
     val producer = new KafkaProducer(host, config.port, 100000, 10000, 10000)
     var count = 1
     var line: String = null
+    val compressionEnabled = false
     do {
       line = reader.readLine()
       val message = new Message(line.getBytes("UTF-8"))
-      producer.send(topic, new ByteBufferMessageSet(message))
+      producer.send(topic, new ByteBufferMessageSet(compressionEnabled, message))
       // rest for a bit
       if(sleepTime > 0)
         Thread.sleep(sleepTime)

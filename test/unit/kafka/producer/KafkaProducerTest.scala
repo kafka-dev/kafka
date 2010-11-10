@@ -44,7 +44,7 @@ class KafkaProducerTest extends TestCase {
     var failed = false
     val firstStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -56,7 +56,7 @@ class KafkaProducerTest extends TestCase {
 
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
 
@@ -71,7 +71,7 @@ class KafkaProducerTest extends TestCase {
     var failed = false
     val firstStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
     }catch {
       case e: Exception => failed=true
     }
@@ -81,7 +81,7 @@ class KafkaProducerTest extends TestCase {
     Assert.assertTrue((firstEnd-firstStart) < 5000)
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -96,7 +96,7 @@ class KafkaProducerTest extends TestCase {
     var failed = false
     val firstStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -106,7 +106,7 @@ class KafkaProducerTest extends TestCase {
     Assert.assertTrue((firstEnd-firstStart) < 5000)
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }

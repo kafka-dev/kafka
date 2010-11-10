@@ -129,7 +129,7 @@ class ZookeeperConsumerConnectorTest extends TestCase with KafkaServerTestHarnes
       for (partition <- 0 until numParts) {
         val ms = 0.until(messagesPerNode).map(x =>
           new Message((header + conf.brokerId + "-" + partition + "-" + x).getBytes)).toArray
-        val mSet = new ByteBufferMessageSet(ms: _*)
+        val mSet = new ByteBufferMessageSet(false, ms: _*)
         for (message <- ms)
           messages ::= message
         producer.send(topic, partition, mSet)

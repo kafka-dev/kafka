@@ -138,7 +138,7 @@ object TestUtils {
    * @param payload The bytes of the message
    */
   def singleMessageSet(payload: Array[Byte]) = 
-    new ByteBufferMessageSet(new Message(payload))
+    new ByteBufferMessageSet(false, new Message(payload))
   
   /**
    * Generate an array of random bytes
@@ -176,10 +176,46 @@ object TestUtils {
    * different messages on their Nth element
    */
   def checkEquals[T](s1: Iterator[T], s2: Iterator[T]) {
-    while(s1.hasNext && s2.hasNext)
+    var length = 0
+    while(s1.hasNext && s2.hasNext) {
+      length += 1
       assertEquals(s1.next, s2.next)
-    assertFalse("Iterators have uneven length--first has more", s1.hasNext)
-    assertFalse("Iterators have uneven length--second has more", s2.hasNext)
+    }
+    
+    if (s1.hasNext)
+    {
+     var length1 = length;
+     while (s1.hasNext)
+     {
+       s1.next
+       length1 += 1
+     }
+     assertFalse("Iterators have uneven length-- first has more: "+length1 + " > " + length, true);
+    }
+    
+    if (s2.hasNext)
+    {
+     var length2 = length;
+     while (s2.hasNext)
+     {
+       s2.next
+       length2 += 1
+     }
+     assertFalse("Iterators have uneven length-- second has more: "+length2 + " > " + length, true);
+    }
+  }
+
+  /**
+   *  Throw an exception if an iterable has different length than expected
+   *  
+   */
+  def checkLength(s1: Iterator[Message], expectedLength:Integer) {
+    var n = 0
+    while (s1.hasNext) {
+      n+=1
+      s1.next
+    }
+    assertEquals(expectedLength, n)
   }
   
   /**
@@ -196,8 +232,8 @@ object TestUtils {
       builder.append(String.format("%x", Integer.valueOf(buffer.get(buffer.position + i))))
     builder.toString
   }
-  
-  /**
+
+   /*
    * Create a producer for the given host and port
    */
   def createProducer(host: String, port: Int): KafkaProducer = {

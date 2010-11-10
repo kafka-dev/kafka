@@ -23,12 +23,13 @@ import junit.framework.Assert._
 class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
 
   override def createMessageSet(messages: Seq[Message]): ByteBufferMessageSet = 
-    new ByteBufferMessageSet(messages: _*)
+    new ByteBufferMessageSet(false, messages: _*)
   
   def testValidBytes() {
-    val messages = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val compressionEnabled = false
+    val messages = new ByteBufferMessageSet(compressionEnabled, new Message("hello".getBytes()), new Message("there".getBytes()))
     val buffer = ByteBuffer.allocate(messages.sizeInBytes.toInt + 2)
-    buffer.put(messages.buffer)
+    buffer.put(messages.serialized)
     buffer.putShort(4)
     val messagesPlus = new ByteBufferMessageSet(buffer)
     assertEquals("Adding invalid bytes shouldn't change byte count", messages.validBytes, messagesPlus.validBytes)
