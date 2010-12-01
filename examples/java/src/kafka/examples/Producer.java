@@ -15,25 +15,25 @@
  */
 package kafka.examples;
 
+import kafka.message.ByteBufferMessageSet;
+import kafka.message.Message;
+import kafka.producer.SimpleProducer;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import kafka.message.ByteBufferMessageSet;
-import kafka.message.Message;
-import kafka.producer.KafkaProducer;
-
 public class Producer extends Thread
 {
-  private final KafkaProducer producer;
+  private final SimpleProducer producer;
   private final String topic;
   
   public Producer(String topic)
   {
-    producer = new KafkaProducer(KafkaProperties.kafkaServerURL,
-                                 KafkaProperties.kafkaServerPort,
-                                 KafkaProperties.kafkaProducerBufferSize,
-                                 KafkaProperties.connectionTimeOut,
-                                 KafkaProperties.reconnectInterval);
+    producer = new SimpleProducer(KafkaProperties.kafkaServerURL,
+                                  KafkaProperties.kafkaServerPort,
+                                  KafkaProperties.kafkaProducerBufferSize,
+                                  KafkaProperties.connectionTimeOut,
+                                  KafkaProperties.reconnectInterval);
     this.topic = topic; 
     
   }

@@ -45,7 +45,7 @@ We include a simple implementation SimpleKafkaETLJob which fetches
 test events (in text format) from server and store data in HDFS.
 
 HOW TO RUN:
-1. Complile the codes using "ant test".
+1. Complile the code using "ant jar".
 
 2. Generate test events in server:
   1) Start kafka server [ Follow the quick start - 

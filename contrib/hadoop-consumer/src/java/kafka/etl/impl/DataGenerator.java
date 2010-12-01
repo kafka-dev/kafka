@@ -28,7 +28,7 @@ import kafka.etl.KafkaETLUtils;
 import kafka.etl.Props;
 import kafka.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.producer.KafkaProducer;
+import kafka.producer.SimpleProducer;
 
 /**
  * Use this class to produce test events to Kafka server. Each event contains a
@@ -40,7 +40,7 @@ public class DataGenerator {
 			System.currentTimeMillis());
 
 	protected Props _props;
-	protected List<KafkaProducer> _producers = null;
+	protected List<SimpleProducer> _producers = null;
 	protected String _topic;
 	protected int _count;
 	protected final int TCP_BUFFER_SIZE = 300 * 1000;
@@ -57,11 +57,11 @@ public class DataGenerator {
 		String nodePath = KafkaETLCommons.getNodesPath(_props);
 		System.out.println("node path=" + nodePath);
 		Props nodesProps = KafkaETLUtils.readProps(nodePath);
-		_producers = new ArrayList<KafkaProducer>();
+		_producers = new ArrayList<SimpleProducer>();
 		for (String key : nodesProps.stringPropertyNames()) {
 			URI uri = nodesProps.getUri(key);
 			System.out.println("server uri:" + uri.toString());
-			_producers.add(new KafkaProducer(uri.getHost(), uri.getPort(),
+			_producers.add(new SimpleProducer(uri.getHost(), uri.getPort(),
 					TCP_BUFFER_SIZE, CONNECT_TIMEOUT, RECONNECT_INTERVAL));
 		}
 	}
@@ -69,7 +69,7 @@ public class DataGenerator {
 	public void run() throws IOException, URISyntaxException {
 
 		int producerId = RANDOM.nextInt() % _producers.size();
-		KafkaProducer producer = _producers.get(producerId);
+		SimpleProducer producer = _producers.get(producerId);
 
 		List<Message> list = new ArrayList<Message>();
 		for (int i = 0; i < _count; i++) {
@@ -85,7 +85,7 @@ public class DataGenerator {
 		producer.send(_topic, new ByteBufferMessageSet(list));
 
 		// close all producers
-		for (KafkaProducer p : _producers) {
+		for (SimpleProducer p : _producers) {
 			p.close();
 		}
 	}
