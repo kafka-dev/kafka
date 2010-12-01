@@ -128,18 +128,20 @@
     <zip destfile="${dist.dir}/${name}-@{version}.zip">
       <zipfileset dir="." prefix="kafka-@{version}" filemode="755" includes="bin/*"/>
       <zipfileset dir="." prefix="kafka-@{version}" includes="**">
-        <exclude name="${dist.dir}/*classes"/>
+        <exclude name="${dist.dir}/*classes/**"/>
         <exclude name="bin/*"/>
         <exclude name=".svn*/**"/>
+        <exclude name=".git*/**"/>
       </zipfileset>
     </zip>
     <tar destfile="${dist.dir}/${name}-@{version}.tar.gz" compression="gzip" longfile="gnu">
       <tarfileset dir="." prefix="kafka-@{version}" filemode="755" includes="bin/*"/>
       <tarfileset dir="." prefix="kafka-@{version}" includes="**">
-        <exclude name="${dist.dir}/*classes"/>
+        <exclude name="${dist.dir}/*classes/**"/>
         <exclude name="${dist.dir}/*.zip"/>
         <exclude name="bin/*"/>
         <exclude name=".svn*/**"/>
+        <exclude name=".git*/**"/>
       </tarfileset>
     </tar>
     </sequential>
