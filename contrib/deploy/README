@@ -1,0 +1,94 @@
+This tool introduces the ability to test Kafka on a set of remote machines. In particular we have written a deployer tool for Amazon's EC2 but can easily be extended to any set of nodes to which we have key-based SSH access. The interface to the tool is through some standard command line scripts or in code ( Java / Junit ). 
+
+The first part of this tool is specific to EC2. This helps to start and stop instances easily. The following script allows you to start 2 LARGE instances of EC2 on the West coast - 
+./contrib/deploy/bin/kafka-ec2-creator.sh 
+   --accessidfile ~/ec2/ec2.accessid 		# A file containing the access key id. We can provide this using --accessid also. The Access Key Id can be retrieved from the Security Credentials section of AWS 
+   --ami ami-d40e5e91 				# The AMI Id
+   --instances 2 				# Number of instances to start
+   --instancetype LARGE 			# The type of instance - DEFAULT, LARGE, XLARGE, MEDIUM_HCPU, and XLARGE_HCPU
+   --region us-west-1.ec2.amazonaws.com 	# The region to start the instances in - others include ec2.ap-southeast-1.amazonaws.com, eu-west-1.ec2.amazonaws.com, us-east-1.ec2.amazonaws.com 
+   --secretkeyfile ~/ec2/ec2.secretkey 		# Secret Access key ( available in the Security Credentials section ) stored in a file
+   --keypairid rsumbaly-west 			# The Key pair id's name . This is created in AWS Management Console during setup and should be downloaded ( as 'rsumbaly-west.pem' in this example )
+     > WEST_HOSTS
+
+The output of this command is saved in a file called 'WEST_HOSTS' and has the following format 
+<external_host_name_1>=<internal_host_name_1>
+
+We require this file to pass to other scripts to make them aware of the machines. If we're trying to deploy Kafka on a non-EC2 environment with machines in the same logical network then we can set both external and internal hostnames to be same. To stop the EC2 instances we would run - 
+./contrib/deploy/bin/kafka-ec2-terminator.sh 
+   --accessidfile ~/ec2/ec2.accessid 
+   --hostnames WEST_HOSTS			# The hostname file saved during the creation 
+   --region us-west-1.ec2.amazonaws.com 
+   --secretkeyfile ~/ec2/ec2.secretkey
+
+The remaining commands are generic and apply to any set of machines as long as we have (a) passwordless SSH access (b) a file containing the hostnames in the format shown above. We will continue explaining with the EC2 instances we started above. The first task is to copy the Kafka files to the remote boxes - 
+./contrib/deploy/bin/kafka-deployer.sh 
+   --hostnames WEST_HOSTS			# The hostname file
+   --hostuserid ec2-user 			# The userid to use to log in. Default is root
+   --source . 					# The directory from where to copy the source.
+   --kafkaroot kafka				# The remote directory name relative the {hostuserid}'s home directory. For example, /Users/ec2-users/<kafkaroot>
+   --sshprivatekey ~/ec2/rsumbaly-west.pem      # The ssh private key downloaded during setup of the instances
+
+Once we have successfully copied all the files we can start the initialization process of all the brokers. Before that we can decide whether to use Zookeeper to store metadata ( thereby helping consumers discover topics ). 
+To start of a Zookeeper cluster on another set of nodes we can follow the same procedure as above to start new instances and then output the hostnames to a file. In our example, we'll stick to the same set of nodes as the brokers. The parameters which we can change are (a) location of the zookeeper snapshot ( --zkdatadir) (b) the port on which to run (--zkport)
+./contrib/deploy/bin/kafka-zk-start.sh 
+   --hostuserid ec2-user 
+   --kafkaroot kafka 
+   --logging debug				# The logging level. Others include warn, off, error
+   --sshprivatekey ~/ec2/rsumbaly-west.pem 
+   --zkconfig kafka/config/zookeeper.properties	# Location of the zookeeper configuration file 
+   --zkdatadir kafka/zookeeper			# The directory relative to user's home directory where the zookeeper snapshots will be stores
+   --zkhosts WEST_HOSTS				# List of zookeeper cluster nodes. In this example, same as our brokers!
+
+Next we start the brokers. First lets start without the zookeeper cluster. We need to provide a default config property file to start the broker ( --kafkaconfig ). The parameters which can be changed are (a) where the kafka logs are stored ( provided by --kafkalog ) (b) the broker ids - The broker ids by default will be set in increasing order of its presence in the --hostnames file. If the user has his own mapping we can provide another file through --brokerids option. This file should be of the format <host_name>=<broker_id> (c) the zookeeper hostname file 
+./contrib/deploy/bin/kafka-broker-start.sh 
+   --hostnames WEST_HOSTS 		
+   --hostuserid ec2-user 			
+   --kafkaconfig kafka/config/server.properties	# The location of the properties files on the remote machine relative the users home directory 
+   --kafkaroot kafka 				# The remote Kafka directory
+   --sshprivatekey ~/ec2/rsumbaly-west.pem 	
+   --logging debug				# The logging level. Others include warn, off, error
+   --kafkalog /tmp/log				# The location on the remote machine where the Kafka logs will be placed
+
+To start with the zookeeper cluster we'd add --zkhosts
+./contrib/deploy/bin/kafka-broker-start.sh
+   --hostnames WEST_HOSTS			# Broker host names
+   --hostuserid ec2-user	
+   --kafkaconfig kafka/config/server.properties 
+   --kafkaroot kafka                            
+   --sshprivatekey ~/ec2/rsumbaly-west.pem     
+   --logging debug                             
+   --kafkalog /tmp/log                        
+   --zkhosts WEST_HOSTS				# The list of ZK hosts. In our example same as broker host names 
+
+The broker started will keep tailing the logs of all the servers till the user manually terminates the process. While the broker is running we can run any class on the remote boxes as follows - 
+./contrib/deploy/bin/kafka-runner.sh 
+   --classname kafka.tools.ProducerPerformance	# The class name to run on the remote box
+   --hostnames WEST_HOSTS			
+   --hostuserid ec2-user 
+   --logging debug 
+   --sshprivatekey ~/ec2/rsumbaly-west.pem 
+   --parameters messages=1000 			# The parameters as <key>=<value> to pass to the remote class
+   --parameters server=kafka://localhost:9092 
+   --parameters topic=test 
+   --kafkaroot kafka			
+
+In the above example we're running the default ProducerPerformance class while passing the following parameters to it ( --messages 1000 --server kafka://localhost:9092 --topic test ).
+The above README only shows how we can utilize this tool through the command line options. We can easily extend to write multi-node based tests in Java covering common distributed computing scenarios like failure, network partitions, etc.
+
+QUICK START
+===========
+a) Start 2 instances on EC2 West Coast 
+./contrib/deploy/bin/kafka-ec2-creator.sh --accessidfile ~/ec2/ec2.accessid --ami ami-d40e5e91 --instances 2 --instancetype LARGE --region us-west-1.ec2.amazonaws.com --secretkeyfile ~/ec2/ec2.secretkey --keypairid rsumbaly-west > WEST_HOSTS 
+
+b) Rsync the complete folder 
+./contrib/deploy/bin/kafka-deployer.sh --hostnames WEST_HOSTS --hostuserid ec2-user --source . --sshprivatekey ~/ec2/rsumbaly-west.pem --kafkaroot kafka
+
+c) Deploy the cluster without Zookeeper
+./contrib/deploy/bin/kafka-broker-start.sh --hostnames WEST_HOSTS --hostuserid ec2-user --kafkaconfig kafka/config/server.properties --kafkaroot kafka --sshprivatekey ~/ec2//rsumbaly-west.pem
+
+d) Run some remote tests 
+./contrib/deploy/bin/kafka-runner.sh --classname kafka.tools.ProducerPerformance  --hostnames WEST_HOSTS --hostuserid ec2-user --sshprivatekey ~/ec2/rsumbaly-west.pem --parameters messages=1000 --parameters server=kafka://localhost:9092 --parameters topic=test --kafkaroot kafka 
+
+e) Stop the two EC2 instances 
+./contrib/deploy/bin/kafka-ec2-terminator.sh --accessidfile ~/ec2/ec2.accessid --hostnames WEST_HOSTS --region us-west-1.ec2.amazonaws.com --secretkeyfile ~/ec2/ec2.secretkey

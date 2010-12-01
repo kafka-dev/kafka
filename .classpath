@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test/unit"/>
+	<classpathentry kind="src" path="test/other"/>
+	<classpathentry kind="src" path="contrib/deploy/src/java"/>
+	<classpathentry kind="con" path="ch.epfl.lamp.sdt.launching.SCALA_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/junit-4.1.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/JVM 1.6"/>
+	<classpathentry kind="lib" path="lib/scala-library-2.8.0.jar"/>
+	<classpathentry kind="lib" path="lib/zkclient-0.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/zookeeper-3.3.0.jar"/>
+	<classpathentry kind="lib" path="lib/jopt-simple-3.2.jar"/>
+	<classpathentry kind="lib" path="contrib/deploy/lib/httpclient-4.0.1.jar"/>
+	<classpathentry kind="lib" path="contrib/deploy/lib/httpcore-4.0.1.jar"/>
+	<classpathentry kind="lib" path="contrib/deploy/lib/typica.jar"/>
+	<classpathentry kind="lib" path="lib/asm-3.3.jar"/>
+	<classpathentry kind="lib" path="lib/cglib-2.2.jar"/>
+	<classpathentry kind="lib" path="lib/easymock-3.0.jar"/>
+	<classpathentry kind="lib" path="lib/objenesis-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/scala-compiler-2.8.0.jar"/>
+	<classpathentry kind="lib" path="contrib/deploy/lib/commons-codec-1.3.jar"/>
+	<classpathentry kind="lib" path="contrib/deploy/lib/commons-logging-1.0.4.jar"/>
+	<classpathentry kind="output" path="eclipse-classes"/>
+</classpath>

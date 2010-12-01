@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Kafka performance report</title>
+    
+    
+    <!-- 1. Add these JavaScript inclusions in the head of your page -->
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+    <script type="text/javascript" src="./js/highcharts.js"></script>
+    <script type="text/javascript" src="./js/exporting.js"></script>
+
+    <script type="text/javascript" src="./js/kafka.js"></script>
+
+    <!-- 2. Add the JavaScript to initialize the chart on document ready -->
+    <script type="text/javascript">
+      $(document).ready(function()
+       {
+        kafkagraph('container1', 'MB of data produced/consumed', './data/MBdata.csv', 'MB of data');
+        kafkagraph('container2', 'Number of messages  produced/consumed', './data/NumMessage.csv', 'Number of messages');
+      });
+    </script>
+
+    </head>
+    <body>
+      <div id="container1" style="width: 800px; height: 400px; margin: 0 auto"></div>
+      <p> <p> <br> <br> <br>
+       <div id="container2" style="width: 800px; height: 400px; margin: 0 auto"></div>
+    </body>
+</html>

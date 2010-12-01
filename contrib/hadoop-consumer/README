@@ -1,0 +1,81 @@
+This is a Hadoop job that pulls data from kafka server into HDFS.
+
+It requires the following inputs from a configuration file 
+(test/test.properties is an example)
+
+kafka.etl.topic : the topic to be fetched;
+
+kafka.nodes	: a hdfs file containing kafka nodes description; 
+		  test/kafka-nodes.txt is an exmple;
+
+kafka.etl.config: a hdfs file containing topic configuration;
+		  test/kafka-config.txt is an exmple;
+
+offsets.root	: input directory containing offsets in text format;
+		  they will be automatically generated in the first run;
+		  the number of files in this directory determines the
+		  number of mappers thus the number of fetch jobs;
+
+output.root	: output directory containing kafka data and updated 
+		  offset files;
+
+partition.granularity: 
+		We assume all topic data contain a "time" field 
+		and we partition data based on specified granularity.
+		Accepted values are: minute/hour/day. Data in the 
+		same partition will go to the same reduce() call. 
+
+KfakaETLJob is an abstract class which sets up job properties and 
+files Hadoop job. Users need to implement methods to provide Mapper
+and Reducer classes to be used. 
+
+KafkaETLMapper is an abstract class which fetches kafka data from 
+the server. It starts from provided offsets (by default, starts from
+smallest offsets available in server) and stops when it reaches 
+the largest available offsets. Users need to implement methods to 
+decode fetched data (to get timestamp field), and to determine job
+status and stopping conditions.  
+
+KafkaETLReducer is an abstract class which is used to partition 
+outputs. Users need to implement methods to generate output key 
+and value. They can also turn off partitioning by setting the 
+number of reducers to be 0.
+
+We include a simple implementation SimpleKafkaETLJob which fetches 
+test events (in text format) from server and store data in HDFS.
+
+HOW TO RUN:
+1. Complile the codes using "ant test".
+
+2. Generate test events in server:
+  1) Start kafka server;
+  2) Update test/test.properties to change the following parameters:  
+   kafka.etl.topic 	: topic name
+   event.count		: number of events to be generated
+   kafka.nodes		: hdfs location of kafka nodes configuration
+			  (test/kafka-nodes.txt is an examle). 
+  3) Generate events 
+   ./run-test.sh kafka.etl.impl.DataGenerator test/test.properties
+
+3. Fetch generated topic into HDFS:
+  1) Update test/test.properties to change the following parameters:
+	hadoop.job.ugi	: id and group 
+	kafka.etl.config: hdfs location of kafka configuration file
+			  (test/kafka-config.txt is an example)
+	offsets.root    : input location (you can provide a hdfs dir
+			 where you have write permission and the job will
+			 automatically generate starting offset files)
+	output.root	: output location (please provide a hdfs dir
+			 where you have write permission)
+	partition.granularity : partition granularity
+
+  2) Fetch data
+  ./run-test.sh kafka.etl.impl.SimpleKafkaETLJob test/test.properties
+
+
+
+
+
+
+
+
