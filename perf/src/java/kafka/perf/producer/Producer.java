@@ -6,11 +6,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import kafka.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.producer.KafkaProducer;
+import kafka.producer.SimpleProducer;
 
 public class Producer extends Thread
 {
-  private final KafkaProducer producer;
+  private final SimpleProducer producer;
   private final String topic;
   private final int messageSize;
   private AtomicLong bytesSent =  new AtomicLong(0L);
@@ -26,7 +26,7 @@ public class Producer extends Thread
                   int kafkaProducerBufferSize, int connectionTimeOut, int reconnectInterval,
                   int messageSize, String name, int batchSize, int numParts)
   {
-    producer = new KafkaProducer(kafkaServerURL,
+    producer = new SimpleProducer(kafkaServerURL,
                                  kafkaServerPort,
                                  kafkaProducerBufferSize,
                                  connectionTimeOut,
