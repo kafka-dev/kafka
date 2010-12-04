@@ -98,7 +98,7 @@ class EmbeddedConsumer(private val consumerConfig: ConsumerConfig,
             for (message <- streamList(i)) {
               val partition = logManager.chooseRandomPartition(topic)
               val start = SystemTime.nanoseconds
-              logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(message))
+              logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(false, message))
               stats.recordRequest(RequestKeys.Produce, SystemTime.nanoseconds - start)
             }
           }

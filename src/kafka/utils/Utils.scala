@@ -391,8 +391,8 @@ object Utils {
   /**
    * Compute the CRC32 of the segment of the byte array given by the specificed size and offset
    * @param bytes The bytes to checksum
-   * @param offset the offset at which to begin checksumming
-   * @param size the number of bytes to checksum
+   * @param the offset at which to begin checksumming
+   * @param the number of bytes to checksum
    * @return The CRC32
    */
   def crc32(bytes: Array[Byte], offset: Int, size: Int): Long = {

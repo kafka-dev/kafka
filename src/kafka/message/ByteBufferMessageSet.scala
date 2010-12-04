@@ -24,52 +24,114 @@ import kafka.utils._
 import kafka.common.ErrorMapping
 import org.apache.log4j.Logger
 
+
 /**
  * A sequence of messages stored in a byte buffer
+ * There are two ways to create a ByteBufferMessageSet 
+ * Option 1: From a ByteBuffer which already contains the serialized message set. Consumers will use this method. 
+ * Option 2: Give it a list of messages (scala/java) along with instructions relating to serialization format. Producers will use this method.
+ * 
  */
-class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends MessageSet {
+class ByteBufferMessageSet protected () extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
   private var validByteCount = -1
-
-  def this(buffer: ByteBuffer) = this(buffer,ErrorMapping.NO_ERROR)
+  private var buffer:ByteBuffer = null
+  var errorCode:Int = ErrorMapping.NO_ERROR 
+  private var shallowValidByteCount = -1
+  private var deepValidByteCount = -1
+  private var deepIterate = false
   
-  def this(messages: Message*) {
-    this(ByteBuffer.allocate(MessageSet.messageSetSize(messages)))
-    for(message <- messages) {
-      buffer.putInt(message.size)
-      buffer.put(message.buffer)
-      message.buffer.rewind()
-    }
-    buffer.rewind()
+  
+  def this(buffer: ByteBuffer, errorCode: Int, deepIterate: Boolean) = {
+    this()
+    this.buffer = buffer
+    this.errorCode = errorCode
+    this.deepIterate = deepIterate
   }
   
-  def this(messages: java.util.List[Message]) {
-    this(ByteBuffer.allocate(MessageSet.messageSetSize(messages)))
-    val iter = messages.iterator
-    while(iter.hasNext) {
-      val message = iter.next.asInstanceOf[Message]
-      buffer.putInt(message.size)
-      buffer.put(message.buffer)
-      message.buffer.rewind()
+  def this(buffer: ByteBuffer) = this(buffer,ErrorMapping.NO_ERROR,false)
+  
+  def this(compressionEnabled:Boolean, messages: Message*) {
+    this()
+    if (compressionEnabled) {
+      val message = CompressionUtils.compress(messages)
+      buffer = ByteBuffer.allocate(message.serializedSize)
+      message.serializeTo(buffer)
+      buffer.rewind
     }
-    buffer.rewind()
+    else {
+      buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+      for (message <- messages) {
+        message.serializeTo(buffer)
+      }
+      buffer.rewind
+    }
   }
   
-  def validBytes: Int = {
-    if(validByteCount < 0) {
-      val iter = iterator
+  def this(compressionEnabled:Boolean, messages: Iterable[Message]) {
+    this()
+    if (compressionEnabled) {
+      val message = CompressionUtils.compress(messages)
+      buffer = ByteBuffer.allocate(message.serializedSize)
+      message.serializeTo(buffer)
+      buffer.rewind
+    }
+    else {
+      buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+      for (message <- messages) {
+        message.serializeTo(buffer)
+      }
+      buffer.rewind
+    }
+  }
+  
+  
+  def enableDeepIteration() = {
+    deepIterate = true
+  }
+  
+  def disableDeepIteration() = {
+    deepIterate = false
+  }
+  
+  def serialized():ByteBuffer = buffer
+  
+  
+  def validBytes: Int = deepIterate match {
+    case true => deepValidBytes
+    case false => shallowValidBytes
+  }
+  
+  def shallowValidBytes: Int = {
+    if(shallowValidByteCount < 0) {
+      val iter = shallowIterator
       while(iter.hasNext)
         iter.next()
     }
-    validByteCount
+    shallowValidByteCount
   }
+  
+  def deepValidBytes: Int = {
+    if (deepValidByteCount < 0) {
+      val iter = deepIterator
+      while (iter.hasNext)
+        iter.next
+    }
+    deepValidByteCount
+  }
+  
 
   /** Write the messages in this set to the given channel */
   def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long = 
     channel.write(buffer.duplicate)
   
-  override def iterator: Iterator[Message] = {
-    ErrorMapping.maybeThrowException(errorCOde)
+  override def iterator: Iterator[Message] = deepIterate match {
+    case true => deepIterator
+    case false => shallowIterator
+  }
+  
+  def shallowIterator(): Iterator[Message] = {
+    ErrorMapping.maybeThrowException(errorCode)
     new IteratorTemplate[Message] {
       var iter = buffer.slice()
       var currValidBytes = 0
@@ -77,12 +139,12 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
       override def makeNext(): Message = {
         // read the size of the item
         if(iter.remaining < 4) {
-          validByteCount = currValidBytes
+          shallowValidByteCount = currValidBytes
           return allDone()
         }
         val size = iter.getInt()
         if(iter.remaining < size) {
-          validByteCount = currValidBytes
+          shallowValidByteCount = currValidBytes
           if (currValidBytes == 0)
             logger.warn("consumer fetch size too small? expected size:" + size + " received bytes:" + iter.remaining)
           return allDone()
@@ -95,6 +157,62 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
       }
     }
   }
+  
+  
+  def deepIterator(): Iterator[Message] = {
+      ErrorMapping.maybeThrowException(errorCode)
+      new IteratorTemplate[Message] {
+      var topIter = buffer.slice()
+      var currValidBytes = 0
+      var innerIter:Iterator[Message] = null
+      
+      
+      def innerDone():Boolean = {
+        (innerIter==null || !innerIter.hasNext)
+      }
+      
+      
+      def makeNextOuter: Message = {
+        if (topIter.remaining < 4) {
+          deepValidByteCount = currValidBytes
+          return allDone()
+        }
+        val size = topIter.getInt()
+        if(topIter.remaining < size) {
+          deepValidByteCount = currValidBytes
+          return allDone()
+        }
+        else {
+          val message = topIter.slice()
+          message.limit(size)
+          topIter.position(topIter.position + size)
+          val newMessage = new Message(message)
+          newMessage.isCompressed match {
+            case true=> {
+                innerIter = CompressionUtils.decompress(newMessage).deepIterator
+                makeNext()
+            }
+            case false=> {
+                innerIter = null
+                currValidBytes += 4 + size
+                newMessage
+            }
+          }
+        }
+      }
+
+     override def makeNext(): Message = 
+       innerDone match {
+        case true => makeNextOuter
+        case false => {
+            val message = innerIter.next
+            currValidBytes += message.serializedSize
+            message
+        }
+      }
+    }
+  }
+  
 
   def sizeInBytes: Long = buffer.limit
   
@@ -112,12 +230,13 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
   override def equals(other: Any): Boolean = {
     other match {
       case that: ByteBufferMessageSet =>
-        (that canEqual this) && errorCOde == that.errorCOde && buffer.equals(that.buffer) 
+        (that canEqual this) && errorCOde == that.errorCOde && buffer.equals(that.buffer) &&
+                deepIterate == that.deepIterate
       case _ => false
     }
   }
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 * (17 + errorCOde) + buffer.hashCode
+  override def hashCode: Int = 31 * (17 + errorCOde) + buffer.hashCode + deepIterate
 }

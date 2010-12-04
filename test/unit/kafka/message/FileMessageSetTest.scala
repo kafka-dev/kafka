@@ -29,7 +29,7 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
   
   def createMessageSet(messages: Seq[Message]): FileMessageSet = {
     val set = new FileMessageSet(tempFile(), true)
-    set.append(new ByteBufferMessageSet(messages: _*))
+    set.append(new ByteBufferMessageSet(false, messages: _*))
     set.flush()
     set
   }
@@ -41,14 +41,14 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
   }
   
   def testIterationOverPartialAndTruncation() {
-    testPartialWrite(0)
-	  testPartialWrite(2)
-    testPartialWrite(4)
-    testPartialWrite(5)
-    testPartialWrite(6)
+    testPartialWrite(0, messageSet)
+	  testPartialWrite(2, messageSet)
+    testPartialWrite(4, messageSet)
+    testPartialWrite(5, messageSet)
+    testPartialWrite(6, messageSet)
   }
   
-  def testPartialWrite(size: Int) {
+  def testPartialWrite(size: Int, messageSet: FileMessageSet) {
     val buffer = ByteBuffer.allocate(size)
     val originalPosition = messageSet.channel.position
     for(i <- 0 until size)

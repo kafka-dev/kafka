@@ -23,11 +23,12 @@ import kafka.utils._
 object TestLogPerformance {
 
   def main(args: Array[String]): Unit = {
-    if(args.length < 3)
-      Utils.croak("USAGE: java " + getClass().getName() + " num_messages message_size batch_size")
+    if(args.length < 4)
+      Utils.croak("USAGE: java " + getClass().getName() + " num_messages message_size batch_size compression_enabled")
     val numMessages = args(0).toInt
     val messageSize = args(1).toInt
     val batchSize = args(2).toInt
+    val compressionEnabled = args(3).toBoolean
     val dir = TestUtils.tempDir()
     val log = new Log(dir, 50*1024*1024, 5000000)
     val bytes = new Array[Byte](messageSize)
@@ -36,7 +37,7 @@ object TestLogPerformance {
     val messages = new Array[Message](batchSize)
     for(i <- 0 until batchSize)
       messages(i) = message
-    val messageSet = new ByteBufferMessageSet(messages: _*)
+    val messageSet = new ByteBufferMessageSet(compressionEnabled, messages: _*)
     val numBatches = numMessages / batchSize
     val start = System.currentTimeMillis()
     for(i <- 0 until numBatches)

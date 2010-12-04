@@ -112,7 +112,7 @@ class FileMessageSet private[message](private[message] val channel: FileChannel,
         
         sizeBuffer.rewind()
         val size: Int = sizeBuffer.getInt()
-        if (size < Message.HeaderSize)
+        if (size < Message.MinHeaderSize)
           return allDone()
         
         // read the item itself
@@ -232,7 +232,7 @@ class FileMessageSet private[message](private[message] val channel: FileChannel,
     
     // check that we have sufficient bytes left in the file
     val size = buffer.getInt(0)
-    if (size < Message.HeaderSize)
+    if (size < Message.MinHeaderSize)
       return -1
     
     val next = start + 4 + size

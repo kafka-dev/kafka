@@ -149,7 +149,7 @@ class SimpleConsumerTest extends TestCase {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(false, message))
     log.flush()
 
     Thread.sleep(100)
@@ -175,7 +175,7 @@ class SimpleConsumerTest extends TestCase {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(false, message))
     log.flush()
 
     Thread.sleep(100)

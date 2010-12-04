@@ -65,7 +65,7 @@ class FetcherRunnable(val name: String,
 
         for((messages, info) <- response.zip(partitionTopicInfos.iterator)) {
           var done = false
-          if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
+          if(messages.errorCode == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
             logger.info("offset " + info.fetchedOffset.get + " out of range")
             // see if we can fix this error
             if (info.fetchedOffset.get == info.consumedOffset.get) {
@@ -78,7 +78,7 @@ class FetcherRunnable(val name: String,
             }
           }
           if (!done) {
-            if(messages.sizeInBytes > 0 || messages.errorCOde != ErrorMapping.NO_ERROR)
+            if(messages.sizeInBytes > 0 || messages.errorCode != ErrorMapping.NO_ERROR)
               read += info.enqueue(messages)
           }
         }

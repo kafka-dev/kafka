@@ -42,8 +42,8 @@ class ProducerRequest(val topic: String,
   def writeTo(buffer: ByteBuffer) {
     Utils.writeShortString(buffer, topic, "UTF-8")
     buffer.putInt(partition)
-    buffer.putInt(messages.buffer.limit)
-    buffer.put(messages.buffer)
+    buffer.putInt(messages.serialized.limit)
+    buffer.put(messages.serialized)
   }
   
   def sizeInBytes(): Int = 2 + topic.length + 4 + 4 + messages.sizeInBytes.asInstanceOf[Int]

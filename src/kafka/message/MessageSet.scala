@@ -33,6 +33,9 @@ object MessageSet {
   def messageSetSize(messages: Seq[Message]): Int = 
     messages.foldLeft(0)(_ + entrySize(_))
   
+  def messageSetSize(messages: Iterable[Message]): Int = 
+    messages.foldLeft(0)(_ + entrySize(_))
+
   /**
    * The size of a list of messages
    */

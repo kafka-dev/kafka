@@ -92,7 +92,7 @@ class SimpleConsumer(val host: String,
       }
       val endTime = SystemTime.nanoseconds
       SimpleConsumerStats.recordFetchRequest(endTime - startTime)
-      new ByteBufferMessageSet(response._1.buffer, response._2)
+      new ByteBufferMessageSet(response._1.buffer, response._2, true)
     }
   }
 

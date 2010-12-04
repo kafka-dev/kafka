@@ -62,7 +62,7 @@ class LogTest extends TestCase {
     val log = new Log(logDir, 1024, 1000)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 10)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(false, message))
     log.flush()
     val messages = log.read(0, 1024)
     var current = 0
