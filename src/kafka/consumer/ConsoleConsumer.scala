@@ -22,10 +22,9 @@ import joptsimple._
 import java.util.Arrays.asList
 import java.util.Properties
 import java.util.Random
-import java.io.OutputStream
+import java.io.PrintStream
 import kafka.message._
 import kafka.utils.Utils
-import kafka.utils.Subprocess
 
 object ConsoleConsumer {
 
@@ -42,7 +41,7 @@ object ConsoleConsumer {
     val groupIdOpt = parser.acceptsAll(asList("g", "group"), "The group id to consume on.")
                            .withRequiredArg
                            .describedAs("gid")
-                           .defaultsTo("streaming-consumer-" + new Random().nextInt(100000))   
+                           .defaultsTo("console-consumer-" + new Random().nextInt(100000))   
                            .ofType(classOf[String])
     val fetchSizeOpt = parser.acceptsAll(asList("s", "fetch-size"), "The amount of data to fetch in a single request.")
                            .withRequiredArg
@@ -73,6 +72,7 @@ object ConsoleConsumer {
     props.put("socket.buffer.size", options.valueOf(socketBufferSizeOpt).toString)
     props.put("fetch.size", options.valueOf(fetchSizeOpt).toString)
     props.put("auto.commit", "true")
+    props.put("autooffset.reset", "largest")
     props.put("zk.connect", options.valueOf(zkConnectOpt))
     val config = new ConsumerConfig(props)
     
@@ -84,14 +84,13 @@ object ConsoleConsumer {
     val stream: KafkaMessageStream = connector.createMessageStreams(Map(topic -> 1)).get(topic).get.get(0)
     
     val formatter: MessageFormatter = messageFormatterClass.newInstance().asInstanceOf[MessageFormatter]
-    formatter.init(props)
+    formatter.init(formatterArgs)
     
-    for(message <- stream) {
-      val payload = message.payload
-      System.out.write(payload.array, payload.arrayOffset, payload.limit)
-      System.out.write('\n')
-    }
+    for(message <- stream)
+      formatter.writeTo(message, System.out)
+      
     System.out.flush()
+    formatter.close()
   }
   
   def checkRequiredArgs(parser: OptionParser, options: OptionSet, required: OptionSpec[_]*) {
@@ -104,23 +103,26 @@ object ConsoleConsumer {
     }
   }
   
-  def parseFormatterArgsOrDie(args: Buffer[String]): Buffer[(String, String)] = {
-    val splits = args.map(_ split "=").filter(_ == null).filter(_.length == 0)
+  def parseFormatterArgsOrDie(args: Buffer[String]): Properties = {
+    val splits = args.map(_ split "=").filterNot(_ == null).filterNot(_.length == 0)
     if(!splits.forall(_.length == 2)) {
       System.err.println("Invalid parser arguments: " + args.mkString(" "))
       System.exit(1)
     }
-    splits.map(a => (a(0), a(1)))
+    val props = new Properties
+    for(a <- splits)
+      props.put(a(0), a(1))
+    props
   }
   
   trait MessageFormatter {
-    def writeTo(message: Message, output: OutputStream)
+    def writeTo(message: Message, output: PrintStream)
     def init(props: Properties) {}
     def close() {}
   }
   
   class NewlineMessageFormatter extends MessageFormatter {
-    def writeTo(message: Message, output: OutputStream) {
+    def writeTo(message: Message, output: PrintStream) {
       val payload = message.payload
       output.write(payload.array, payload.arrayOffset, payload.limit)
       output.write('\n')
