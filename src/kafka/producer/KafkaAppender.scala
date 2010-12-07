@@ -67,7 +67,7 @@ class KafkaAppender extends AppenderSkeleton {
     logger.debug("[" + new Date(event.getTimeStamp).toString + "]" + event.getRenderedMessage +
             " for " + host + "," + port)
     val message = serializer.toMessage(event.getMessage)
-    producer.send(topic, new ByteBufferMessageSet(message))
+    producer.send(topic, new ByteBufferMessageSet(false, message))
   }
 
   override def close = {

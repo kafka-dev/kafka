@@ -59,9 +59,9 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
   def testProduceAndFetch() {
     // send some messages
     val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
-    sent.buffer.rewind
+    sent.Buffer.rewind
     var fetched: ByteBufferMessageSet = null
     while(fetched == null || fetched.validBytes == 0)
       fetched = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
@@ -87,10 +87,10 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.Buffer.rewind
         fetches += new FetchRequest(topic, 0, 0, 10000)
       }
 
@@ -128,7 +128,7 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)
@@ -136,7 +136,7 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
     producer.multiSend(produceList.toArray)
 
     for (messageSet <- messages.values)
-      messageSet.buffer.rewind
+      messageSet.Buffer.rewind
 
     // wait a bit for produced message to be available
     Thread.sleep(200)
@@ -148,13 +148,13 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
   def testGetOffsets() {
     // send some messages
     val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
 
     Thread.sleep(200)
     val now = System.currentTimeMillis
     val actualOffsets = consumer.getOffsetsBefore(topic, 0, now, 10)
-    val expectedOffsets = Array(28L)
+    val expectedOffsets = Array(30L)
     TestUtils.checkEquals(actualOffsets.iterator, expectedOffsets.iterator)
   }
 }

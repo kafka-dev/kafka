@@ -16,6 +16,7 @@
 
 package kafka
 
+import api.FetchRequest
 import kafka.utils._
 import kafka.server._
 import kafka.consumer.SimpleConsumer
@@ -41,7 +42,7 @@ object ConsumerPerformance {
     var consumedInInterval = 0
     var offset: Long = 0L
     while(!done) {
-      val messages = consumer.fetch(topic, offset, fetchSize)
+      val messages = consumer.fetch(new FetchRequest(topic, 0, offset, fetchSize))
       var messagesRead = 0
       for(message <- messages)
         messagesRead += 1

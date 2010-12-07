@@ -45,7 +45,7 @@ object ProducerPerformance {
     val compressionEnabled = args(8).toBoolean
     val rand = new java.util.Random
     
-    val producer = new KafkaProducer(host, config.port, config.socketSendBuffer, 30000, 100000)
+    val producer = new SimpleProducer(host, config.port, config.socketSendBuffer, 30000, 100000)
     val batchesPerThread = numMessages / numThreads / batchSize / config.numPartitions
     val totalBytesSent = new AtomicLong(0)
     val totalBatchesSent = new AtomicLong(0)

@@ -45,14 +45,14 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
     val sent2 = new ByteBufferMessageSet(new java.util.ArrayList[Message]())
     producer.send(topic, sent2)
     Thread.sleep(200)
-    sent2.buffer.rewind
+    sent2.Buffer.rewind
     var fetched2 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
     TestUtils.checkEquals(sent2.iterator, fetched2.iterator)
 
     // send some messages
-    val sent3 = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent3 = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent3)
-    sent3.buffer.rewind
+    sent3.Buffer.rewind
     var fetched3: ByteBufferMessageSet = null
     while(fetched3 == null || fetched3.validBytes == 0)
       fetched3 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
@@ -76,10 +76,10 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.Buffer.rewind
         fetches += new FetchRequest(topic, 0, 0, 10000)
       }
 
@@ -133,10 +133,10 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches : java.util.ArrayList[FetchRequest] = new java.util.ArrayList[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.Buffer.rewind
         fetches.add(new FetchRequest(topic, 0, 0, 10000))
       }
 
@@ -155,7 +155,7 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)
@@ -163,7 +163,7 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
     producer.multiSend(produceList.toArray)
 
     for (messageSet <- messages.values)
-      messageSet.buffer.rewind
+      messageSet.Buffer.rewind
       
     // wait a bit for produced message to be available
     Thread.sleep(200)
@@ -175,14 +175,14 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
   def testGetOffsets() {
     // send some messages
     val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
 
     // wait a bit until the log file is created
     Thread.sleep(100)
     val now = System.currentTimeMillis
     val actualOffsets1 = consumer.getOffsetsBefore(topic, 0, now, 10)
-    val expectedOffsets1 = Array(28L)
+    val expectedOffsets1 = Array(30L)
     TestUtils.checkEquals(actualOffsets1.iterator, expectedOffsets1.iterator)
 
     val oldTime = now - 1000000

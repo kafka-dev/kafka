@@ -36,8 +36,13 @@ class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
   }
 
   def testEquals() {
-    val messages = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
-    val moreMessages = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    var messages = new ByteBufferMessageSet(true, new Message("hello".getBytes()), new Message("there".getBytes()))
+    var moreMessages = new ByteBufferMessageSet(true, new Message("hello".getBytes()), new Message("there".getBytes()))
+
+    assertTrue(messages.equals(moreMessages))
+
+    messages = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
+    moreMessages = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
 
     assertTrue(messages.equals(moreMessages))
   }

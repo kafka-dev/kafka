@@ -16,6 +16,7 @@
 
 package kafka
 
+import api.FetchRequest
 import kafka.utils._
 import kafka.consumer._
 import kafka.server._
@@ -35,7 +36,7 @@ object TestConsumer {
       def run() {
         var offset = 0L
         while(true) {
-          val messages = consumer.fetch(topic, offset, 10000)
+          val messages = consumer.fetch(new FetchRequest(topic, 0, offset, 10000))
           println("fetched " + messages.sizeInBytes + " bytes from offset " + offset)
           var consumed = 0
           for(message <- messages) {

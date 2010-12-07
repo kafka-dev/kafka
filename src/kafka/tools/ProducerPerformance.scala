@@ -122,7 +122,7 @@ object ProducerPerformance {
               messages(k) = new Message(bytes)
               bytesSent += messages(k).payloadSize
             }
-            val set = new ByteBufferMessageSet(messages: _*)
+            val set = new ByteBufferMessageSet(false, messages: _*)
             val sendStart = System.currentTimeMillis
             try  {
               producer.send(topic, part, set)

@@ -38,7 +38,7 @@ object TestRichProducer {
     val sleepTime = args(4).toInt
     
     val reader = new BufferedReader(new FileReader(input))
-    val producer = new KafkaProducer(host, config.port, 100000, 10000, 10000)
+    val producer = new SimpleProducer(host, config.port, 100000, 10000, 10000)
     var count = 1
     var line: String = null
     val compressionEnabled = false

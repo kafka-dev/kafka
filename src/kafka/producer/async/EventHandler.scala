@@ -45,7 +45,7 @@ class EventHandler[T](val producer: SimpleProducer,
   def serialize(eventsPerTopic: Map[String, Seq[T]]): Map[String, ByteBufferMessageSet] = {
     import scala.collection.JavaConversions._
     val eventsPerTopicMap = eventsPerTopic.map(e => (e._1, e._2.map(l => serializer.toMessage(l))))
-    eventsPerTopicMap.map(e => (e._1, new ByteBufferMessageSet(asList(e._2))))
+    eventsPerTopicMap.map(e => (e._1, new ByteBufferMessageSet(false, asList(e._2))))
   }
 
   def collate(events: Seq[T]): Map[String, Seq[T]] = {

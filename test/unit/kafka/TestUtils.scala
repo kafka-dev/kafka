@@ -179,7 +179,7 @@ object TestUtils {
     var length = 0
     while(s1.hasNext && s2.hasNext) {
       length += 1
-      assertEquals(s1.next, s2.next)
+      assertEquals(s2.next, s1.next)
     }
     
     if (s1.hasNext)

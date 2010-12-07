@@ -45,29 +45,29 @@
   <target name="build" depends="init" description="Compile main source tree">
     <replace-dir dir="${classes.dir}"   />
     <replace-dir dir="${testclasses.dir}" />
-    <scalac srcdir="${src.dir}"
+    <fsc srcdir="${src.dir}"
   	        destdir="${classes.dir}"
             classpathref="main-classpath"
-            force="changed"
+            force="yes"
     	    target="jvm-1.5">
       <include name="**/*.scala"   />
-    </scalac>
-    <scalac srcdir="${unittestsrc.dir}"
+    </fsc>
+    <fsc srcdir="${unittestsrc.dir}"
             destdir="${testclasses.dir}"
             classpathref="test-classpath"
-            force="changed"
+            force="yes"
 	        target="jvm-1.5">
       <include name="**/*.scala"/>
-    </scalac>
-    <scalac srcdir="${othertestsrc.dir}"
+    </fsc>
+    <fsc srcdir="${othertestsrc.dir}"
             destdir="${testclasses.dir}"
             classpathref="test-classpath"
-            force="changed"
+            force="yes"
             target="jvm-1.5">
       <include name="**/*.scala"/>
-    </scalac>
-  	<copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
-  	<copy file="${test.dir}/log4j.properties" todir="${testclasses.dir}" />
+    </fsc>
+    <copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
+    <copy file="${test.dir}/log4j.properties" todir="${testclasses.dir}" />
   </target>
 
   <target name="jar" depends="build" description="Build jar file">

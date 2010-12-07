@@ -18,11 +18,11 @@ package kafka.message
 
 import java.nio._
 import java.nio.channels._
-import scala.collection.mutable
 import kafka.message._
 import kafka.utils._
 import kafka.common.ErrorMapping
 import org.apache.log4j.Logger
+import collection.{JavaConversions, mutable}
 
 
 /**
@@ -84,7 +84,13 @@ class ByteBufferMessageSet protected () extends MessageSet {
       buffer.rewind
     }
   }
+
+  import scala.collection.JavaConversions._
+  def this(messages: java.util.List[Message], compressionEnabled:Boolean = false) {
+    this(compressionEnabled, JavaConversions.asIterable(messages))
+  }
   
+  def Buffer = buffer
   
   def enableDeepIteration() = {
     deepIterate = true
@@ -230,7 +236,7 @@ class ByteBufferMessageSet protected () extends MessageSet {
   override def equals(other: Any): Boolean = {
     other match {
       case that: ByteBufferMessageSet =>
-        (that canEqual this) && errorCOde == that.errorCOde && buffer.equals(that.buffer) &&
+        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) &&
                 deepIterate == that.deepIterate
       case _ => false
     }
@@ -238,5 +244,5 @@ class ByteBufferMessageSet protected () extends MessageSet {
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 * (17 + errorCOde) + buffer.hashCode + deepIterate
+  override def hashCode: Int = 31 + (17 * errorCode) + buffer.hashCode + deepIterate.hashCode
 }

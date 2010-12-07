@@ -324,7 +324,7 @@ public abstract class KafkaETLMapper implements
 	 */
 	protected boolean checkErrorCode(ByteBufferMessageSet messages, String input)
 			throws IOException {
-		int errorCode = messages.errorCOde();
+		int errorCode = messages.errorCode();
 		if (errorCode == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE()) {
 			// offset cannot cross the maximum offset (guaranteed by Kafka
 			// protocol)

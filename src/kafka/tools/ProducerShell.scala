@@ -61,7 +61,7 @@ object ProducerShell {
         done = true
       } else {
         val lineBytes = line.trim.getBytes()
-        val messages = new ByteBufferMessageSet(new Message(lineBytes))
+        val messages = new ByteBufferMessageSet(false, new Message(lineBytes))
         producer.send(topic, messages)
         println("sent: " + line + " (" + messages.sizeInBytes + " bytes)")
       }

@@ -20,12 +20,12 @@ import junit.framework.TestCase
 import java.io.File
 import kafka.TestUtils
 import kafka.utils.Utils
-import kafka.message.{ByteBufferMessageSet, Message}
 import kafka.log.Log
 import kafka.server.{KafkaConfig, KafkaServer}
 import junit.framework.Assert._
 import java.util.{Random, Properties}
 import kafka.api.{FetchRequest, OffsetRequest}
+import kafka.message.{MessageSet, ByteBufferMessageSet, Message}
 
 object SimpleConsumerTest {
   val random = new Random()  
@@ -116,10 +116,16 @@ class SimpleConsumerTest extends TestCase {
     val log = logManager.getOrCreateLog(topic, part)
     
     val message = new Message(Integer.toString(42).getBytes())
-    for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+    var count = 0L
+    for(i <- 0 until 20) {
+      log.append(new ByteBufferMessageSet(false, message))
+      if(i == 0)
+        count += MessageSet.entrySize(message)
+    }
     log.flush()
 
+    println("offset = " + count)
+    
     Thread.sleep(100)
 
     val offsetRequest = new OffsetRequest(topic, part,
@@ -127,11 +133,11 @@ class SimpleConsumerTest extends TestCase {
     
     val offsets = log.getOffsetsBefore(offsetRequest)
 
-    assertEquals(220L, offsets.head)
+    assertEquals(240L, offsets.head)
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           OffsetRequest.LATEST_TIME, 10)
-    assertEquals(220L, consumerOffsets.head)
+    assertEquals(240L, consumerOffsets.head)
 
     // try to fetch using latest offset
     val messageSet: ByteBufferMessageSet = simpleConsumer.fetch(
@@ -158,11 +164,11 @@ class SimpleConsumerTest extends TestCase {
                                           System.currentTimeMillis, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
 
-    assertEquals(220L, offsets.head)
+    assertEquals(240L, offsets.head)
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           System.currentTimeMillis, 10)
-    assertEquals(220L, consumerOffsets.head)
+    assertEquals(240L, consumerOffsets.head)
   }
 
   def testGetOffsetsBeforeEarliestTime() {

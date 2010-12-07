@@ -49,7 +49,7 @@ public class Producer extends Thread
         Message message = new Message(new byte[messageSize]);
         messageList.add(message);
       }
-      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList);
+      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList, false);
       producer.send(topic, random.nextInt(numParts), set);
       bytesSent.getAndAdd(batchSize * messageSize);
       messagesSent.getAndAdd(messageList.size());

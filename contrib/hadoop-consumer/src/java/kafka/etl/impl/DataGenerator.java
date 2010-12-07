@@ -82,7 +82,7 @@ public class DataGenerator {
 		// send events
 		System.out.println(" send " + list.size() + " " + _topic
 				+ " count events to " + producerId);
-		producer.send(_topic, new ByteBufferMessageSet(list));
+		producer.send(_topic, new ByteBufferMessageSet(list, false));
 
 		// close all producers
 		for (SimpleProducer p : _producers) {

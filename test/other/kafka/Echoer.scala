@@ -16,8 +16,9 @@
 
 package kafka
 
+import api.FetchRequest
 import consumer.SimpleConsumer
-import producer.KafkaProducer
+import producer.SimpleProducer
 import scala.io.Source
 import java.io._
 import server.{KafkaServer, KafkaConfig}
@@ -38,13 +39,13 @@ object Echoer {
     val server = new KafkaServer(config)
     server.startup()
     Thread.sleep(500)
-    val producer = new KafkaProducer("localhost", config.port, config.socketSendBuffer, 1000000, 100)
+    val producer = new SimpleProducer("localhost", config.port, config.socketSendBuffer, 1000000, 100)
     Thread.sleep(1000)
     val consumer = new SimpleConsumer("localhost", config.port, 10000, config.socketReceiveBuffer)
     Utils.daemonThread("kafka-consumer", () => {
         var offset = 0L
         while(true) {
-          val messages = consumer.fetch("test", offset, 10000)
+          val messages = consumer.fetch(new FetchRequest("test", 0, offset, 10000))
           println("fetched " + messages.sizeInBytes)
           for(message <- messages) {
             println("consumed: " + Utils.toString(message.payload, "UTF-8"))

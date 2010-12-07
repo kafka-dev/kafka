@@ -30,7 +30,7 @@ object TestProducer {
     
     val config = new KafkaConfig(Utils.loadProps(args(0)))
     val topic = args(1)
-    val producer = new KafkaProducer("localhost", config.port, config.socketSendBuffer, 1000000, 100)
+    val producer = new SimpleProducer("localhost", config.port, config.socketSendBuffer, 1000000, 100)
     
     val input = new BufferedReader(new InputStreamReader(System.in))
     while(true) {

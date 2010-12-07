@@ -46,7 +46,7 @@ public class Producer extends Thread
       Message message = new Message(messageStr.getBytes());
       List<Message> messageList = new ArrayList<Message>();
       messageList.add(message);
-      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList);
+      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList, false);
       producer.send(topic, set);
       messageNo++;
     }
