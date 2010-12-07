@@ -12,6 +12,17 @@ This produce includes joda-time, developed by joda.org (joda-time.sourceforge.ne
 
 This product includes the scala runtime and compiler (www.scala-lang.org) developed by EPFL, which includes the following license:
 
+This product includes zookeeper, a Hadoop sub-project (http://hadoop.apache.org/zookeeper)
+
+This product includes log4j, an Apache project (http://logging.apache.org/log4j)
+
+This product includes easymock, developed by easymock.org (http://easymock.org)
+
+This product includes objenesis, developed by Joe Walnes, Henri Tremblay, Leonardo Mesquita (http://code.google.com/p/objenesis)
+
+This product includes cglib, developed by sourceforge.net (http://cglib.sourceforge.net)
+
+This product includes asm, developed by OW2 consortium (http://asm.ow2.org)
 -----------------------------------------------------------------------
 
 SCALA LICENSE

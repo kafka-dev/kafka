@@ -24,4 +24,4 @@ public class UndefinedPropertyException extends RuntimeException {
 		super(message);
 	}
 
-};
+}

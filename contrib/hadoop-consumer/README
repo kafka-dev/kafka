@@ -25,7 +25,7 @@ partition.granularity:
 		Accepted values are: minute/hour/day. Data in the 
 		same partition will go to the same reduce() call. 
 
-KfakaETLJob is an abstract class which sets up job properties and 
+KafkaETLJob is an abstract class which sets up job properties and 
 files Hadoop job. Users need to implement methods to provide Mapper
 and Reducer classes to be used. 
 
@@ -45,17 +45,19 @@ We include a simple implementation SimpleKafkaETLJob which fetches
 test events (in text format) from server and store data in HDFS.
 
 HOW TO RUN:
-1. Complile the codes using "ant test".
+1. Complile the code using "ant jar".
 
 2. Generate test events in server:
-  1) Start kafka server;
+  1) Start kafka server [ Follow the quick start - 
+                        http://sna-projects.com/kafka/quickstart.php ]
   2) Update test/test.properties to change the following parameters:  
    kafka.etl.topic 	: topic name
    event.count		: number of events to be generated
    kafka.nodes		: hdfs location of kafka nodes configuration
-			  (test/kafka-nodes.txt is an examle). 
+			  (test/kafka-nodes.txt is an example). 
   3) Generate events 
-   ./run-test.sh kafka.etl.impl.DataGenerator test/test.properties
+   ./bin/run-class.sh kafka.etl.impl.DataGenerator test/test.properties
+ 
 
 3. Fetch generated topic into HDFS:
   1) Update test/test.properties to change the following parameters:
@@ -70,7 +72,7 @@ HOW TO RUN:
 	partition.granularity : partition granularity
 
   2) Fetch data
-  ./run-test.sh kafka.etl.impl.SimpleKafkaETLJob test/test.properties
+  ./bin/run-class.sh kafka.etl.impl.SimpleKafkaETLJob test/test.properties
 
 
 

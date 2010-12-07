@@ -28,13 +28,12 @@ import java.util.Map;
 
 import kafka.api.FetchRequest;
 import kafka.api.MultiFetchResponse;
-import kafka.api.OffsetRequest$;
+import kafka.api.OffsetRequest;
 import kafka.common.ErrorMapping;
 import kafka.consumer.SimpleConsumer;
 import kafka.message.ByteBufferMessageSet;
-import kafka.message.MessageSet;
 import kafka.message.Message;
-
+import kafka.message.MessageSet;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -43,6 +42,8 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.lib.MultipleOutputs;
+
+import static kafka.api.OffsetRequest.*;
 
 /**
  * KafkaETL mapper
@@ -362,7 +363,7 @@ public abstract class KafkaETLMapper implements
 		long[] range = new long[2];
 
 		long[] offsets = consumer.getOffsetsBefore(topic, partition,
-				OffsetRequest$.MODULE$.EARLIEST_TIME(), 1);
+				OffsetRequest.EARLIEST_TIME(), 1);
 
 		if (offsets.length != 1)
 			throw new IOException("input:" + input
@@ -371,7 +372,7 @@ public abstract class KafkaETLMapper implements
 		range[0] = offsets[0];
 
 		offsets = consumer.getOffsetsBefore(topic, partition,
-				OffsetRequest$.MODULE$.LATEST_TIME(), 1);
+				OffsetRequest.LATEST_TIME(), 1);
 
 		if (offsets.length != 1)
 			throw new IOException("input:" + input

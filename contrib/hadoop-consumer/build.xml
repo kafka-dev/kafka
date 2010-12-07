@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="kafka-etl" basedir="." default="all">
+<project name="kafka-etl" basedir="./../../" default="all">
   <property file="build.properties" />
 
   <property name="name" value="kafka-etl" />
@@ -12,25 +12,14 @@
     <fileset dir="${lib.dir}">
       <include name="*.jar" />
     </fileset>
-    <fileset dir="${kafka.lib.dir}">
+    <fileset dir="${dist.dir}">
       <include name="*.jar" />
     </fileset>
-    <fileset dir="${kafka.dist.dir}">
+    <fileset dir="${contrib.root.dir}/hadoop-consumer/lib/">
       <include name="*.jar" />
     </fileset>
-    <pathelement path="${classes.dir}" />
+    <pathelement path="${classes.dir}/" />
   </path>
-
-  <!-- set the build number based on environment variable, otherwise blank -->
-  <property environment="env" description="System environment variables (including those set by Hudson)"/>
-  <condition property="curr.release.snapshot" value="${curr.release}-snapshot-${env.BUILD_NUMBER}" else="${curr.release}">
-       <and>
-          <isset property="env.BUILD_NUMBER" />
-          <not>
-              <equals arg1="" arg2="${env.BUILD_NUMBER}" trim="yes"/>
-          </not> 
-       </and>
-  </condition>
 
   <macrodef name="replace-dir">
     <attribute name="dir" />
@@ -43,46 +32,23 @@
   <target name="all" depends="clean, jar" description="Build all artifacts." />
 
   <target name="clean" description="Delete generated files.">
-    <delete dir="${dist.dir}" />
-  	<delete dir="${docs.dir}" />
+    <delete dir="${contrib.classes.dir}" />
   </target>
 
-  <target name="build" description="Compile main source tree java files">
-    <replace-dir dir="${classes.dir}" />
-    <javac fork="true" executable="${java6.home}/bin/javac" destdir="${classes.dir}" target="1.6" debug="true" deprecation="false" failonerror="true">
-      <src path="${java.dir}" />
+  <target name="build" description="Compile contrib packages">
+    <replace-dir dir="${contrib.classes.dir}" />
+    <javac destdir="${contrib.classes.dir}" target="1.6" debug="true" deprecation="false" failonerror="true">
+      <src path="${contrib.root.dir}/hadoop-consumer" />
       <classpath refid="main-classpath" />
     </javac>
   </target>
-  
-  <target name="jar" depends="build" description="Build etl jar file">
-    <jar destfile="${dist.dir}/${name}-${curr.release}.jar">
-      <fileset dir="${classes.dir}">
+
+  <target name="jar" depends="build" description="Build contrib jar file">
+    <jar destfile="${dist.dir}/${name}-contrib-${curr.release}.jar">
+      <fileset dir="${contrib.classes.dir}">
         <include name="**/*.*" />
       </fileset>
     </jar>
   </target>
 
- <target name="test" depends="build" description="Build etl test jar file">
-     <jar destfile="${dist.dir}/${name}-test-${curr.release}.jar">
-     <fileset dir="${classes.dir}"> <include name="**/*.*" /> </fileset>
-            <zipfileset src="${kafka.lib.dir}/log4j-1.2.15.jar" excludes="META-INF/*" />
-            <zipfileset src="lib/joda-time-1.6.jar" excludes="META-INF/*" />
-            <zipfileset src="lib/hadoop-0.20.2-core.jar" excludes="META-INF/*" />
-            <zipfileset src="lib/commons-logging-1.0.4.jar" excludes="META-INF/*" />
-            <zipfileset src="${kafka.dist.dir}/kafka-${curr.release}.jar" excludes="META-INF/*" />
-            <zipfileset src="${kafka.lib.dir}/scala-compiler-${scala.release}.jar" excludes="META-INF/*" />
-            <zipfileset src="${kafka.lib.dir}/scala-library-${scala.release}.jar" excludes="META-INF/*" />
-     </jar>
-  </target>
-
-
-  <target name="srcjar" description="Build source jar file">
-    <mkdir dir="${dist.dir}" />
-    <jar destfile="${dist.dir}/${name}-${curr.release}-src.jar">
-      <fileset dir="${java.dir}">
-        <include name="**/*.java" />
-      </fileset>
-    </jar>
-  </target>
 </project>
