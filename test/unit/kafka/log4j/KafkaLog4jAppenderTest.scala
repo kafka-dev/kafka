@@ -26,7 +26,7 @@ import kafka.utils.Utils
 import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.api.FetchRequest
-import kafka.serializer.Serializer
+import kafka.serializer.Encoder
 import kafka.message.{MessageSet, Message}
 import kafka.producer.async.MissingConfigException
 
@@ -62,7 +62,7 @@ class KafkaLog4jAppenderTest extends TestCase {
     props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
-    props.put("log4j.appender.KAFKA.Serializer", "kafka.log4j.AppenderStringSerializer")
+    props.put("log4j.appender.KAFKA.encoder", "kafka.log4j.AppenderStringEncoder")
     props.put("log4j.logger.kafka.log4j", "INFO, KAFKA")
 
     // port missing
@@ -77,7 +77,7 @@ class KafkaLog4jAppenderTest extends TestCase {
     props.put("log4j.rootLogger", "INFO")
     props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
-    props.put("log4j.appender.KAFKA.Serializer", "kafka.log4j.AppenderStringSerializer")
+    props.put("log4j.appender.KAFKA.Encoder", "kafka.log4j.AppenderStringEncoder")
     props.put("log4j.appender.KAFKA.Port", "9092")
     props.put("log4j.logger.kafka.log4j", "INFO, KAFKA")
 
@@ -94,7 +94,7 @@ class KafkaLog4jAppenderTest extends TestCase {
     props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Port", "9092")
-    props.put("log4j.appender.KAFKA.Serializer", "kafka.log4j.AppenderStringSerializer")
+    props.put("log4j.appender.KAFKA.Encoder", "kafka.log4j.AppenderStringEncoder")
     props.put("log4j.logger.kafka.log4j", "INFO, KAFKA")
 
     // topic missing
@@ -151,7 +151,7 @@ class KafkaLog4jAppenderTest extends TestCase {
     props.put("log4j.appender.KAFKA.Port", "9092")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
-    props.put("log4j.appender.KAFKA.Serializer", "kafka.log4j.AppenderStringSerializer")
+    props.put("log4j.appender.KAFKA.Encoder", "kafka.log4j.AppenderStringEncoder")
     props.put("log4j.logger.kafka.log4j", "INFO, KAFKA")
     props
   }
@@ -179,11 +179,9 @@ class KafkaLog4jAppenderTest extends TestCase {
   }
 }
 
-class AppenderStringSerializer extends Serializer[AnyRef] {
-  def toEvent(message: Message):AnyRef = message.toString
+class AppenderStringEncoder extends Encoder[AnyRef] {
   def toMessage(event: AnyRef):Message = {
     new Message(event.asInstanceOf[String].getBytes)
   }
-  def getName(event: AnyRef): String = null
 }
 

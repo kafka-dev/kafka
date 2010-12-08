@@ -18,6 +18,6 @@ package kafka.serializer
 
 import kafka.message.Message
 
-trait ReadSerializer[T] {
-  def toEvent(message: Message):T
+trait Encoder[T] {
+  def toMessage(event: T):Message
 }
