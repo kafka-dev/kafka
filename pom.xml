@@ -23,7 +23,16 @@
 					<artifactId>jline</artifactId>
 					<groupId>jline</groupId>
 				</exclusion>
+				<exclusion>
+					<artifactId>log4j</artifactId>
+					<groupId>log4j</groupId>
+				</exclusion>
 			</exclusions>
+		</dependency>
+		<dependency>
+			<artifactId>log4j</artifactId>
+			<groupId>log4j</groupId>
+			<version>1.2.16</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
@@ -59,11 +68,11 @@
 	</pluginRepositories>
 
 	<build>
-		<sourceDirectory>../src</sourceDirectory>
+		<sourceDirectory>src</sourceDirectory>
 
 		<resources>
 			<resource>
-				<directory>../src</directory>
+				<directory>src</directory>
 				<includes>
 					<include>**/*.scala</include>
 					<include>**/*.java</include>

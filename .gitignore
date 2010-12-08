@@ -1,3 +1,7 @@
 dist
 *classes
 docs/
+.project
+.classpath
+.settings/
+target/
