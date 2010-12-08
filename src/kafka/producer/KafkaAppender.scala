@@ -22,7 +22,7 @@ import kafka.message.ByteBufferMessageSet
 import java.util.Date
 import org.apache.log4j.{Logger, AppenderSkeleton}
 import kafka.utils.Utils
-import kafka.serializer.Serializer
+import kafka.serializer.WriteSerializer
 
 class KafkaAppender extends AppenderSkeleton {
   var port:Int = 0
@@ -32,7 +32,7 @@ class KafkaAppender extends AppenderSkeleton {
   
   private var producer:SimpleProducer = null
   private val logger = Logger.getLogger(classOf[KafkaAppender])
-  private var serializer: Serializer[AnyRef] = null
+  private var serializer: WriteSerializer[AnyRef] = null
   
   def getPort:Int = port
   def setPort(port: Int) = { this.port = port }
@@ -64,8 +64,10 @@ class KafkaAppender extends AppenderSkeleton {
   }
   
   override def append(event: LoggingEvent) = {
-    logger.debug("[" + new Date(event.getTimeStamp).toString + "]" + event.getRenderedMessage +
+    if (logger.isDebugEnabled){
+      logger.debug("[" + new Date(event.getTimeStamp).toString + "]" + event.getRenderedMessage +
             " for " + host + "," + port)
+    }
     val message = serializer.toMessage(event.getMessage)
     producer.send(topic, new ByteBufferMessageSet(message))
   }

@@ -18,6 +18,6 @@ package kafka.serializer
 
 import kafka.message.Message
 
-trait Serializer[T] extends WriteSerializer[T] with ReadSerializer[T]{
-  def getName(event: T):String
+trait WriteSerializer[T] {
+  def toMessage(event: T):Message
 }
