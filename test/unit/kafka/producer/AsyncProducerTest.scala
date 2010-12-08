@@ -23,6 +23,7 @@ import junit.framework.{Assert, TestCase}
 import java.util.{Properties}
 import org.easymock.{EasyMock}
 import kafka.api.ProducerRequest
+import org.apache.log4j.Level
 
 class AsyncProducerTest extends TestCase {
 
@@ -53,6 +54,9 @@ class AsyncProducerTest extends TestCase {
     val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
 
     producer.start
+    //temporarily set log4j to a higher level to avoid error in the output
+    producer.setLoggerLevel(Level.FATAL)
+    
     try {
       for(i <- 0 until 11) {
         producer.send(messageContent1)
@@ -64,6 +68,7 @@ class AsyncProducerTest extends TestCase {
     }
     producer.close
     EasyMock.verify(basicProducer)
+    producer.setLoggerLevel(Level.ERROR)    
   }
 
   def testAddAfterQueueClosed() {
@@ -242,14 +247,10 @@ class AsyncProducerTest extends TestCase {
                      override val reconnectInterval: Int) extends
   SimpleProducer(host, port, bufferSize, connectTimeoutMs, reconnectInterval) {
     override def send(topic: String, messages: ByteBufferMessageSet): Unit = {
-      println("Sleeping inside send method..")
       Thread.sleep(1000)
-      println("Waking up and returning..")
     }
     override def multiSend(produces: Array[ProducerRequest]) {
-      println("Sleeping inside multiSend method..")
       Thread.sleep(1000)
-      println("Waking up and returning from multiSend..")
     }
   }
 }

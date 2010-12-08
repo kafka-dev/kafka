@@ -19,9 +19,9 @@ package kafka.producer.async
 import java.util.concurrent.LinkedBlockingQueue
 import kafka.serializer.Serializer
 import kafka.utils.Utils
-import org.apache.log4j.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 import kafka.producer.SimpleProducer
+import org.apache.log4j.{Level, Logger}
 
 object AsyncKafkaProducer {
   val shutdown = new Object
@@ -66,4 +66,6 @@ class AsyncKafkaProducer[T](config: ProducerConfig,
     closed.set(true)
   }
   
+  // for testing only
+  def setLoggerLevel(level: Level) = logger.setLevel(level)
 }
