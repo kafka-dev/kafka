@@ -29,7 +29,8 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
   private static final String MSG_SIZE = "msgSize";
   private static final String FETCH_SIZE = "fetchSize";
   private static final String XAXIS = "xaxis";
-  
+  private static final String COMPRESSION= "compression";
+    
   /* Default values */
   private static int numProducer = 20;
   private static int numTopic = 10;
@@ -49,6 +50,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
   final static String consumerName = "-Consumer-";
   private static String reportFileName = "";
   private static String xaxisLabel = "";
+  private static Boolean compression = false;
   private final static String REPORT_FILE = "reportFile";
   
   private Producer [] producers;
@@ -73,8 +75,9 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
       else
         kafkaServerURL = hosts[random.nextInt(hosts.length)];
 
-      producers[i] = new Producer(topic,kafkaServerURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut, reconnectInterval,
-                                  messageSize, InetAddress.getLocalHost().getHostAddress()+ producerName +i, batchSize, numParts);
+      producers[i] = new Producer(topic,kafkaServerURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut,
+                                  reconnectInterval, messageSize, InetAddress.getLocalHost().getHostAddress()+
+                                  producerName +i, batchSize, numParts, compression);
     }
 
     // Start the threads
@@ -281,7 +284,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     parser.accepts(TEST_TIME, "time to run tests").withOptionalArg().ofType(Integer.class);
     parser.accepts(MSG_SIZE, "message size").withOptionalArg().ofType(Integer.class);
     parser.accepts(FETCH_SIZE, "fetch size").withOptionalArg().ofType(Integer.class);
-
+    parser.accepts(COMPRESSION, "compression").withOptionalArg().ofType(Boolean.class);
 
     return parser;
   }
@@ -320,7 +323,10 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
    
     if(options.hasArgument(FETCH_SIZE))
       fetchSize = ((Integer)options.valueOf(FETCH_SIZE)).intValue();
-    
+
+    if(options.hasArgument(COMPRESSION))
+      compression = ((Boolean)options.valueOf(COMPRESSION)).booleanValue();
+
     System.out.println("numTopic: " + numTopic);
   }
   

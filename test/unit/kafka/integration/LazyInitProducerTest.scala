@@ -155,6 +155,6 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
     val now = System.currentTimeMillis
     val actualOffsets = consumer.getOffsetsBefore(topic, 0, now, 10)
     val expectedOffsets = Array(30L)
-    TestUtils.checkEquals(actualOffsets.iterator, expectedOffsets.iterator)
+    TestUtils.checkEquals(expectedOffsets.iterator, actualOffsets.iterator)
   }
 }

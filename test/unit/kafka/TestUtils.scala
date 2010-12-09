@@ -175,30 +175,30 @@ object TestUtils {
    * Throw an exception if the two iterators are of differing lengths or contain
    * different messages on their Nth element
    */
-  def checkEquals[T](s1: Iterator[T], s2: Iterator[T]) {
+  def checkEquals[T](expected: Iterator[T], actual: Iterator[T]) {
     var length = 0
-    while(s1.hasNext && s2.hasNext) {
+    while(expected.hasNext && actual.hasNext) {
       length += 1
-      assertEquals(s2.next, s1.next)
+      assertEquals(expected.next, actual.next)
     }
     
-    if (s1.hasNext)
+    if (expected.hasNext)
     {
      var length1 = length;
-     while (s1.hasNext)
+     while (expected.hasNext)
      {
-       s1.next
+       expected.next
        length1 += 1
      }
      assertFalse("Iterators have uneven length-- first has more: "+length1 + " > " + length, true);
     }
     
-    if (s2.hasNext)
+    if (actual.hasNext)
     {
      var length2 = length;
-     while (s2.hasNext)
+     while (actual.hasNext)
      {
-       s2.next
+       actual.next
        length2 += 1
      }
      assertFalse("Iterators have uneven length-- second has more: "+length2 + " > " + length, true);

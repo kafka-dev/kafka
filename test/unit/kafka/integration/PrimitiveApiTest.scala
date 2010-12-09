@@ -183,11 +183,11 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
     val now = System.currentTimeMillis
     val actualOffsets1 = consumer.getOffsetsBefore(topic, 0, now, 10)
     val expectedOffsets1 = Array(30L)
-    TestUtils.checkEquals(actualOffsets1.iterator, expectedOffsets1.iterator)
+    TestUtils.checkEquals(expectedOffsets1.iterator, actualOffsets1.iterator)
 
     val oldTime = now - 1000000
     val actualOffsets2 = consumer.getOffsetsBefore(topic, 0, oldTime, 10)
     val expectedOffsets2 = new Array[Long](0)
-    TestUtils.checkEquals(actualOffsets2.iterator, expectedOffsets2.iterator)
+    TestUtils.checkEquals(expectedOffsets2.iterator, actualOffsets2.iterator)
   }
 }

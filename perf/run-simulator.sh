@@ -8,7 +8,7 @@ fi
 
 base_dir=$(dirname $0)/..
 
-#CLASSPATH=$CLASSPATH:bin
+CLASSPATH=$base_dir/dist/perf-classes
 
 for file in $base_dir/dist/*.jar;
 do
@@ -25,11 +25,11 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
-CLASSPATH=$base_dir/perf/build/java:$CLASSPATH
 echo $CLASSPATH
 
 if [ -z "$KAFKA_PERF_OPTS" ]; then
-  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=3333 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"  
+#  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=3333 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
 fi
 
 if [ -z "$JAVA_HOME" ]; then

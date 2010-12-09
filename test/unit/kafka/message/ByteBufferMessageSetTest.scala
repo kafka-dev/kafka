@@ -17,7 +17,6 @@
 package kafka.message
 
 import java.nio._
-import junit.framework.TestCase
 import junit.framework.Assert._
 
 class ByteBufferMessageSetTest extends BaseMessageSetTestCases {

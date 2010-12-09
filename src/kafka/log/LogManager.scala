@@ -83,8 +83,6 @@ class LogManager(val config: KafkaConfig,
     scheduler.scheduleWithRate(cleanupLogs, 60 * 1000, logCleanupIntervalMs)
   }
 
-
-
   if(config.enableZookeeper) {
     kafkaZookeeper = new KafkaZooKeeper(config, this)
     kafkaZookeeper.startup

@@ -2,7 +2,6 @@ package kafka.message
 
 
 import junit.framework.TestCase
-import junit.framework.Assert._
 import kafka.TestUtils
 
 class CompressionUtilTest extends TestCase {

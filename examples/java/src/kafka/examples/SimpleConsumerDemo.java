@@ -31,7 +31,7 @@ public class SimpleConsumerDemo
 {
   private static void printMessages(ByteBufferMessageSet messageSet)
   {
-    Iterator<Message> it =  messageSet.elements();
+    Iterator<Message> it =  messageSet.iterator();
     while(it.hasNext())
     {
       System.out.println(ExampleUtils.getMessage(it.next()));

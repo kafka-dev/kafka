@@ -20,11 +20,11 @@ public class Producer extends Thread
   private String procudername;
   private int batchSize;
   private int numParts;
-  
+  private boolean compression;  
 
   public Producer(String topic, String kafkaServerURL, int kafkaServerPort,
                   int kafkaProducerBufferSize, int connectionTimeOut, int reconnectInterval,
-                  int messageSize, String name, int batchSize, int numParts)
+                  int messageSize, String name, int batchSize, int numParts, boolean compression)
   {
     producer = new SimpleProducer(kafkaServerURL,
                                  kafkaServerPort,
@@ -36,6 +36,7 @@ public class Producer extends Thread
     procudername = name;
     this.batchSize = batchSize;
     this.numParts = numParts;
+    this.compression = compression;
 
   }
 
@@ -49,7 +50,7 @@ public class Producer extends Thread
         Message message = new Message(new byte[messageSize]);
         messageList.add(message);
       }
-      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList, false);
+      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList, compression);
       producer.send(topic, random.nextInt(numParts), set);
       bytesSent.getAndAdd(batchSize * messageSize);
       messagesSent.getAndAdd(messageList.size());
