@@ -86,7 +86,7 @@
   <target name="test" depends="jar" description="Run junit tests.">
     <replace-dir dir="${testreport.dir}" />
     <replace-dir dir="${testhtml.dir}" />
-    <junit printsummary="on" showoutput="false">
+    <junit printsummary="on" showoutput="true">
       <classpath refid="test-classpath" />
       <formatter type="xml" />
       <batchtest fork="yes" todir="${testreport.dir}">

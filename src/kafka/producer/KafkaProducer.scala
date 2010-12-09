@@ -18,12 +18,12 @@ package kafka.producer
 
 import java.net._
 import java.nio.channels._
-import org.apache.log4j.Logger
 import kafka.message._
 import kafka.network._
 import kafka.utils._
 import kafka.api._
 import scala.math._
+import org.apache.log4j.{Level, Logger}
 
 object SimpleProducer {
   val RequestKey: Short = 0
@@ -46,6 +46,7 @@ class SimpleProducer(val host: String,
   private val lock = new Object()
   @volatile
   private var shutdown: Boolean = false
+
   /**
    * Send a message
    */
@@ -176,6 +177,9 @@ class SimpleProducer(val host: String,
       channel = connect()
     }
   }
+
+  // for testing only
+  def setLoggerLevel(level: Level) = logger.setLevel(level)  
 }
 
 trait KafkaProducerStatsMBean {
