@@ -35,7 +35,6 @@ class ZKLoadBalanceTest extends TestCase with ZooKeeperTestHarness {
 
   override def setUp() {
     super.setUp()
-    println("Initializing ZookeeperConsumerConnector.")
 
     dirs = new ZKGroupTopicDirs(group, topic)
   }

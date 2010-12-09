@@ -55,7 +55,6 @@ class FetcherTest extends TestCase with KafkaServerTestHarness {
   
   override def setUp() {
     super.setUp()
-    println("Initializing fetcher.")
     fetcher = new Fetcher(new ConsumerConfig(TestUtils.createConsumerProperties("", "", "")), null)
     fetcher.initConnections(topicInfos, cluster)
   }
@@ -90,7 +89,6 @@ class FetcherTest extends TestCase with KafkaServerTestHarness {
       producer.close()
       count += ms.size
     }
-    println("Sent " + count + " messages.")
     count
   }
   

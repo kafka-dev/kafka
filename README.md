@@ -12,3 +12,9 @@ Kafka is aimed at providing a publish-subscribe solution that can handle all act
 See our [web site](http://sna-projects.com/kafka) for more details on the project.
 
 Kafka is a new project, and we are interested in building the community; we would welcome any thoughts or patches. You can reach us [here](http://groups.google.com/group/kafka-dev). 
+
+To get kafka code:
+  git clone git@github.com:kafka-dev/kafka.git kafka
+
+To run unit tests:
+  ant test (you need to make sure that scala 2.8.0 is in your PATH)
