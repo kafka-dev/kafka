@@ -16,6 +16,7 @@
 
 package kafka.log4j
 
+import org.apache.log4j.spi.LoggingEvent
 import org.apache.log4j.{PropertyConfigurator, Logger}
 import java.util.Properties
 import java.io.File
@@ -179,9 +180,10 @@ class KafkaLog4jAppenderTest extends TestCase {
   }
 }
 
-class AppenderStringEncoder extends Encoder[AnyRef] {
-  def toMessage(event: AnyRef):Message = {
-    new Message(event.asInstanceOf[String].getBytes)
+class AppenderStringEncoder extends Encoder[LoggingEvent] {
+  def toMessage(event: LoggingEvent):Message = {
+    val logMessage = event.getMessage
+    new Message(logMessage.asInstanceOf[String].getBytes)
   }
 }
 

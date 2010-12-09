@@ -68,7 +68,7 @@ class KafkaAppender extends AppenderSkeleton {
       logger.debug("[" + new Date(event.getTimeStamp).toString + "]" + event.getRenderedMessage +
             " for " + host + "," + port)
     }
-    val message = encoder.toMessage(event.getMessage)
+    val message = encoder.toMessage(event)
     producer.send(topic, new ByteBufferMessageSet(message))
   }
 
