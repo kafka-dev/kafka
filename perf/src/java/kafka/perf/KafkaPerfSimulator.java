@@ -30,6 +30,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
   private static final String FETCH_SIZE = "fetchSize";
   private static final String XAXIS = "xaxis";
   private static final String COMPRESSION= "compression";
+  private static final String BATCH_SIZE = "batchSize";
     
   /* Default values */
   private static int numProducer = 20;
@@ -264,7 +265,10 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
     if(NUM_TOPIC.equals(xaxisLabel))
       return ""+numTopic;
-    
+
+    if(BATCH_SIZE.equals(xaxisLabel))
+      return "" + batchSize;
+      
     return "";
   }
   
@@ -285,7 +289,8 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     parser.accepts(MSG_SIZE, "message size").withOptionalArg().ofType(Integer.class);
     parser.accepts(FETCH_SIZE, "fetch size").withOptionalArg().ofType(Integer.class);
     parser.accepts(COMPRESSION, "compression").withOptionalArg().ofType(Boolean.class);
-
+    parser.accepts(BATCH_SIZE, "batch size").withOptionalArg().ofType(Integer.class);
+      
     return parser;
   }
 
@@ -327,6 +332,9 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     if(options.hasArgument(COMPRESSION))
       compression = ((Boolean)options.valueOf(COMPRESSION)).booleanValue();
 
+    if(options.hasArgument(BATCH_SIZE))
+      batchSize = ((Integer)options.valueOf(BATCH_SIZE)).intValue();
+      
     System.out.println("numTopic: " + numTopic);
   }
   

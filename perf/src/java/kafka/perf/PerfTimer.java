@@ -70,8 +70,8 @@ public class PerfTimer extends Thread
                        perfSim.getAvgMessagesRecPs() + "," +
                        perfSim.getAvgMBytesRecPs() + "," +
                        perfSim.getAvgMessagesSentPs() + "," +
-                       perfSim.getAvgMBytesSentPs() + "," +
-                       brokerStats.getBrokerStats();
+                       perfSim.getAvgMBytesSentPs();
+//                       brokerStats.getBrokerStats();
     
     System.out.println(header);
     System.out.println(data);

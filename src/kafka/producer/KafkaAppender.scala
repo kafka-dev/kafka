@@ -22,17 +22,17 @@ import kafka.message.ByteBufferMessageSet
 import java.util.Date
 import org.apache.log4j.{Logger, AppenderSkeleton}
 import kafka.utils.Utils
-import kafka.serializer.Serializer
+import kafka.serializer.Encoder
 
 class KafkaAppender extends AppenderSkeleton {
   var port:Int = 0
   var host:String = null
   var topic:String = null
-  var serializerClass:String = null
+  var encoderClass:String = null
   
   private var producer:SimpleProducer = null
   private val logger = Logger.getLogger(classOf[KafkaAppender])
-  private var serializer: Serializer[AnyRef] = null
+  private var encoder: Encoder[AnyRef] = null
   
   def getPort:Int = port
   def setPort(port: Int) = { this.port = port }
@@ -43,8 +43,8 @@ class KafkaAppender extends AppenderSkeleton {
   def getTopic:String = topic
   def setTopic(topic: String) = { this.topic = topic }
 
-  def getSerializer:String = serializerClass
-  def setSerializer(serializer: String) = { this.serializerClass = serializer }
+  def getEncoder:String = encoderClass
+  def setEncoder(encoder: String) = { this.encoderClass = encoder }
   
   override def activateOptions = {
     // check for config parameter validity
@@ -54,19 +54,21 @@ class KafkaAppender extends AppenderSkeleton {
       throw new MissingConfigException("Broker Port must be specified by the Kafka log4j appender") 
     if(topic == null)
       throw new MissingConfigException("topic must be specified by the Kafka log4j appender")
-    if(serializerClass == null)
-      throw new MissingConfigException("Serializer must be specified by the Kafka log4j appender")
-    // instantiate the serializer, if present
-    serializer = Utils.getObject(serializerClass)    
+    if(encoderClass == null)
+      throw new MissingConfigException("Encoder must be specified by the Kafka log4j appender")
+    // instantiate the encoder, if present
+    encoder = Utils.getObject(encoderClass)    
     producer = new SimpleProducer(host, port, 100*1024, 30000, 10000)
     logger.info("Kafka producer connected to " + host + "," + port)
     logger.info("Logging for topic: " + topic)
   }
   
   override def append(event: LoggingEvent) = {
-    logger.debug("[" + new Date(event.getTimeStamp).toString + "]" + event.getRenderedMessage +
+    if (logger.isDebugEnabled){
+      logger.debug("[" + new Date(event.getTimeStamp).toString + "]" + event.getRenderedMessage +
             " for " + host + "," + port)
-    val message = serializer.toMessage(event.getMessage)
+    }
+    val message = encoder.toMessage(event.getMessage)
     producer.send(topic, new ByteBufferMessageSet(false, message))
   }
 

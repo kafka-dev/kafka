@@ -124,8 +124,6 @@ class SimpleConsumerTest extends TestCase {
     }
     log.flush()
 
-    println("offset = " + count)
-    
     Thread.sleep(100)
 
     val offsetRequest = new OffsetRequest(topic, part,

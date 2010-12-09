@@ -37,12 +37,10 @@ trait ProducerConsumerTestHarness extends TestCase {
                                    port,
                                    1000000,
                                    64*1024)
-      println("Setting up producer and consumer at port " + port)
       super.setUp()
     }
     
     override def tearDown() {
-      println("Shutting down producer and consumer at port " + port)
       producer.close()
       consumer.close()
       super.tearDown()
