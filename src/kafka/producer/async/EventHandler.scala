@@ -16,7 +16,7 @@
 
 package kafka.producer.async
                                 
-import kafka.serializer.Serializer
+import kafka.serializer.SerDeser
 import kafka.message.ByteBufferMessageSet
 import collection.mutable.HashMap
 import collection.mutable.Map
@@ -25,7 +25,7 @@ import kafka.api.ProducerRequest
 import kafka.producer.SimpleProducer
 
 class EventHandler[T](val producer: SimpleProducer,
-                      val serializer: Serializer[T]) {
+                      val serializer: SerDeser[T]) {
 
   private val logger = Logger.getLogger(classOf[EventHandler[T]])
   
@@ -50,11 +50,11 @@ class EventHandler[T](val producer: SimpleProducer,
 
   def collate(events: Seq[T]): Map[String, Seq[T]] = {
     val collatedEvents = new HashMap[String, Seq[T]]
-    val distinctTopics = events.map(e => serializer.getName(e)).distinct
+    val distinctTopics = events.map(e => serializer.getTopic(e)).distinct
 
     var remainingEvents = events
     distinctTopics foreach { topic => 
-      val topicEvents = remainingEvents partition (serializer.getName(_).equals(topic))
+      val topicEvents = remainingEvents partition (serializer.getTopic(_).equals(topic))
       remainingEvents = topicEvents._2
       collatedEvents += (topic -> topicEvents._1)
     }

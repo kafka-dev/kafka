@@ -51,7 +51,6 @@ class ZookeeperConsumerConnectorTest extends TestCase with KafkaServerTestHarnes
   
   override def setUp() {
     super.setUp()
-    println("Initializing fetcher.")
   }
   
   def testBasic() {

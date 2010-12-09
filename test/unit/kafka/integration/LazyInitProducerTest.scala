@@ -44,15 +44,12 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
     super.setUp()
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
-    println("Setting up " + configs.size + " kafka servers for testing")
     servers = configs.map(TestUtils.createServer(_))
   }
 
   override def tearDown() {
     super.tearDown()
-    println("Shutting down test kafka instance")
     servers.map(server => server.shutdown())
-    println("Deleting log directories")
     servers.map(server => Utils.rm(server.config.logDir))
   }
   
