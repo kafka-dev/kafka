@@ -17,11 +17,11 @@
 package kafka.producer.async
 
 import java.util.concurrent.LinkedBlockingQueue
-import kafka.serializer.Serializer
 import kafka.utils.Utils
 import org.apache.log4j.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 import kafka.producer.SimpleProducer
+import kafka.serializer.SerDeser
 
 object AsyncKafkaProducer {
   val shutdown = new Object
@@ -29,7 +29,7 @@ object AsyncKafkaProducer {
 
 class AsyncKafkaProducer[T](config: ProducerConfig,
                             producer: SimpleProducer,
-                            serializer: Serializer[T]) {
+                            serializer: SerDeser[T]) {
 
   private val logger = Logger.getLogger(classOf[AsyncKafkaProducer[T]])
   private val closed = new AtomicBoolean(false)

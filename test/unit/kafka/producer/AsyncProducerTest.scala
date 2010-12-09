@@ -17,12 +17,12 @@
 package kafka.producer
 
 import async.{AsyncKafkaProducer, ProducerConfig, QueueClosedException, QueueFullException}
-import kafka.serializer.Serializer
 import kafka.message.{ByteBufferMessageSet, Message}
 import junit.framework.{Assert, TestCase}
-import java.util.{Properties}
-import org.easymock.{EasyMock}
+import java.util.Properties
+import org.easymock.EasyMock
 import kafka.api.ProducerRequest
+import kafka.serializer.SerDeser
 
 class AsyncProducerTest extends TestCase {
 
@@ -229,10 +229,10 @@ class AsyncProducerTest extends TestCase {
     new ByteBufferMessageSet(messageList)
   }
 
-  class StringSerializer extends Serializer[String] {
+  class StringSerializer extends SerDeser[String] {
     def toEvent(message: Message):String = message.toString
     def toMessage(event: String):Message = new Message(event.getBytes)
-    def getName(event: String): String = event.concat("-topic")
+    def getTopic(event: String): String = event.concat("-topic")
   }
 
   class MockProducer(override val host: String,

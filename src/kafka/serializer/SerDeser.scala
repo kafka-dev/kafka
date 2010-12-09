@@ -16,8 +16,7 @@
 
 package kafka.serializer
 
-import kafka.message.Message
-
-trait Serializer[T] extends Encoder[T] with Decoder[T]{
-  def getName(event: T):String
+trait SerDeser[T] extends Encoder[T] with Decoder[T]{
+  // extracts the name of the topic from the event data
+  def getTopic(event: T):String
 }
