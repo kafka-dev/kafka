@@ -30,35 +30,36 @@ object ConsoleConsumer {
 
   def main(args: Array[String]) {
     val parser = new OptionParser
-    val topicIdOpt = parser.acceptsAll(asList("t", "topic"), "REQUIRED: The topic id to consume on.")
+    val topicIdOpt = parser.accepts("topic", "REQUIRED: The topic id to consume on.")
                            .withRequiredArg
                            .describedAs("topic")
                            .ofType(classOf[String])
-    val zkConnectOpt = parser.acceptsAll(asList("z", "zk-urls"), "REQUIRED: The connection string for the zookeeper connection.")
+    val zkConnectOpt = parser.accepts("zookeeper", "REQUIRED: The connection string for the zookeeper connection in the form host:port. " + 
+                                      "Multiple URLS can be given to allow fail-over.")
                            .withRequiredArg
                            .describedAs("urls")
                            .ofType(classOf[String])
-    val groupIdOpt = parser.acceptsAll(asList("g", "group"), "The group id to consume on.")
+    val groupIdOpt = parser.accepts("group", "The group id to consume on.")
                            .withRequiredArg
                            .describedAs("gid")
                            .defaultsTo("console-consumer-" + new Random().nextInt(100000))   
                            .ofType(classOf[String])
-    val fetchSizeOpt = parser.acceptsAll(asList("s", "fetch-size"), "The amount of data to fetch in a single request.")
+    val fetchSizeOpt = parser.accepts("fetch-size", "The amount of data to fetch in a single request.")
                            .withRequiredArg
                            .describedAs("size")
                            .ofType(classOf[Integer])
                            .defaultsTo(1024 * 1024)   
-    val socketBufferSizeOpt = parser.acceptsAll(asList("b", "socket-buffer-size"), "The size of the tcp socket size.")
+    val socketBufferSizeOpt = parser.accepts("socket-buffer-size", "The size of the tcp RECV size.")
                            .withRequiredArg
                            .describedAs("size")
                            .ofType(classOf[Integer])
                            .defaultsTo(2 * 1024 * 1024)
-    val messageFormatterOpt = parser.acceptsAll(asList("f", "formatter"))
+    val messageFormatterOpt = parser.accepts("formatter", "The name of a class to use for formatting kafka messages for display.")
                            .withRequiredArg
                            .describedAs("class")
                            .ofType(classOf[String])
                            .defaultsTo(classOf[NewlineMessageFormatter].getName)
-    val messageFormatterArgOpt = parser.acceptsAll(asList("p", "property"))
+    val messageFormatterArgOpt = parser.accepts("property")
                            .withRequiredArg
                            .describedAs("prop")
                            .ofType(classOf[String])
