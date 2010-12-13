@@ -21,6 +21,7 @@ import junit.framework.{Assert, TestCase}
 import kafka.utils.SystemTime
 import kafka.TestUtils
 import kafka.server.{KafkaServer, KafkaConfig}
+import org.apache.log4j.Level
 
 class KafkaProducerTest extends TestCase {
   private var messageBytes =  new Array[Byte](2);
@@ -41,6 +42,9 @@ class KafkaProducerTest extends TestCase {
     val producer = new SimpleProducer("NOT_USED", 9092, 100*1024, 300, 1000)
     var failed = false
     val firstStart = SystemTime.milliseconds
+
+    //temporarily increase log4j level to avoid error in output
+    producer.setLoggerLevel(Level.FATAL)
     try {
       producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
     }catch {
@@ -62,6 +66,7 @@ class KafkaProducerTest extends TestCase {
     val secondEnd = SystemTime.milliseconds
     println("Second message send retries took " + (secondEnd-secondStart) + " ms")
     Assert.assertTrue((secondEnd-secondEnd) < 300)
+    producer.setLoggerLevel(Level.ERROR)
   }
 
   def testReachableServer() {
@@ -92,6 +97,8 @@ class KafkaProducerTest extends TestCase {
     val producer = new SimpleProducer("localhost", 9091, 100*1024, 300, 500)
     var failed = false
     val firstStart = SystemTime.milliseconds
+    //temporarily increase log4j level to avoid error in output
+    producer.setLoggerLevel(Level.FATAL)
     try {
       producer.send("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))
     }catch {
@@ -110,6 +117,6 @@ class KafkaProducerTest extends TestCase {
     Assert.assertTrue(failed)
     val secondEnd = SystemTime.milliseconds
     Assert.assertTrue((secondEnd-secondEnd) < 300)
-
+    producer.setLoggerLevel(Level.ERROR)
   }
 }

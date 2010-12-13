@@ -16,14 +16,14 @@
 
 package kafka.producer.async
 
-import kafka.serializer.Serializer
 import kafka.utils.SystemTime
 import java.util.concurrent.{TimeUnit, CountDownLatch, BlockingQueue}
 import org.apache.log4j.Logger
 import collection.mutable.ListBuffer
+import kafka.serializer.SerDeser
 
 class ProducerSendThread[T](val queue: BlockingQueue[T],
-                            val serializer: Serializer[T],
+                            val serializer: SerDeser[T],
                             val handler: EventHandler[T],
                             val queueTime: Long,
                             val batchSize: Int,

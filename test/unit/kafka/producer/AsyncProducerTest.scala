@@ -17,12 +17,13 @@
 package kafka.producer
 
 import async.{AsyncKafkaProducer, ProducerConfig, QueueClosedException, QueueFullException}
-import kafka.serializer.Serializer
 import kafka.message.{ByteBufferMessageSet, Message}
 import junit.framework.{Assert, TestCase}
-import java.util.{Properties}
-import org.easymock.{EasyMock}
+import java.util.Properties
+import org.easymock.EasyMock
 import kafka.api.ProducerRequest
+import kafka.serializer.SerDeser
+import org.apache.log4j.Level
 
 class AsyncProducerTest extends TestCase {
 
@@ -53,6 +54,9 @@ class AsyncProducerTest extends TestCase {
     val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
 
     producer.start
+    //temporarily set log4j to a higher level to avoid error in the output
+    producer.setLoggerLevel(Level.FATAL)
+    
     try {
       for(i <- 0 until 11) {
         producer.send(messageContent1)
@@ -64,6 +68,7 @@ class AsyncProducerTest extends TestCase {
     }
     producer.close
     EasyMock.verify(basicProducer)
+    producer.setLoggerLevel(Level.ERROR)    
   }
 
   def testAddAfterQueueClosed() {
@@ -229,10 +234,10 @@ class AsyncProducerTest extends TestCase {
     new ByteBufferMessageSet(messageList)
   }
 
-  class StringSerializer extends Serializer[String] {
+  class StringSerializer extends SerDeser[String] {
     def toEvent(message: Message):String = message.toString
     def toMessage(event: String):Message = new Message(event.getBytes)
-    def getName(event: String): String = event.concat("-topic")
+    def getTopic(event: String): String = event.concat("-topic")
   }
 
   class MockProducer(override val host: String,
@@ -242,14 +247,10 @@ class AsyncProducerTest extends TestCase {
                      override val reconnectInterval: Int) extends
   SimpleProducer(host, port, bufferSize, connectTimeoutMs, reconnectInterval) {
     override def send(topic: String, messages: ByteBufferMessageSet): Unit = {
-      println("Sleeping inside send method..")
       Thread.sleep(1000)
-      println("Waking up and returning..")
     }
     override def multiSend(produces: Array[ProducerRequest]) {
-      println("Sleeping inside multiSend method..")
       Thread.sleep(1000)
-      println("Waking up and returning from multiSend..")
     }
   }
 }
