@@ -18,15 +18,21 @@ package kafka.consumer
 
 import scala.collection.mutable._
 import scala.collection.JavaConversions._
+import org.I0Itec.zkclient._
 import joptsimple._
+import org.apache.log4j.Logger
 import java.util.Arrays.asList
 import java.util.Properties
 import java.util.Random
 import java.io.PrintStream
 import kafka.message._
 import kafka.utils.Utils
+import kafka.utils.ZkUtils
+import kafka.utils.StringSerializer
 
 object ConsoleConsumer {
+  
+  private val logger = Logger.getLogger(getClass())
 
   def main(args: Array[String]) {
     val parser = new OptionParser
@@ -64,8 +70,7 @@ object ConsoleConsumer {
                            .describedAs("prop")
                            .ofType(classOf[String])
     
-    val options = parser.parse(args : _*)
-    
+    val options: OptionSet = tryParse(parser, args)
     checkRequiredArgs(parser, options, topicIdOpt, zkConnectOpt)
     
     val props = new Properties()
@@ -79,9 +84,19 @@ object ConsoleConsumer {
     
     val topic = options.valueOf(topicIdOpt)
     val messageFormatterClass = Class.forName(options.valueOf(messageFormatterOpt))
-    val formatterArgs = parseFormatterArgsOrDie(options.valuesOf(messageFormatterArgOpt))
+    val formatterArgs = tryParseFormatterArgs(options.valuesOf(messageFormatterArgOpt))
     
     val connector = Consumer.create(config)
+    
+    Runtime.getRuntime.addShutdownHook(new Thread() {
+      override def run() {
+        connector.shutdown()
+        // if there is no group specified then avoid polluting zookeeper with persistent group data, this is a hack
+        if(!options.has(groupIdOpt))  
+          tryCleanupZookeeper(options.valueOf(zkConnectOpt), options.valueOf(groupIdOpt))
+      }
+    })
+    
     val stream: KafkaMessageStream = connector.createMessageStreams(Map(topic -> 1)).get(topic).get.get(0)
     
     val formatter: MessageFormatter = messageFormatterClass.newInstance().asInstanceOf[MessageFormatter]
@@ -94,6 +109,17 @@ object ConsoleConsumer {
     formatter.close()
   }
   
+  def tryParse(parser: OptionParser, args: Array[String]) = {
+    try {
+      parser.parse(args : _*)
+    } catch {
+      case e: OptionException => {
+        Utils.croak(e.getMessage)
+        null
+      }
+    }
+  }
+  
   def checkRequiredArgs(parser: OptionParser, options: OptionSet, required: OptionSpec[_]*) {
     for(arg <- required) {
     	if(!options.has(arg)) {
@@ -104,7 +130,7 @@ object ConsoleConsumer {
     }
   }
   
-  def parseFormatterArgsOrDie(args: Buffer[String]): Properties = {
+  def tryParseFormatterArgs(args: Iterable[String]): Properties = {
     val splits = args.map(_ split "=").filterNot(_ == null).filterNot(_.length == 0)
     if(!splits.forall(_.length == 2)) {
       System.err.println("Invalid parser arguments: " + args.mkString(" "))
@@ -127,6 +153,18 @@ object ConsoleConsumer {
       val payload = message.payload
       output.write(payload.array, payload.arrayOffset, payload.limit)
       output.write('\n')
+    }
+  }
+  
+  def tryCleanupZookeeper(zkUrl: String, groupId: String) {
+    try {
+      val dir = "/consumers/" + groupId
+      logger.info("Cleaning up temporary zookeeper data under " + dir + ".")
+      val zk = new ZkClient(zkUrl, 30*1000, 30*1000, StringSerializer)
+      zk.deleteRecursive(dir)
+      zk.close()
+    } catch {
+      case _ => // swallow
     }
   }
    
