@@ -1,361 +1,272 @@
 package kafka.perf;
+
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Date;
-import java.util.Random;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-
 import kafka.perf.consumer.SimplePerfConsumer;
 import kafka.perf.jmx.BrokerJmxClient;
-import kafka.perf.producer.Producer;
+import kafka.perf.producer.PerfProducer;
 
+public class KafkaPerfSimulator extends PerfSimulator implements KafkaSimulatorMXBean {
 
-public class KafkaPerfSimulator implements KafkaSimulatorMXBean
-{
-  /*Command line parser options*/
-  
-  private static final String NUM_PRODUCER = "numProducer";
-  private static final String NUM_CONSUMER = "numConsumer";
-  private static final String NUM_TOPIC = "numTopic";
-  private static final String NUM_PARTS = "numParts";
-  private static final String TEST_TIME = "time";
-  private static final String KAFKA_SERVER = "kafkaServer";
-  private static final String MSG_SIZE = "msgSize";
-  private static final String FETCH_SIZE = "fetchSize";
-  private static final String XAXIS = "xaxis";
-  private static final String COMPRESSION= "compression";
-  private static final String BATCH_SIZE = "batchSize";
-    
-  /* Default values */
-  private static int numProducer = 20;
-  private static int numTopic = 10;
-  private static int numParts = 10;
-  private static int numConsumers = 10;
-  private static long timeToRunMs = 60000L * 1; 
+	protected static final String CONSUMER_KAFKA_SERVER = "consumerKafkaServer";
+	protected static final String CONSUMER_KAFKA_PORT = "consumerKafkaPort";
+	protected static final String CONSUMER_TOPIC = "consumerTopic";
+	protected static final String PRODUCER_TOPIC = "producerTopic";
+	protected static final String KAFKA_SERVER_LOG_DIR = "serverLogDir";
+	
+	private PerfProducer [] producers;
+	private SimplePerfConsumer[] consumers;
 
-  private static String kafkaServersURL = "";
-  private final static int kafkaServerPort = 9092;
-  private final static int kafkaProducerBufferSize = 64*1024;
-  private final static int connectionTimeOut = 100000;
-  private final static int reconnectInterval = 10000;
-  private static int messageSize = 200;
-  private static int fetchSize = 1024 *1024; /*1MB*/
-  private static int batchSize = 200;
-  final static String producerName = "-Producer-";
-  final static String consumerName = "-Consumer-";
-  private static String reportFileName = "";
-  private static String xaxisLabel = "";
-  private static Boolean compression = false;
-  private final static String REPORT_FILE = "reportFile";
-  
-  private Producer [] producers;
-  private SimplePerfConsumer [] consumers;
+	private String consumerKafkaServerURL;
+	private int consumerKafkaServerPort;
+	private String consumerTopic;
+	private String producerTopic;
+	private int fetchSize = 1024 * 1024; /*1MB*/;
+	private String kafkaServerLogDir;
 
-  public void startProducers() throws UnknownHostException
-  {
-    producers = new Producer[numProducer];
-    Random random = new Random();
-    String [] hosts = kafkaServersURL.split(",");
-    for(int i = 0; i < numProducer; i++ )
-    {
-      String topic;
-      String kafkaServerURL;
-      if(numTopic >= numProducer)
-        topic = "topic" +i;
-      else
-        topic = "topic" + random.nextInt(numTopic);
+	public void startProducers() throws UnknownHostException
+	{
+		producers = new PerfProducer[numProducer];
+		for(int i = 0; i < numProducer; i++ )
+			producers[i] = new PerfProducer(producerTopic, kafkaServersURL, kafkaServerPort, kafkaProducerBufferSize, 
+					connectionTimeOut, reconnectInterval, InetAddress.getLocalHost().getHostAddress()+ producerName +i, 
+					batchSize, numParts, compression,
+					fetchSize, consumerKafkaServerURL, consumerKafkaServerPort, consumerTopic);
 
-      if(hosts.length >= numProducer)
-        kafkaServerURL = hosts[i];
-      else
-        kafkaServerURL = hosts[random.nextInt(hosts.length)];
+		// Start the threads
+		for(int i = 0; i < numProducer; i++)
+			producers[i].start();
+	}
 
-      producers[i] = new Producer(topic,kafkaServerURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut,
-                                  reconnectInterval, messageSize, InetAddress.getLocalHost().getHostAddress()+
-                                  producerName +i, batchSize, numParts, compression);
-    }
+	public void startConsumers() throws UnknownHostException
+	{
+		consumers = new SimplePerfConsumer[numConsumers];
+		for(int i = 0; i < numConsumers; i++ )
+			consumers[i] = new SimplePerfConsumer(producerTopic, kafkaServersURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut, reconnectInterval,
+					fetchSize, InetAddress.getLocalHost().getHostAddress()+ consumerName +i, this.numParts);
 
-    // Start the threads
-    for(int i = 0; i < numProducer; i++)
-      producers[i].start();
+		// Start the threads
+		for(int i = 0; i < numConsumers; i++)
+			consumers[i].start();
+	}
 
-  }
-  
-  public void startConsumers() throws UnknownHostException
-  {
-    consumers = new SimplePerfConsumer[numConsumers];
-    Random random = new Random();
-    String [] hosts = kafkaServersURL.split(",");
-    for(int i = 0; i < numConsumers; i++ )
-    {
-      String topic;
-      String kafkaServerURL;
-      if(numTopic >= numConsumers)
-        topic = "topic" +i;
-      else
-        topic = "topic" + random.nextInt(numTopic);
+	public void startPerfRun() throws InterruptedException, UnknownHostException {
+		try {
+			startProducers();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		Thread.sleep(5000);
+		startConsumers();
+	}
 
-      if(hosts.length >= numConsumers)
-        kafkaServerURL = hosts[i];
-      else
-        kafkaServerURL = hosts[random.nextInt(hosts.length)];
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		//create parser and get options
 
-      consumers[i] = new SimplePerfConsumer(topic,kafkaServerURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut, reconnectInterval,
-                                  fetchSize, InetAddress.getLocalHost().getHostAddress()+ consumerName +i, this.numParts);
-    }
+		BrokerJmxClient brokerStats = new BrokerJmxClient(kafkaServersURL, 9999, timeToRunMs);
+		KafkaPerfSimulator sim = new KafkaPerfSimulator();
+		try {
+			sim.getOptions(sim.createParser(), args);
+		} catch (IOException e) {
+			System.err.println("Exception occurred while parsing arguments");
+		}
+		try {
+			sim.startPerfRun();
+		} catch (UnknownHostException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
-    // Start the threads
-    for(int i = 0; i < numConsumers; i++)
-      consumers[i].start();
-  }
+		PerfTimer timer = new PerfTimer(brokerStats, sim, numConsumers, numProducer,numParts, numTopic, 
+				timeToRunMs, reportFileName, compression);
+		timer.start();
 
-  public KafkaPerfSimulator() throws UnknownHostException
-  {
-    startProducers();
-    startConsumers();
- 
-  }
+		MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+		ObjectName mbeanName = null;
+		try {
+			mbeanName = new ObjectName("kafka.perf:type=Simulator");
+			mbs.registerMBean(sim, mbeanName);
+		} catch (Exception e) {
+			System.err.println("Problem occured while registering perf mbean");
+		} 
+		while(true);
 
+	}
 
-  public String getMBytesSentPs()
-  {
-    if(producers == null ||producers.length == 0)
-      return "";
-    StringBuffer msg = new StringBuffer();
-    for(int i = 0; i < numProducer -1; i++)
-      msg.append(producers[i].getMBytesSentPs()  +",");
-    msg.append(producers[numProducer -1].getMBytesSentPs());
-    System.out.println(msg);
-    return msg.toString();
-   }
+	protected OptionParser createParser() {
+		OptionParser parser = super.createParser();
 
-  public double getAvgMBytesSentPs()
-  {
-    if(producers == null ||producers.length == 0)
-      return 0;
-    double total = 0;
-    
-    for(int i = 0; i < numProducer -1; i++)
-      total = total + producers[i].getMBytesSentPs();
-    total = total +producers[numProducer -1].getMBytesSentPs();
-    return total /numProducer;
-   }
-  
-  public double getAvgMessagesSentPs()
-  {
-    if(producers == null ||producers.length == 0)
-      return 0;
-    double total = 0;
-    
-    for(int i = 0; i < numProducer -1; i++)
-      total = total + producers[i].getMessagesSentPs();
-    total = total +producers[numProducer -1].getMessagesSentPs();
-    return total /numProducer;
-   }
-  
-  
-  public String getMessagesSentPs()
-  {
-    if(producers == null ||producers.length == 0)
-      return "";
-    StringBuffer msg = new StringBuffer();
-    for(int i = 0; i < numProducer -1; i++)
-      msg.append(producers[i].getMessagesSentPs() +",");
-    msg.append(producers[numProducer -1].getMessagesSentPs());
-    System.out.println(msg);
-    return msg.toString();
-  }
+		/* required arguments */
+		parser.accepts(CONSUMER_TOPIC, "consumer topic").withRequiredArg().ofType(String.class);
+		parser.accepts(PRODUCER_TOPIC, "producer topic").withRequiredArg().ofType(String.class);
 
-  public String getProducers()
-  {
-    if(producers == null || producers.length == 0)
-      return "";
-    StringBuffer name = new StringBuffer();
-    for(int i = 0; i < numProducer -1; i++)
-      name.append(producers[i].getProducerName() +",");
-    name.append(producers[numProducer -1].getProducerName());
-    return name.toString();
-  }
+		/* optional values */
+		parser.accepts(CONSUMER_KAFKA_SERVER, "consumer kafka server").withOptionalArg().ofType(String.class);
+		parser.accepts(CONSUMER_KAFKA_PORT, "consumer kafka server port").withOptionalArg().ofType(Integer.class);
+		
+		/* only makes sense if kafka server is localhost and compression ratio needs to be calculated */
+		parser.accepts(KAFKA_SERVER_LOG_DIR, "kafka server log dir").withOptionalArg().ofType(String.class);
+		
+		return parser;
+	}
 
-  public String getMBytesRecPs()
-  {
-    StringBuffer msg = new StringBuffer();
-    for(int i = 0; i < numConsumers -1; i++)
-      msg.append(consumers[i].getMBytesRecPs() +",");
-    msg.append(consumers[numConsumers -1].getMBytesRecPs());
-    //System.out.println(msg);
-    return msg.toString();
-  }
+	protected void getOptions(OptionParser parser, String[] args) throws IOException
+	{
+		super.getOptions(parser, args);
+		System.out.println("Number of producers = " + numProducer);
+		OptionSet options = parser.parse(args);
 
-  public double getAvgMBytesRecPs()
-  {
-    if(consumers == null ||consumers.length == 0)
-      return 0;
+		if(!(options.hasArgument(CONSUMER_TOPIC) && options.hasArgument(PRODUCER_TOPIC)))
+		{
+			parser.printHelpOn(System.err);
+			System.exit(1);
+		}
 
-    double total = 0;
-    for(int i = 0; i < numConsumers -1; i++)
-      total = total + consumers[i].getMBytesRecPs();
+		if(options.hasArgument(CONSUMER_TOPIC))
+			consumerTopic = ((String)options.valueOf(CONSUMER_TOPIC));
 
-   total = total + consumers[numConsumers -1].getMBytesRecPs();
-   
-   return total / numConsumers;
-  }
+		if(options.hasArgument(PRODUCER_TOPIC))
+			producerTopic = ((String)options.valueOf(PRODUCER_TOPIC));
 
-  public double getAvgMessagesRecPs()
-  {
-    if(consumers == null ||consumers.length == 0)
-      return 0;
+		if(producerTopic.equals(consumerTopic)) {
+			if(!(options.hasArgument(CONSUMER_KAFKA_SERVER) && options.hasArgument(CONSUMER_KAFKA_PORT))) {
+				System.err.println("Producer and consumer topics need to be different on the same Kafka server");
+				System.exit(1);
+			}
+		}
 
-    double total = 0;
-    for(int i = 0; i < numConsumers -1; i++)
-      total = total + consumers[i].getMessagesRecPs();;
+		if(options.hasArgument(CONSUMER_KAFKA_SERVER))
+			consumerKafkaServerURL = ((String)options.valueOf(CONSUMER_KAFKA_SERVER));
+		else
+			consumerKafkaServerURL = kafkaServersURL;
 
-   total = total + consumers[numConsumers -1].getMessagesRecPs();
-   
-   return total / numConsumers;
-  }
+		if(options.hasArgument(CONSUMER_KAFKA_PORT))
+			consumerKafkaServerPort = ((Integer)options.valueOf(CONSUMER_KAFKA_PORT)).intValue();
+		else
+			consumerKafkaServerPort = kafkaServerPort;
+		
+		if(options.hasArgument(KAFKA_SERVER_LOG_DIR))
+			kafkaServerLogDir = ((String)options.valueOf(KAFKA_SERVER_LOG_DIR));
+	}
 
-  
-  public String getMessagesRecPs()
-  {
-    StringBuffer msg = new StringBuffer();
-    for(int i = 0; i < numConsumers -1; i++)
-      msg.append(consumers[i].getMessagesRecPs() +",");
-    msg.append(consumers[numConsumers -1].getMessagesRecPs());
-    //System.out.println(msg);
-    return msg.toString();
-  }
+	public String getConsumers() {
+		StringBuffer name = new StringBuffer();
+		for(int i = 0; i < numConsumers -1; i++)
+			name.append(consumers[i].getConsumerName() +",");
+		name.append(consumers[numConsumers -1].getConsumerName());
+		return name.toString();
+	}
 
-  public String getConsumers()
-  {
-    StringBuffer name = new StringBuffer();
-    for(int i = 0; i < numConsumers -1; i++)
-      name.append(consumers[i].getConsumerName() +",");
-    name.append(consumers[numConsumers -1].getConsumerName());
-    return name.toString();
-  }
+	public String getMBytesRecPs() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-  public String getXaxisLabel()
-  {
-    if(NUM_PRODUCER.equals(xaxisLabel))
-      return "Number of Producers";
-    
-    if(NUM_CONSUMER.equals(xaxisLabel))
-      return "Number of Consumers";
+	public String getMBytesSentPs() {
+		if(producers == null ||producers.length == 0)
+			return "";
+		StringBuffer msg = new StringBuffer();
+		for(int i = 0; i < numProducer -1; i++)
+			msg.append(producers[i].getMBytesSentPs()  +",");
+		msg.append(producers[numProducer -1].getMBytesSentPs());
+		System.out.println(msg);
+		return msg.toString();
+	}
 
-    if(NUM_TOPIC.equals(xaxisLabel))
-      return "Number of Topics";
-    
-    return "";
-  }
-  
-  public String getXAxisVal()
-  {
-    if(NUM_PRODUCER.equals(xaxisLabel))
-      return ""+numProducer;
-    
-    if(NUM_CONSUMER.equals(xaxisLabel))
-      return "" + numConsumers;
+	public String getMessagesRecPs() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    if(NUM_TOPIC.equals(xaxisLabel))
-      return ""+numTopic;
+	public String getMessagesSentPs() {
+		if(producers == null ||producers.length == 0)
+			return "";
+		StringBuffer msg = new StringBuffer();
+		for(int i = 0; i < numProducer -1; i++)
+			msg.append(producers[i].getMessagesSentPs() +",");
+		msg.append(producers[numProducer -1].getMessagesSentPs());
+		System.out.println(msg);
+		return msg.toString();
+	}
 
-    if(BATCH_SIZE.equals(xaxisLabel))
-      return "" + batchSize;
-      
-    return "";
-  }
-  
-  private static OptionParser createParser()
-  {
-    OptionParser parser = new OptionParser();
-    /* required arguments */
-    parser.accepts(KAFKA_SERVER, "kafka server url").withRequiredArg().ofType(String.class);
-    parser.accepts(REPORT_FILE, "report file name").withRequiredArg().ofType(String.class);
-    parser.accepts(XAXIS, "report xaxis").withRequiredArg().ofType(String.class);
+	public String getProducers() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    /* optional values */
-    parser.accepts(NUM_PRODUCER, "number of producers").withOptionalArg().ofType(Integer.class);
-    parser.accepts(NUM_CONSUMER, "number of consumers").withOptionalArg().ofType(Integer.class);
-    parser.accepts(NUM_TOPIC, "number of topic").withOptionalArg().ofType(Integer.class);
-    parser.accepts(NUM_PARTS, "number of partitions").withOptionalArg().ofType(Integer.class);
-    parser.accepts(TEST_TIME, "time to run tests").withOptionalArg().ofType(Integer.class);
-    parser.accepts(MSG_SIZE, "message size").withOptionalArg().ofType(Integer.class);
-    parser.accepts(FETCH_SIZE, "fetch size").withOptionalArg().ofType(Integer.class);
-    parser.accepts(COMPRESSION, "compression").withOptionalArg().ofType(Boolean.class);
-    parser.accepts(BATCH_SIZE, "batch size").withOptionalArg().ofType(Integer.class);
-      
-    return parser;
-  }
+	protected double getAvgMBytesSentPs() {
+		if(producers == null ||producers.length == 0)
+			return 0;
+		double total = 0;
 
-  private static void  getOptions(OptionParser parser, String[] args)
-  {
-    OptionSet options = parser.parse(args);
+		for(int i = 0; i < numProducer-1; i++)
+			total = total + producers[i].getMBytesSentPs();
+		total = total +producers[numProducer-1].getMBytesSentPs();
+		return total /numProducer;		
+	}
 
-    if(!(options.hasArgument(KAFKA_SERVER) || options.hasArgument(REPORT_FILE) 
-         ||  options.hasArgument(XAXIS)))
-      printUsage();
-      
-    kafkaServersURL = (String)options.valueOf(KAFKA_SERVER);
-    reportFileName= (String)options.valueOf(REPORT_FILE);
-    xaxisLabel = (String)options.valueOf(XAXIS);
-    
-    System.out.println("server: " + kafkaServersURL + " report: " + reportFileName + " xaxisLabel : " 
-                       + xaxisLabel);
-    
-    if(options.hasArgument(NUM_PRODUCER))
-       numProducer = ((Integer)options.valueOf(NUM_PRODUCER)).intValue();
-    if(options.hasArgument(NUM_CONSUMER))
-       numConsumers = ((Integer)options.valueOf(NUM_CONSUMER)).intValue();
+	protected double getAvgMessagesSentPs() {
+		if(producers == null ||producers.length == 0)
+			return 0;
+		double total = 0;
 
-    if(options.hasArgument(NUM_TOPIC))
-       numTopic = ((Integer)options.valueOf(NUM_TOPIC)).intValue();
+		for(int i = 0; i < numProducer -1; i++)
+			total = total + producers[i].getMessagesSentPs();
+		total = total +producers[numProducer -1].getMessagesSentPs();
+		return total /numProducer;
+	}
 
-    if(options.hasArgument(NUM_PARTS))
-       numParts = ((Integer)options.valueOf(NUM_PARTS)).intValue();
+	protected double getAvgMessagesRecPs() {
+		if(consumers == null ||consumers.length == 0)
+			return 0;
 
-    if(options.hasArgument(TEST_TIME))
-      timeToRunMs = ((Integer)options.valueOf(TEST_TIME)).intValue() * 60 * 1000;
+		double total = 0;
+		for(int i = 0; i < numConsumers -1; i++)
+			total = total + consumers[i].getMessagesRecPs();
 
-    if(options.hasArgument(MSG_SIZE))
-      messageSize = ((Integer)options.valueOf(MSG_SIZE)).intValue();
-   
-    if(options.hasArgument(FETCH_SIZE))
-      fetchSize = ((Integer)options.valueOf(FETCH_SIZE)).intValue();
+		total = total + consumers[numConsumers -1].getMessagesRecPs();
+		return total / numConsumers;
+	}
 
-    if(options.hasArgument(COMPRESSION))
-      compression = ((Boolean)options.valueOf(COMPRESSION)).booleanValue();
+	protected double getAvgMBytesRecPs() {
+		if(consumers == null ||consumers.length == 0)
+			return 0;
 
-    if(options.hasArgument(BATCH_SIZE))
-      batchSize = ((Integer)options.valueOf(BATCH_SIZE)).intValue();
-      
-    System.out.println("numTopic: " + numTopic);
-  }
-  
-  private static void printUsage()
-  {
-    System.out.println("kafka server name is requied");
-    System.exit(0);
-  }
-  
-  public static void main(String[] args) throws Exception {
+		double total = 0;
+		for(int i = 0; i < numConsumers -1; i++)
+			total = total + consumers[i].getMBytesRecPs();
 
-    //create parser and get options
-    getOptions(createParser(), args);
-    
-    BrokerJmxClient brokerStats = new BrokerJmxClient(kafkaServersURL, 9999, timeToRunMs);
-    KafkaPerfSimulator sim = new KafkaPerfSimulator();
-    PerfTimer timer = new PerfTimer( brokerStats, sim, numConsumers, numProducer,numParts, numTopic, timeToRunMs,reportFileName);
-    timer.start();
-    MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-    ObjectName mbeanName = new ObjectName("kafka.perf:type=Simulator");
-    mbs.registerMBean(sim, mbeanName);
-    while(true);
-  }
+		total = total + consumers[numConsumers -1].getMBytesRecPs();
+
+		return total / numConsumers;
+	}
+
+	@Override
+	protected long getTotalBytesSent() {
+		long bytes = 0;
+		for(int i = 0;i < numProducer; i++) {
+			bytes += producers[i].getTotalBytesSent();
+		}
+		return bytes;
+	}
+
+	@Override
+	protected String getKafkaServerLogDir() {
+		return kafkaServerLogDir;
+	}
 }

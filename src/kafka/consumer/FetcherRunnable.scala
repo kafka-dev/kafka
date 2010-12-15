@@ -18,11 +18,10 @@ package kafka.consumer
 
 import java.util.concurrent.CountDownLatch
 import org.apache.log4j.Logger
-import java.nio.channels.{ClosedChannelException, ClosedByInterruptException}
-import kafka.common.{OffsetOutOfRangeException, ErrorMapping}
+import kafka.common.ErrorMapping
 import kafka.cluster.{Partition, Broker}
-import kafka.api.{MultiFetchResponse, OffsetRequest, FetchRequest}
-import kafka.utils.{StringSerializer, ZkUtils, ZKGroupTopicDirs, Utils}
+import kafka.api.{OffsetRequest, FetchRequest}
+import kafka.utils.{ZkUtils, ZKGroupTopicDirs, Utils}
 import org.I0Itec.zkclient.ZkClient
 
 class FetcherRunnable(val name: String,
