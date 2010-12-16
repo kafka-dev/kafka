@@ -48,77 +48,51 @@ class SimpleProducer(val host: String,
   private var shutdown: Boolean = false
 
   /**
-   * Send a message
+   * Common functionality for the public send methods
    */
-  def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+  private def send(send: BoundedByteBufferSend) {
     lock synchronized {
       val startTime = SystemTime.nanoseconds
       getOrMakeConnection()
-      val setSize = messages.sizeInBytes.asInstanceOf[Int]
-      if(logger.isTraceEnabled)
-        logger.trace("Got message set with " + setSize + " bytes to send")
-      val send = new BoundedByteBufferSend(new ProducerRequest(topic, partition, messages))
+
       try {
         send.writeCompletely(channel)
       } catch {
         case e : java.io.IOException =>
-          // retry once
-          try {
-            if(channel != null)
-              disconnect(channel)
-            channel = connect
-          }catch {
-            case ioe: java.io.IOException => channel = null; throw ioe;
-          }
+          // no way to tell if write succeeded. Disconnect and re-throw exception to let client handle retry
+          if(channel != null) disconnect(channel)
+          throw e
       }
       // TODO: do we still need this?
       sentOnConnection += 1
       if(sentOnConnection >= reconnectInterval) {
         disconnect(channel)
-        channel = connect()
-        sentOnConnection = 0
-      }
-      val endTime = SystemTime.nanoseconds
-      KafkaProducerStats.recordProduceRequest(endTime - startTime)
-    }
-  }
- 
-  def send(topic: String, messages: ByteBufferMessageSet): Unit = send(topic, ProducerRequest.RandomPartition, messages)
-  
-  def multiSend(produces: Array[ProducerRequest]) {
-    lock synchronized {
-      val startTime = SystemTime.nanoseconds
-      getOrMakeConnection()
-      val setSize = produces.foldLeft(0L)(_ + _.messages.sizeInBytes)
-      if(logger.isTraceEnabled)
-        logger.trace("Got multi message sets with " + setSize + " bytes to send")
-      val send = new BoundedByteBufferSend(new MultiProducerRequest(produces))
-      try {
-        send.writeCompletely(channel)
-      } catch {
-        case e : java.io.IOException =>
-          // retry once
-          try {
-            if(channel != null)
-            {
-              disconnect(channel)
-              channel = null
-            }
-            channel = connect
-          }catch {
-            case ioe: java.io.IOException => channel = null; throw ioe;
-          }
-      }
-      sentOnConnection += 1
-      if(sentOnConnection >= reconnectInterval) {
-        disconnect(channel)
-        channel = null        
+        channel = null
         this.channel = connect()
         sentOnConnection = 0
       }
       val endTime = SystemTime.nanoseconds
       KafkaProducerStats.recordProduceRequest(endTime - startTime)
     }
+  }
+
+  /**
+   * Send a message
+   */
+  def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+    val setSize = messages.sizeInBytes.asInstanceOf[Int]
+    if(logger.isTraceEnabled)
+      logger.trace("Got message set with " + setSize + " bytes to send")
+    send(new BoundedByteBufferSend(new ProducerRequest(topic, partition, messages)))
+  }
+ 
+  def send(topic: String, messages: ByteBufferMessageSet): Unit = send(topic, ProducerRequest.RandomPartition, messages)
+
+  def multiSend(produces: Array[ProducerRequest]) {
+    val setSize = produces.foldLeft(0L)(_ + _.messages.sizeInBytes)
+    if(logger.isTraceEnabled)
+      logger.trace("Got multi message sets with " + setSize + " bytes to send")
+    send(new BoundedByteBufferSend(new MultiProducerRequest(produces)))
   }
 
   def close() = {
