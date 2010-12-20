@@ -95,7 +95,7 @@
             target="jvm-1.5">
       <include name="**/*.scala"/>
     </scalac>
-        <copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
+    <copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
   </target>
 
   <target name="jar" depends="build" description="Build jar file">
