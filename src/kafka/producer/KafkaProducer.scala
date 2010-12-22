@@ -132,7 +132,7 @@ class SimpleProducer(val host: String,
       }
       catch {
         case e: Exception => {
-          disconnect(channel)
+          disconnect()
           val endTimeMs = SystemTime.milliseconds
           if ( (endTimeMs - beginTimeMs + connectBackoffMs) > connectTimeoutMs)
           {
