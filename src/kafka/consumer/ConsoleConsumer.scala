@@ -30,6 +30,10 @@ import kafka.utils.Utils
 import kafka.utils.ZkUtils
 import kafka.utils.StringSerializer
 
+/**
+ * Consumer that dumps messages out to standard out.
+ *
+ */
 object ConsoleConsumer {
   
   private val logger = Logger.getLogger(getClass())
@@ -69,6 +73,8 @@ object ConsoleConsumer {
                            .withRequiredArg
                            .describedAs("prop")
                            .ofType(classOf[String])
+    val resetBeginningOpt = parser.accepts("from-beginning", "If the consumer does not already have an established offset to consume from, " +
+    		"start with the earliest message present in the log rather than the latest message.")
     
     val options: OptionSet = tryParse(parser, args)
     checkRequiredArgs(parser, options, topicIdOpt, zkConnectOpt)
@@ -78,7 +84,7 @@ object ConsoleConsumer {
     props.put("socket.buffer.size", options.valueOf(socketBufferSizeOpt).toString)
     props.put("fetch.size", options.valueOf(fetchSizeOpt).toString)
     props.put("auto.commit", "true")
-    props.put("autooffset.reset", "largest")
+    props.put("autooffset.reset", if(options.has(resetBeginningOpt)) "smallest" else "largest")
     props.put("zk.connect", options.valueOf(zkConnectOpt))
     val config = new ConsumerConfig(props)
     

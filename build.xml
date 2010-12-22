@@ -69,7 +69,6 @@
       <include name="**/*.scala"/>
     </fsc>
   	<copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
-  	<copy file="${test.dir}/log4j.properties" todir="${testclasses.dir}" />
   </target>
 
   <target name="build" depends="init" description="Compile main source tree">
@@ -96,8 +95,7 @@
             target="jvm-1.5">
       <include name="**/*.scala"/>
     </scalac>
-        <copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
-        <copy file="${test.dir}/log4j.properties" todir="${testclasses.dir}" />
+    <copy file="${src.dir}/log4j.properties" todir="${dist.dir}" />
   </target>
 
   <target name="jar" depends="build" description="Build jar file">

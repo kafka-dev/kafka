@@ -19,7 +19,7 @@ do
 done
 
 if [ -z "$KAFKA_OPTS" ]; then
-  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote"
+  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=$base_dir/dist/log4j.properties "
 fi
 
 if [ -z "$JAVA_HOME" ]; then
