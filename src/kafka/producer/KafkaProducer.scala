@@ -60,15 +60,14 @@ class SimpleProducer(val host: String,
       } catch {
         case e : java.io.IOException =>
           // no way to tell if write succeeded. Disconnect and re-throw exception to let client handle retry
-          if(channel != null) disconnect(channel)
+          disconnect()
           throw e
       }
       // TODO: do we still need this?
       sentOnConnection += 1
       if(sentOnConnection >= reconnectInterval) {
-        disconnect(channel)
-        channel = null
-        this.channel = connect()
+        disconnect()
+        channel = connect()
         sentOnConnection = 0
       }
       val endTime = SystemTime.nanoseconds
@@ -96,17 +95,24 @@ class SimpleProducer(val host: String,
   }
 
   def close() = {
-    if (channel != null)
-      disconnect(channel)
-    channel = null
-    shutdown = true
+    lock synchronized {
+      disconnect()
+      shutdown = true
+    }
   }
-    
-  private def disconnect(channel: SocketChannel) {
+
+  /**
+   * Disconnect from current channel, closing connection.
+   * Side effect: channel field is set to null on successful disconnect
+   */
+  private def disconnect() {
     try {
-      logger.debug("Disconnecting from " + host + ":" + port)
-      Utils.swallow(logger.warn, channel.close())
-      Utils.swallow(logger.warn, channel.socket.close())
+      if(channel != null) {
+        logger.debug("Disconnecting from " + host + ":" + port)
+        Utils.swallow(logger.warn, channel.close())
+        Utils.swallow(logger.warn, channel.socket.close())
+        channel = null
+      }
     } catch {
       case e: Exception => logger.error("Error on disconnect: ", e)
     }
@@ -126,11 +132,7 @@ class SimpleProducer(val host: String,
       }
       catch {
         case e: Exception => {
-          if(channel != null)
-          {
-            disconnect(channel)
-            channel = null
-          }            
+          disconnect(channel)
           val endTimeMs = SystemTime.milliseconds
           if ( (endTimeMs - beginTimeMs + connectBackoffMs) > connectTimeoutMs)
           {
