@@ -62,9 +62,11 @@ class SimpleConsumer(val host: String,
   }
 
   def close() {
-    if (channel != null)
-      close(channel)
-    channel = null
+    lock synchronized {
+      if (channel != null)
+        close(channel)
+      channel = null
+    }
   }
 
   /**
