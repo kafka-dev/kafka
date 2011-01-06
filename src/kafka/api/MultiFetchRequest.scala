@@ -44,4 +44,14 @@ class MultiFetchRequest(val fetches: Array[FetchRequest]) extends Request(Reques
       size += fetch.sizeInBytes
     size
   }
+
+
+  override def toString(): String = {
+    val buffer = new StringBuffer
+    for(fetch <- fetches) {
+      buffer.append(fetch.toString)
+      buffer.append(",")
+    }
+    buffer.toString
+  }
 }

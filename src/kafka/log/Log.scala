@@ -67,6 +67,18 @@ object Log {
 
   def findRange[T <: Range](ranges: Array[T], value: Long): Option[T] =
     findRange(ranges, value, ranges.length)
+
+  /**
+   * Make log segment file name from offset bytes. All this does is pad out the offset number with zeros
+   * so that ls sorts the files numerically
+   */
+  def nameFromOffset(offset: Long): String = {
+    val nf = NumberFormat.getInstance()
+    nf.setMinimumIntegerDigits(20)
+    nf.setMaximumFractionDigits(0)
+    nf.setGroupingUsed(false)
+    nf.format(offset) + Log.FILE_SUFFIX
+  }
 }
 
 /**
@@ -120,7 +132,7 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
 
     if(accum.size == 0) {
       // no existing segments, create a new mutable segment
-      val newFile = new File(dir, nameFromOffset(0))
+      val newFile = new File(dir, Log.nameFromOffset(0))
       val set = new FileMessageSet(newFile, true)
       accum.add(new LogSegment(newFile, set, 0))
     } else {
@@ -259,7 +271,7 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
     lock synchronized {
       val last = segments.view.last
       val newOffset = nextAppendOffset
-      val newFile = new File(dir, nameFromOffset(newOffset))
+      val newFile = new File(dir, Log.nameFromOffset(newOffset))
       if(logger.isDebugEnabled)
         logger.debug("Rolling log '" + name + "' to " + newFile.getName())
       segments.append(new LogSegment(newFile, new FileMessageSet(newFile, true), newOffset))
@@ -287,18 +299,6 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
       unflushed.set(0)
       lastflushedTime.set(System.currentTimeMillis)
      }
-  }
-
-  /**
-   * Make log segment file name from offset bytes. All this does is pad out the offset number with zeros
-   * so that ls sorts the files numerically
-   */
-  private def nameFromOffset(offset: Long): String = {
-    val nf = NumberFormat.getInstance()
-    nf.setMinimumIntegerDigits(20)
-    nf.setMaximumFractionDigits(0)
-    nf.setGroupingUsed(false)
-    nf.format(offset) + Log.FILE_SUFFIX
   }
 
   def getOffsetsBefore(request: OffsetRequest): Array[Long] = {

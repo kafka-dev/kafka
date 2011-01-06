@@ -95,11 +95,18 @@ class EmbeddedConsumer(private val consumerConfig: ConsumerConfig,
             logger.info("starting consumer thread " + i + " for topic " + topic)
             val logManager = kafkaServer.getLogManager
             val stats = kafkaServer.getStats
-            for (message <- streamList(i)) {
-              val partition = logManager.chooseRandomPartition(topic)
-              val start = SystemTime.nanoseconds
-              logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(message))
-              stats.recordRequest(RequestKeys.Produce, SystemTime.nanoseconds - start)
+            try {
+              for (message <- streamList(i)) {
+                val partition = logManager.chooseRandomPartition(topic)
+                val start = SystemTime.nanoseconds
+                logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(message))
+                stats.recordRequest(RequestKeys.Produce, SystemTime.nanoseconds - start)
+              }
+            }
+            catch {
+              case e =>
+                logger.fatal(e + Utils.stackTrace(e))
+                logger.fatal(topic + " stream " + i + " unexpectedly exited")
             }
           }
         }, false)
