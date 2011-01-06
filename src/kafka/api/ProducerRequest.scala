@@ -60,7 +60,7 @@ class ProducerRequest(val topic: String,
     builder.append("ProducerRequest(")
     builder.append(topic + ",")
     builder.append(partition + ",")
-    builder.append(messages)
+    builder.append(messages.sizeInBytes)
     builder.append(")")
     builder.toString
   }

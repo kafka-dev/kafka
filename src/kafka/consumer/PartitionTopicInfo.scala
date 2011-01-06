@@ -21,6 +21,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic._
 import kafka.message._
 import kafka.cluster._
+import kafka.common.ErrorMapping
 
 class PartitionTopicInfo(val topic: String, 
                          val brokerId: Int,
@@ -47,6 +48,14 @@ class PartitionTopicInfo(val topic: String,
       chunkQueue.put(new FetchedDataChunk(messages, this))
     }
     size
+  }
+
+  /**
+   *  add an empty message with the exception to the queue so that client can see the error
+   */
+  def enqueueError(e: Throwable) = {
+    val messages = new ByteBufferMessageSet(ErrorMapping.EMPTY_BYTEBUFFER, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Throwable]]))
+    chunkQueue.put(new FetchedDataChunk(messages, this))
   }
 
   override def toString(): String = topic + ":" + partition.toString

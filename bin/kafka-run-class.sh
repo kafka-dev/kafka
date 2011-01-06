@@ -8,8 +8,6 @@ fi
 
 base_dir=$(dirname $0)/..
 
-#CLASSPATH=$CLASSPATH:bin
-
 for file in $base_dir/dist/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
@@ -20,10 +18,8 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
-CLASSPATH=dist:$CLASSPATH
-
 if [ -z "$KAFKA_OPTS" ]; then
-  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote"
+  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=$base_dir/dist/log4j.properties "
 fi
 
 if [ -z "$JAVA_HOME" ]; then

@@ -19,13 +19,13 @@ package kafka.integration
 import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.zk.ZooKeeperTestHarness
-import kafka.server.{KafkaServer, KafkaConfig}
 import java.nio.channels.ClosedByInterruptException
-import org.apache.log4j.Logger
 import java.util.concurrent.atomic.AtomicInteger
 import kafka.{TestZKUtils, TestUtils}
 import kafka.utils.ZKGroupTopicDirs
 import kafka.consumer.{ConsumerTimeoutException, ConsumerConfig, ConsumerConnector, Consumer}
+import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
+import org.apache.log4j.{Level, Logger}
 
 class AutoOffsetResetTest extends TestCase with ZooKeeperTestHarness {
 
@@ -41,13 +41,19 @@ class AutoOffsetResetTest extends TestCase with ZooKeeperTestHarness {
   val smallOffset = -1
   
   private val logger = Logger.getLogger(getClass())
+  val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
   override def setUp() {
     super.setUp()
     kafkaServer = TestUtils.createServer(kafkaConfig)
+
+    // temporarily set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.FATAL)
   }
 
   override def tearDown() {
+    // restore set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.ERROR)
     kafkaServer.shutdown
     super.tearDown
   }

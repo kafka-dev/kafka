@@ -42,4 +42,13 @@ class MultiProducerRequest(val produces: Array[ProducerRequest]) extends Request
       size += produce.sizeInBytes
     size
   }
+
+  override def toString(): String = {
+    val buffer = new StringBuffer
+    for(produce <- produces) {
+      buffer.append(produce.toString)
+      buffer.append(",")
+    }
+    buffer.toString
+  }  
 }

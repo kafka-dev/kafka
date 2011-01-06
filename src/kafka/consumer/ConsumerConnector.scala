@@ -44,7 +44,7 @@ trait ConsumerConnector {
   /**
    *  shut down the connector
    */
-  def shutdown
+  def shutdown()
 }
 
 object Consumer {
