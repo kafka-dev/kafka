@@ -153,9 +153,6 @@ class SimpleProducer(val host: String,
       channel = connect()
     }
   }
-
-  // for testing only
-  def setLoggerLevel(level: Level) = logger.setLevel(level)  
 }
 
 trait KafkaProducerStatsMBean {
