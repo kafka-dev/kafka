@@ -72,9 +72,10 @@ class LogCorruptionTest extends TestCase with ProducerConsumerTestHarness with K
       case e: InvalidMessageSizeException => "This is good"
     }
 
-    // restore set request handler logger to a higher level
-    fetcherRunnableLogger.setLevel(Level.ERROR)
 
     zkConsumerConnector1.shutdown
+
+    // restore set request handler logger to a higher level
+    fetcherRunnableLogger.setLevel(Level.ERROR)
   }
 }
