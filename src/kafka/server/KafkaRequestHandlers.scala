@@ -27,6 +27,7 @@ import kafka.server._
 import kafka.api._
 import kafka.common.{WrongPartitionException, ErrorMapping}
 import kafka.utils.{Utils, SystemTime}
+import java.io.IOException
 
 /**
  * Logic to handle the various Kafka requests
@@ -59,7 +60,13 @@ class KafkaRequestHandlers(val logManager: LogManager) {
     }
     catch {
       case e =>
-        logger.error("erorr processing ProduceRequst on " + request.topic + ":" + partition + " " + e)
+        logger.error("erorr processing ProduceRequst on " + request.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+        e match {
+          case _: IOException =>
+            logger.error("force shutdown due to " + e)
+            Runtime.getRuntime.halt(1)
+          case _ =>
+        }
         throw e
     }
     if (logger.isDebugEnabled)
@@ -80,7 +87,13 @@ class KafkaRequestHandlers(val logManager: LogManager) {
       }
       catch {
         case e =>
-          logger.error("erorr processing MultiProduceRequst on " + produce.topic + ":" + partition + " " + e)
+          logger.error("erorr processing MultiProduceRequst on " + produce.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+          e match {
+            case _: IOException =>
+              logger.error("force shutdown due to " + e)
+              Runtime.getRuntime.halt(1)
+            case _ =>
+          }
           throw e
       }
     }
