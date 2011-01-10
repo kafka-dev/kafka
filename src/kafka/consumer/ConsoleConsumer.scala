@@ -57,12 +57,12 @@ object ConsoleConsumer {
     val fetchSizeOpt = parser.accepts("fetch-size", "The amount of data to fetch in a single request.")
                            .withRequiredArg
                            .describedAs("size")
-                           .ofType(classOf[Integer])
+                           .ofType(classOf[java.lang.Integer])
                            .defaultsTo(1024 * 1024)   
     val socketBufferSizeOpt = parser.accepts("socket-buffer-size", "The size of the tcp RECV size.")
                            .withRequiredArg
                            .describedAs("size")
-                           .ofType(classOf[Integer])
+                           .ofType(classOf[java.lang.Integer])
                            .defaultsTo(2 * 1024 * 1024)
     val messageFormatterOpt = parser.accepts("formatter", "The name of a class to use for formatting kafka messages for display.")
                            .withRequiredArg
