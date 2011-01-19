@@ -216,5 +216,5 @@ object TestUtils {
 }
 
 object TestZKUtils {
-  val zookeeperConnect = "localhost:7000"  
+  val zookeeperConnect = "127.0.0.1:2182"  
 }

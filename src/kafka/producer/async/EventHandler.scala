@@ -15,7 +15,7 @@
 */
 
 package kafka.producer.async
-                                
+
 import kafka.serializer.SerDeser
 import kafka.message.ByteBufferMessageSet
 import collection.mutable.HashMap
@@ -28,9 +28,9 @@ class EventHandler[T](val producer: SimpleProducer,
                       val serializer: SerDeser[T]) {
 
   private val logger = Logger.getLogger(classOf[EventHandler[T]])
-  
-  def handle(events: Seq[T]) {
-    send(serialize(collate(events)))        
+
+  def handle(events: Seq[QueueItem[T]]) {
+    send(serialize(collate(events)))
   }
 
   def send(messagesPerTopic: Map[String, ByteBufferMessageSet]) {
@@ -48,19 +48,19 @@ class EventHandler[T](val producer: SimpleProducer,
     eventsPerTopicMap.map(e => (e._1, new ByteBufferMessageSet(asList(e._2))))
   }
 
-  def collate(events: Seq[T]): Map[String, Seq[T]] = {
+  def collate(events: Seq[QueueItem[T]]): Map[String, Seq[T]] = {
     val collatedEvents = new HashMap[String, Seq[T]]
-    val distinctTopics = events.map(e => serializer.getTopic(e)).distinct
+    val distinctTopics = events.map(e => e.getTopicCallback.apply(e.getData)).toSeq.distinct
 
     var remainingEvents = events
-    distinctTopics foreach { topic => 
-      val topicEvents = remainingEvents partition (serializer.getTopic(_).equals(topic))
+    distinctTopics foreach { topic =>
+      val topicEvents = remainingEvents partition (e => e.getTopicCallback.apply(e.getData).equals(topic))
       remainingEvents = topicEvents._2
-      collatedEvents += (topic -> topicEvents._1)
+      collatedEvents += (topic -> topicEvents._1.map(q => q.getData).toSeq)
     }
     collatedEvents
   }
-  
+
   def close = {
     producer.close
   }

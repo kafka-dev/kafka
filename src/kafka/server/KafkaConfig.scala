@@ -17,8 +17,8 @@
 package kafka.server
 
 import java.util.Properties
-import kafka.message._
-import kafka.utils._
+import kafka.utils.{Utils, ZKConfig}
+import kafka.message.Message
 
 /**
  * Configuration settings for the kafka server

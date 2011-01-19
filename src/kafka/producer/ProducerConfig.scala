@@ -12,15 +12,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
-package kafka.producer.async
+package kafka.producer
 
 import kafka.utils.Utils
 import java.util.Properties
 
 class ProducerConfig(props: Properties) {
-
   /** the broker to which the producer sends events */
   val host = Utils.getString(props, "host")
 
@@ -32,17 +31,4 @@ class ProducerConfig(props: Properties) {
   val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)
 
   val reconnectInterval = Utils.getInt(props, "reconnect.interval", 30000)
-
-  /* maximum time, in milliseconds, for buffering data on the producer queue */
-  val queueTime = Utils.getInt(props, "queue.time", 5000)
-  
-  /** the maximum size of the blocking queue for buffering on the producer */
-  val queueSize = Utils.getInt(props, "queue.size", 10000)
-
-  /** the number of messages batched at the producer */
-  val batchSize = Utils.getInt(props, "batch.size", 200)
-
-  /** the serializer class for events */
-  val serializerClass = Utils.getString(props, "serializer.class")
-  
 }

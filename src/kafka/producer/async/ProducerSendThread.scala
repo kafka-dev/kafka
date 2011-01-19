@@ -19,10 +19,10 @@ package kafka.producer.async
 import kafka.utils.SystemTime
 import java.util.concurrent.{TimeUnit, CountDownLatch, BlockingQueue}
 import org.apache.log4j.Logger
-import collection.mutable.ListBuffer
 import kafka.serializer.SerDeser
+import collection.mutable.{ListBuffer, HashMap, Map}
 
-class ProducerSendThread[T](val queue: BlockingQueue[T],
+class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
                             val serializer: SerDeser[T],
                             val handler: EventHandler[T],
                             val queueTime: Long,
@@ -31,26 +31,26 @@ class ProducerSendThread[T](val queue: BlockingQueue[T],
 
   private val logger = Logger.getLogger(classOf[ProducerSendThread[T]])
   private var running: Boolean = true
-  private val shutdownLatch = new CountDownLatch(1) 
-  
+  private val shutdownLatch = new CountDownLatch(1)
+
   override def run {
 
     try {
       val remainingEvents = processEvents
       if(logger.isDebugEnabled) logger.debug("Remaining events = " + remainingEvents.size)
-      
+
       // handle remaining events
       if(remainingEvents.size > 0)
         tryToHandle(remainingEvents)
     }catch {
-      case e: Exception => logger.error("Error in sending events")
+      case e: Exception => logger.error("Error in sending events: " + e.printStackTrace)
     }finally {
       shutdownLatch.countDown
     }
   }
 
   def awaitShutdown = shutdownLatch.await
-  
+
   def shutdown = {
     running = false
     handler.close
@@ -58,19 +58,20 @@ class ProducerSendThread[T](val queue: BlockingQueue[T],
       logger.debug("Shutdown thread complete")
   }
 
-  private def processEvents(): Seq[T] = {
+  private def processEvents(): Seq[QueueItem[T]] = {
     var now = SystemTime.milliseconds
     var lastSend = now
 
-    var events = new ListBuffer[T]
+    var events = new ListBuffer[QueueItem[T]]
     while(running) {
-      val current: T = queue.poll(scala.math.max(0, queueTime - (lastSend - now)), TimeUnit.MILLISECONDS)
-      if(current == shutdownCommand) {
+      val current: QueueItem[T] = queue.poll(scala.math.max(0, queueTime - (lastSend - now)), TimeUnit.MILLISECONDS)
+      if(current != null && current.getData == shutdownCommand) {
         return events
       }
 
-      if(current != null)
+      if(current != null && current.getData != null) {
         events += current
+      }
 
       now = SystemTime.milliseconds
 
@@ -82,13 +83,13 @@ class ProducerSendThread[T](val queue: BlockingQueue[T],
         if(logger.isDebugEnabled && expired) logger.debug("Queue time reached. Sending..")
         tryToHandle(events)
         lastSend = now
-        events = new ListBuffer[T]
+        events = new ListBuffer[QueueItem[T]]
       }
     }
     events
   }
-  
-  def tryToHandle(events: Seq[T]) {
+
+  def tryToHandle(events: Seq[QueueItem[T]]) {
     try {
       if(logger.isDebugEnabled) logger.debug("Handling " + events.size + " events")
       handler.handle(events)

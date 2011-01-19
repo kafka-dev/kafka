@@ -16,24 +16,19 @@
 
 package kafka.zk
 
-import java.io.File
-import java.util._
-import org.apache.zookeeper._
-import org.apache.zookeeper.data._
 import org.apache.zookeeper.server.ZooKeeperServer
 import org.apache.zookeeper.server.NIOServerCnxn
-import org.apache.zookeeper.ZooDefs
 import kafka.TestUtils
-import kafka.utils._
 import org.I0Itec.zkclient.ZkClient
 import java.net.InetSocketAddress
+import kafka.utils.{Utils, StringSerializer}
 
 class EmbeddedZookeeper(val connectString: String) {
   val snapshotDir = TestUtils.tempDir()
   val logDir = TestUtils.tempDir()
-  val zookeeper = new ZooKeeperServer(snapshotDir, logDir, 200)
+  val zookeeper = new ZooKeeperServer(snapshotDir, logDir, 3000)
   val port = connectString.split(":")(1).toInt
-  val factory = new NIOServerCnxn.Factory(new InetSocketAddress(port))
+  val factory = new NIOServerCnxn.Factory(new InetSocketAddress("127.0.0.1", port))
   factory.startup(zookeeper)
   val client = new ZkClient(connectString)
   client.setZkSerializer(StringSerializer)
