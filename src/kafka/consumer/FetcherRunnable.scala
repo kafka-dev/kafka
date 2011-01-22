@@ -64,22 +64,31 @@ class FetcherRunnable(val name: String,
         var read = 0
 
         for((messages, info) <- response.zip(partitionTopicInfos.iterator)) {
-          var done = false
-          if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
-            logger.info("offset " + info.fetchedOffset.get + " out of range")
-            // see if we can fix this error
-            if (info.fetchedOffset.get == info.consumedOffset.get) {
-              val resetOffset = resetConsumerOffsets(info.topic, info.partition)
-              if(resetOffset >= 0) {
-                info.fetchedOffset.set(resetOffset)
-                info.consumedOffset.set(resetOffset)
-                done = true
+          try {
+            var done = false
+            if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
+              logger.info("offset " + info.fetchedOffset.get + " out of range")
+              // see if we can fix this error
+              if (info.fetchedOffset.get == info.consumedOffset.get) {
+                val resetOffset = resetConsumerOffsets(info.topic, info.partition)
+                if(resetOffset >= 0) {
+                  info.fetchedOffset.set(resetOffset)
+                  info.consumedOffset.set(resetOffset)
+                  done = true
+                }
               }
             }
-          }
-          if (!done) {
-            if(messages.sizeInBytes > 0 || messages.errorCOde != ErrorMapping.NO_ERROR)
+            if (!done)
               read += info.enqueue(messages)
+          }
+          catch {
+            case e =>
+              if (!stopped) {
+                logger.error("error in FetcherRunnable for " + info + ": " + e + Utils.stackTrace(e))
+                info.enqueueError(e)
+              }
+              // re-throw the exception to stop the fetcher
+              throw e
           }
         }
         if (logger.isTraceEnabled)

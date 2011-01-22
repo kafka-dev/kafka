@@ -14,27 +14,9 @@
  * limitations under the License.
  */
 
-package kafka.etl;
+package kafka.serializer
 
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Partitioner;
-
-/**
- * Partitioner that partitions based on time granularity
- */
-@SuppressWarnings("deprecation")
-public class KafkaETLPartitioner implements
-		Partitioner<KafkaETLKey, BytesWritable> {
-
-	@Override
-	public int getPartition(KafkaETLKey key, BytesWritable value,
-			int numPartitions) {
-		return (int) (key.getPartition() % numPartitions);
-	}
-
-	@Override
-	public void configure(JobConf conf) {
-	}
-
+trait SerDeser[T] extends Encoder[T] with Decoder[T]{
+  // extracts the name of the topic from the event data
+  def getTopic(event: T):String
 }

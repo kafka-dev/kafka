@@ -18,8 +18,6 @@ package kafka.serializer
 
 import kafka.message.Message
 
-trait Serializer[T] {
-  def toEvent(message: Message):T
+trait Encoder[T] {
   def toMessage(event: T):Message
-  def getName(event: T):String
 }

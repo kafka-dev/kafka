@@ -6,8 +6,9 @@ then
   exit 1
 fi
 
-base_dir=$(dirname $0)/..
+base_dir=$(dirname $0)/../..
 
+# include kafka jars
 for file in $base_dir/dist/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
@@ -18,9 +19,20 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
-if [ -z "$KAFKA_OPTS" ]; then
-  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=file:$base_dir/dist/log4j.properties "
-fi
+
+local_dir=$(dirname $0)
+
+# include hadoop-consumer jars
+for file in $local_dir/lib/*.jar;
+do
+  CLASSPATH=$CLASSPATH:$file
+done
+
+CLASSPATH=dist:$CLASSPATH:${HADOOP_HOME}/conf
+
+#if [ -z "$KAFKA_OPTS" ]; then
+#  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote"
+#fi
 
 if [ -z "$JAVA_HOME" ]; then
   JAVA="java"

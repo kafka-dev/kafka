@@ -37,15 +37,12 @@ trait KafkaServerTestHarness extends TestCase {
   override def setUp() {
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
-    println("Setting up " + configs.size + " kafka servers for testing")
     servers = configs.map(TestUtils.createServer(_))
     super.setUp()
   }
     
   override def tearDown() {
-    println("Shutting down test kafka instance")
     servers.map(server => server.shutdown())
-    println("Deleting log directories")
     servers.map(server => Utils.rm(server.config.logDir))
     super.tearDown()
   }

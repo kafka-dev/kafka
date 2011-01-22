@@ -14,27 +14,10 @@
  * limitations under the License.
  */
 
-package kafka.etl;
+package kafka.serializer
 
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
+import kafka.message.Message
 
-/**
- * Map output key comparator
- * 
- */
-public class KafkaETLKeyComparator extends WritableComparator {
-
-	protected KafkaETLKeyComparator() {
-		super(KafkaETLKey.class, true);
-	}
-
-	@SuppressWarnings("rawtypes")
-	@Override
-	public int compare(WritableComparable o1, WritableComparable o2) {
-		KafkaETLKey pair1 = (KafkaETLKey) o1;
-		KafkaETLKey pair2 = (KafkaETLKey) o2;
-		return pair1.compareTo(pair2);
-	}
-
+trait Decoder[T] {
+  def toEvent(message: Message):T
 }

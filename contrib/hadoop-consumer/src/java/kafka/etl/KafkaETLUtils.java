@@ -38,8 +38,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-
-
+import org.apache.hadoop.io.BytesWritable;
 
 public class KafkaETLUtils {
 
@@ -51,81 +50,7 @@ public class KafkaETLUtils {
 		}
 	};
 
-	public static long getPartition(long timestamp,
-			DateUtils.TimeGranularity granularity) {
-
-		switch (granularity) {
-		case DAY:
-			long numDays = getNumDaysFromEpoch(timestamp);
-			return numDays;
-		case HOUR:
-			long numHours = getNumHoursFromEpoch(timestamp);
-			return numHours;
-		case MINUTE:
-			long numMinutes = getNumMinutesFromEpoch(timestamp);
-			return numMinutes;
-		default:
-			// by default, partition by day
-			return getNumDaysFromEpoch(timestamp);
-		}
-	}
-
-	public static long getNumYearsFromEpoch(long timestamp) {
-		return timestamp / 1000 / 60 / 60 / 24 / 365;
-	}
-
-	public static long getNumDaysFromEpoch(long timestamp) {
-		return timestamp / 1000 / 60 / 60 / 24;
-	}
-
-	public static long getNumHoursFromEpoch(long timestamp) {
-		return timestamp / 1000 / 60 / 60;
-	}
-
-	public static long getNumMinutesFromEpoch(long timestamp) {
-		return timestamp / 1000 / 60;
-	}
-
-	public static long getStartTime(long timestamp,
-			DateUtils.TimeGranularity granularity) {
-
-		switch (granularity) {
-		case DAY:
-			long numDays = getNumDaysFromEpoch(timestamp);
-			return numDays * 1000 * 60 * 60 * 24;
-		case HOUR:
-			long numHours = getNumHoursFromEpoch(timestamp);
-			return numHours * 1000 * 60 * 60;
-		case MINUTE:
-			long numMinutes = getNumMinutesFromEpoch(timestamp);
-			return numMinutes * 1000 * 60;
-		default:
-			// by default, partition by day
-			throw new RuntimeException("Invalid granularity:" + granularity);
-
-		}
-	}
-
-	public static long getEndTime(long timestamp,
-			DateUtils.TimeGranularity granularity) {
-
-		switch (granularity) {
-		case DAY:
-			long numDays = getNumDaysFromEpoch(timestamp);
-			return (numDays + 1) * 1000 * 60 * 60 * 24;
-		case HOUR:
-			long numHours = getNumHoursFromEpoch(timestamp);
-			return (numHours + 1) * 1000 * 60 * 60;
-		case MINUTE:
-			long numMinutes = getNumMinutesFromEpoch(timestamp);
-			return (numMinutes + 1) * 1000 * 60;
-		default:
-			// by default, partition by day
-			throw new RuntimeException("Invalid granularity:" + granularity);
-
-		}
-	}
-
+	
 	public static Path getLastPath(Path path, FileSystem fs) throws IOException {
 
 		FileStatus[] statuses = fs.listStatus(path, PATH_FILTER);
@@ -259,5 +184,21 @@ public class KafkaETLUtils {
 		return null;
 	}
 
+    public static byte[] getBytes(BytesWritable val) {
+        
+        byte[] buffer = val.getBytes();
+        
+        /* FIXME: remove the following part once the below gira is fixed
+         * https://issues.apache.org/jira/browse/HADOOP-6298
+         */
+        long len = val.getLength();
+        byte [] bytes = buffer;
+        if (len < buffer.length) {
+            bytes = new byte[(int) len];
+            System.arraycopy(buffer, 0, bytes, 0, (int)len);
+        }
+        
+        return bytes;
+    }
 
 }

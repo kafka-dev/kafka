@@ -58,7 +58,7 @@ class KafkaConfig(props: Properties) extends ZKConfig(props) {
   val logFileSize = Utils.getIntInRange(props, "log.file.size", 1*1024*1024*1024, (Message.HeaderSize, Int.MaxValue))
   
   /* the number of messages accumulated on a log partition before messages are flushed to disk */
-  val flushInterval = Utils.getIntInRange(props, "log.flush.interval", 1, (1, Int.MaxValue))
+  val flushInterval = Utils.getIntInRange(props, "log.flush.interval", 500, (1, Int.MaxValue))
   
   /* the number of hours to keep a log file before deleting it */
   val logRetentionHours = Utils.getIntInRange(props, "log.retention.hours", 24 * 7, (1, Int.MaxValue))
@@ -73,7 +73,7 @@ class KafkaConfig(props: Properties) extends ZKConfig(props) {
   val flushIntervalMap = Utils.getTopicFlushIntervals(Utils.getString(props, "topic.flush.intervals.ms", ""))
 
   /* the frequency in ms that the log flusher checks whether any log needs to be flushed to disk */
-  val flushSchedulerThreadRate = Utils.getInt(props, "log.default.flush.scheduler.interval.ms",  5000)
+  val flushSchedulerThreadRate = Utils.getInt(props, "log.default.flush.scheduler.interval.ms",  3000)
 
   /* the maximum time in ms that a message in any topic is kept in memory before flushed to disk */
   val defaultFlushIntervalMs = Utils.getInt(props, "log.default.flush.interval.ms", flushSchedulerThreadRate)

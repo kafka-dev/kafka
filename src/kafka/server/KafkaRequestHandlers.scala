@@ -26,7 +26,8 @@ import kafka.message._
 import kafka.server._
 import kafka.api._
 import kafka.common.{WrongPartitionException, ErrorMapping}
-import kafka.utils.SystemTime
+import kafka.utils.{Utils, SystemTime}
+import java.io.IOException
 
 /**
  * Logic to handle the various Kafka requests
@@ -58,7 +59,15 @@ class KafkaRequestHandlers(val logManager: LogManager) {
         logger.trace(request.messages.sizeInBytes + " bytes written to logs.")
     }
     catch {
-      case e: WrongPartitionException => // let it go for now
+      case e =>
+        logger.error("erorr processing ProduceRequst on " + request.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+        e match {
+          case _: IOException =>
+            logger.error("force shutdown due to " + e)
+            Runtime.getRuntime.halt(1)
+          case _ =>
+        }
+        throw e
     }
     if (logger.isDebugEnabled)
       logger.debug("kafka produce time " + (SystemTime.milliseconds - sTime) + " ms")
@@ -69,16 +78,24 @@ class KafkaRequestHandlers(val logManager: LogManager) {
     if(logger.isTraceEnabled)
       logger.trace("Handling multiproducer request")
     val request = MultiProducerRequest.readFrom(receive.buffer)
-    try {
-      for (produce <- request.produces) {
-        val partition = produce.getTranslatedPartition(logManager.chooseRandomPartition)
+    for (produce <- request.produces) {
+      val partition = produce.getTranslatedPartition(logManager.chooseRandomPartition)
+      try {
         logManager.getOrCreateLog(produce.topic, partition).append(produce.messages)
         if(logger.isTraceEnabled)
           logger.trace(produce.messages.sizeInBytes + " bytes written to logs.")
       }
-    }
-    catch {
-      case e: WrongPartitionException => // let it go for now
+      catch {
+        case e =>
+          logger.error("erorr processing MultiProduceRequst on " + produce.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+          e match {
+            case _: IOException =>
+              logger.error("force shutdown due to " + e)
+              Runtime.getRuntime.halt(1)
+            case _ =>
+          }
+          throw e
+      }
     }
     None
   }
@@ -107,9 +124,9 @@ class KafkaRequestHandlers(val logManager: LogManager) {
       response = new MessageSetSend(log.read(fetchRequest.offset, fetchRequest.maxSize))
     }
     catch {
-      case e: RuntimeException =>
-        response=new MessageSetSend(MessageSet.Empty, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Exception]]))
-      case e2 => throw e2
+      case e =>
+        logger.error("error when processing request " + fetchRequest + " " + e + Utils.stackTrace(e))
+        response=new MessageSetSend(MessageSet.Empty, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Throwable]]))
     }
     response
   }

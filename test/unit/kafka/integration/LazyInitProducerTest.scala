@@ -24,8 +24,8 @@ import kafka.TestUtils
 import kafka.api.{ProducerRequest, FetchRequest}
 import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.utils.Utils
-import kafka.server.{KafkaServer, KafkaConfig}
-
+import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
+import org.apache.log4j.{Level, Logger}
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -39,20 +39,24 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
                }
   val configs = List(config)
   var servers: List[KafkaServer] = null
+  val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
   override def setUp() {
     super.setUp()
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
-    println("Setting up " + configs.size + " kafka servers for testing")
     servers = configs.map(TestUtils.createServer(_))
+
+    // temporarily set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.FATAL)    
   }
 
   override def tearDown() {
+    // restore set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.ERROR)
+
     super.tearDown()
-    println("Shutting down test kafka instance")
     servers.map(server => server.shutdown())
-    println("Deleting log directories")
     servers.map(server => Utils.rm(server.config.logDir))
   }
   

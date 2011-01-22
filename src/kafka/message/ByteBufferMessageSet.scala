@@ -21,8 +21,8 @@ import java.nio.channels._
 import scala.collection.mutable
 import kafka.message._
 import kafka.utils._
-import kafka.common.ErrorMapping
 import org.apache.log4j.Logger
+import kafka.common.{InvalidMessageSizeException, ErrorMapping}
 
 /**
  * A sequence of messages stored in a byte buffer
@@ -84,7 +84,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
         if(iter.remaining < size) {
           validByteCount = currValidBytes
           if (currValidBytes == 0)
-            logger.warn("consumer fetch size too small? expected size:" + size + " received bytes:" + iter.remaining)
+            throw new InvalidMessageSizeException("invalid message size:" + size + " only received bytes:" + iter.remaining)
           return allDone()
         }
         currValidBytes += 4 + size

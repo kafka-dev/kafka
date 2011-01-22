@@ -17,35 +17,71 @@ package kafka.etl.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.apache.hadoop.mapred.Reporter;
-import kafka.etl.KafkaETLMapper;
+import kafka.etl.KafkaETLKey;
+import kafka.etl.KafkaETLUtils;
 import kafka.message.Message;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.Mapper;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reporter;
 
 /**
  * Simple implementation of KafkaETLMapper. It assumes that 
  * input data are text timestamp (long).
  */
-public class SimpleKafkaETLMapper extends KafkaETLMapper {
+@SuppressWarnings("deprecation")
+public class SimpleKafkaETLMapper implements
+Mapper<KafkaETLKey, BytesWritable, LongWritable, Text> {
 
-	@Override
-	protected long getTimestamp(Message message) throws IOException {
+    protected long _count = 0;
+    
+	protected Text getData(Message message) throws IOException {
 		ByteBuffer buf = message.payload();
 		
 		byte[] array = new byte[buf.limit()];
 		buf.get(array);
 		
-		String text = new String(array, "UTF8");
-		return Long.valueOf(text);
+		Text text = new Text( new String(array, "UTF8"));
+		return text;
 	}
 
-	@Override
-	protected float getProgress() {
-		return 0;
-	}
 
-	@Override
-	protected Status getStatus(Message message, Reporter reporter) {
-		return KafkaETLMapper.Status.OUTPUT_AND_CONTINUE;
-	}
+    @Override
+    public void map(KafkaETLKey key, BytesWritable val,
+            OutputCollector<LongWritable, Text> collector,
+            Reporter reporter) throws IOException {
+        
+         
+        byte[] bytes = KafkaETLUtils.getBytes(val);
+        
+        //check the checksum of message
+        Message message = new Message(bytes);
+        long checksum = key.getChecksum();
+        if (checksum != message.checksum()) 
+            throw new IOException ("Invalid message checksum " 
+                                            + message.checksum() + ". Expected " + key + ".");
+        Text data = getData (message);
+        _count ++;
+           
+        collector.collect(new LongWritable (_count), data);
+
+    }
+
+
+    @Override
+    public void configure(JobConf arg0) {
+        // TODO Auto-generated method stub
+        
+    }
+
+
+    @Override
+    public void close() throws IOException {
+        // TODO Auto-generated method stub
+        
+    }
 
 }
