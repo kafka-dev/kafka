@@ -25,7 +25,7 @@ import collection.mutable.Map
 import org.apache.log4j.Logger
 import kafka.common.InvalidConfigException
 
-class ProducerPool[V](private val config: RichProducerConfig,
+class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
                       private val allBrokers: Map[Int, (String, Int)]) {
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])

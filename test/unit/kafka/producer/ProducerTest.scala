@@ -26,7 +26,7 @@ import org.junit.{After, Before}
 import junit.framework.{Assert, TestCase}
 import kafka.serializer.Encoder
 
-class RichProducerTest extends TestCase {
+class ProducerTest extends TestCase {
   private val topic = "test-topic"
   private val port1 = 9092
   private val port2 = 9093
@@ -88,9 +88,9 @@ class RichProducerTest extends TestCase {
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("zk.connect", TestZKUtils.zookeeperConnect)
-    val config = new RichProducerConfig(props)
+    val config = new ProducerConfig(props)
 
-    val richProducer = new RichProducer[String, String](config)
+    val richProducer = new Producer[String, String](config)
     richProducer.send(topic, "test", "test")
 
   }
@@ -100,9 +100,9 @@ class RichProducerTest extends TestCase {
     props.put("partitioner.class", "kafka.producer.NegativePartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("zk.connect", TestZKUtils.zookeeperConnect)
-    val config = new RichProducerConfig(props)
+    val config = new ProducerConfig(props)
 
-    val richProducer = new RichProducer[String, String](config)
+    val richProducer = new Producer[String, String](config)
     try {
       richProducer.send(topic, "test", "test")
       Assert.fail("Should fail with InvalidPartitionException")

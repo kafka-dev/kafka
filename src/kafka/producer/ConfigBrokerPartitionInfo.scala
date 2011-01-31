@@ -20,7 +20,7 @@ import collection.mutable.Map
 import kafka.common.InvalidConfigException
 import org.apache.log4j.Logger
 
-class ConfigBrokerPartitionInfo(config: RichProducerConfig) extends BrokerPartitionInfo {
+class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionInfo {
   private val logger = Logger.getLogger(classOf[ConfigBrokerPartitionInfo])
   private val brokerPartitions: Seq[(Int, Int)] = getConfigTopicPartitionInfo
   private val allBrokers = getConfigBrokerInfo

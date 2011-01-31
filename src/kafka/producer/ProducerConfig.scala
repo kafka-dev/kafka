@@ -19,7 +19,7 @@ package kafka.producer
 import java.util.Properties
 import kafka.utils.Utils
 
-class RichProducerConfig(props: Properties) {
+class ProducerConfig(props: Properties) {
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class")
 

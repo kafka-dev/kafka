@@ -22,10 +22,10 @@ import kafka.utils._
 import kafka.common.InvalidConfigException
 import java.util.Properties
 
-class RichProducer[K,V](config: RichProducerConfig,
-                        partitioner: Partitioner[K],
-                        serializer: Encoder[V]) {
-  private val logger = Logger.getLogger(classOf[RichProducer[K, V]])
+class Producer[K,V](config: ProducerConfig,
+                    partitioner: Partitioner[K],
+                    serializer: Encoder[V]) {
+  private val logger = Logger.getLogger(classOf[Producer[K, V]])
   if(config.zkConnect == null && config.brokerPartitionInfo == null)
     throw new InvalidConfigException("At least one of zk.connect or broker.partition.info must be specified")
 
@@ -49,7 +49,7 @@ class RichProducer[K,V](config: RichProducerConfig,
   // pool of producers, one per broker
   private val producerPool = new ProducerPool[V](config, serializer, brokerPartitionInfo.getAllBrokerInfo)
 
-  def this(config: RichProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
+  def this(config: ProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
     Utils.getObject(config.serializerClass))
 
   /**
@@ -61,7 +61,7 @@ class RichProducer[K,V](config: RichProducerConfig,
    */
   def send(topic: String, key: K, data: V*) {
     // find the number of broker partitions registered for this topic
-    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(topic)    
+    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(topic)
     val totalNumPartitions = numBrokerPartitions.map(bp => bp._2).reduceLeft(_ + _)
 
     var partitionId: Int = 0
