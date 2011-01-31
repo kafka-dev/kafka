@@ -21,6 +21,7 @@ import java.io._
 import joptsimple._
 import kafka.message._
 import kafka.producer._
+import java.util.Properties
 
 /**
  * Interactive shell for producing messages from the command line
@@ -51,8 +52,14 @@ object ProducerShell {
     
     val url = new URI(options.valueOf(urlOpt))
     val topic = options.valueOf(topicOpt)
-    val producer = new SimpleProducer(url.getHost, url.getPort, 64*1024, 10*1000, 100)
-    
+    val props = new Properties()
+    props.put("host", url.getHost)
+    props.put("port", url.getPort.toString)
+    props.put("buffer.size", "65536")
+    props.put("connect.timeout.ms", "10000")
+    props.put("reconnect.interval", "100")
+    val producer = new SyncProducer(new SyncProducerConfig(props))
+
     val input = new BufferedReader(new InputStreamReader(System.in))
     var done = false
     while(!done) {

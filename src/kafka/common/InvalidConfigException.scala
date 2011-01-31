@@ -14,21 +14,11 @@
  * limitations under the License.
 */
 
-package kafka.producer
+package kafka.common
 
-import kafka.utils.Utils
-import java.util.Properties
-
-class ProducerConfig(props: Properties) {
-  /** the broker to which the producer sends events */
-  val host = Utils.getString(props, "host")
-
-  /** the port on which the broker is running */
-  val port = Utils.getInt(props, "port")
-
-  val bufferSize = Utils.getInt(props, "buffer.size", 100*1024)
-
-  val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)
-
-  val reconnectInterval = Utils.getInt(props, "reconnect.interval", 30000)
+/**
+ * Indicates that the given config parameter has invalid value
+ */
+class InvalidConfigException(message: String) extends RuntimeException(message) {
+  def this() = this(null)
 }

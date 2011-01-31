@@ -15,13 +15,11 @@
 */
 package kafka.producer
 
-import kafka.message.Message
-
-trait Partitioner {
-  // extracts key from data to calculate the
-  // partition bucket id for routing the data to
-  // the topic corresponding to that partition bucket id.
-  // returns an index into the array of topics as the partition
-  // id
-  def partition(data: Message, numPartitions: Int): Int
+trait Partitioner[T] {
+  /**
+   * Uses the key to calculate a partition bucket id for routing
+   * the data to the appropriate broker partition
+   * @return an integer between 0 and numPartitions-1
+   */
+  def partition(key: T, numPartitions: Int): Int
 }

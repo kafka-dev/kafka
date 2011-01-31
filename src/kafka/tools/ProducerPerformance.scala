@@ -16,13 +16,14 @@
 
 package kafka.tools
 
+import joptsimple.OptionParser
+import kafka.message.{Message, ByteBufferMessageSet}
 import java.net.URI
-import java.util.concurrent._
-import java.util.concurrent.atomic._
-import joptsimple._
-import kafka.utils._
-import kafka.message._
-import kafka.producer._
+import kafka.utils.Utils
+import java.util.concurrent.{CountDownLatch, Executors}
+import java.util.concurrent.atomic.AtomicLong
+import java.util.Properties
+import kafka.producer.{SyncProducerConfig, SyncProducer}
 
 /**
  * Load test for the producer
@@ -91,8 +92,14 @@ object ProducerPerformance {
     val partitions = options.valueOf(numPartitionsOpt).intValue
     val reportingInterval = options.valueOf(reportingIntervalOpt).intValue
     val rand = new java.util.Random
-    
-    val producer = new SimpleProducer(url.getHost, url.getPort, 1*1024*1024, 30000, 100000)
+
+    val props = new Properties()
+    props.put("host", url.getHost)
+    props.put("port", url.getPort.toString)
+    props.put("buffer.size", "1048576")
+    props.put("connect.timeout.ms", "30000")
+    props.put("reconnect.interval", "100000")
+    val producer = new SyncProducer(new SyncProducerConfig(props))
     val batchesPerThread = numMessages / numThreads / batchSize / partitions
     val totalBytesSent = new AtomicLong(0)
     val totalBatchesSent = new AtomicLong(0)

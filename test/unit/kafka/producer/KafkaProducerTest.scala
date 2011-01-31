@@ -22,11 +22,12 @@ import kafka.utils.SystemTime
 import kafka.TestUtils
 import kafka.server.{KafkaServer, KafkaConfig}
 import org.apache.log4j.{Logger, Level}
+import java.util.Properties
 
 class KafkaProducerTest extends TestCase {
   private var messageBytes =  new Array[Byte](2);
   private var server: KafkaServer = null
-  val simpleProducerLogger = Logger.getLogger(classOf[SimpleProducer])
+  val simpleProducerLogger = Logger.getLogger(classOf[SyncProducer])
 
   override def setUp() {
     server = TestUtils.createServer(new KafkaConfig(TestUtils.createBrokerConfig(0, 9092))
@@ -40,7 +41,13 @@ class KafkaProducerTest extends TestCase {
   }
 
   def testUnreachableServer() {
-    val producer = new SimpleProducer("NOT_USED", 9092, 100*1024, 300, 1000)
+    val props = new Properties()
+    props.put("host", "NOT_USED")
+    props.put("port", "9092")
+    props.put("buffer.size", "102400")
+    props.put("connect.timeout.ms", "300")
+    props.put("reconnect.interval", "1000")
+    val producer = new SyncProducer(new SyncProducerConfig(props))
     var failed = false
     val firstStart = SystemTime.milliseconds
 
@@ -71,7 +78,13 @@ class KafkaProducerTest extends TestCase {
   }
 
   def testReachableServer() {
-    val producer = new SimpleProducer("localhost", 9092, 100*1024, 500, 1000)
+    val props = new Properties()
+    props.put("host", "localhost")
+    props.put("port", "9092")
+    props.put("buffer.size", "102400")
+    props.put("connect.timeout.ms", "500")
+    props.put("reconnect.interval", "1000")
+    val producer = new SyncProducer(new SyncProducerConfig(props))
     var failed = false
     val firstStart = SystemTime.milliseconds
     try {
@@ -95,7 +108,13 @@ class KafkaProducerTest extends TestCase {
   }
 
   def testReachableServerWrongPort() {
-    val producer = new SimpleProducer("localhost", 9091, 100*1024, 300, 500)
+    val props = new Properties()
+    props.put("host", "localhost")
+    props.put("port", "9091")
+    props.put("buffer.size", "102400")
+    props.put("connect.timeout.ms", "300")
+    props.put("reconnect.interval", "500")
+    val producer = new SyncProducer(new SyncProducerConfig(props))
     var failed = false
     val firstStart = SystemTime.milliseconds
     //temporarily increase log4j level to avoid error in output

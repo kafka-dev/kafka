@@ -17,9 +17,9 @@ package kafka.producer.async
 
 import java.util.Properties
 import kafka.utils.Utils
-import kafka.producer.ProducerConfig
+import kafka.producer.SyncProducerConfig
 
-class AsyncProducerConfig(props: Properties) extends ProducerConfig(props) {
+class AsyncProducerConfig(props: Properties) extends SyncProducerConfig(props) {
   /* maximum time, in milliseconds, for buffering data on the producer queue */
   val queueTime = Utils.getInt(props, "queue.time", 5000)
 

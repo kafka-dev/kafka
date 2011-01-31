@@ -16,57 +16,79 @@
 
 package kafka.producer
 
-import org.I0Itec.zkclient.ZkClient
-import kafka.utils.{StringSerializer, ZkUtils, Utils}
 import org.apache.log4j.Logger
-import kafka.message.{ByteBufferMessageSet, Message}
+import kafka.serializer.Encoder
+import kafka.utils._
+import kafka.common.InvalidConfigException
+import java.util.Properties
 
-class RichProducer[T](config: RichProducerConfig,
-                      partitioner: Partitioner) {
-  private val logger = Logger.getLogger(classOf[RichProducer[T]])
+class RichProducer[K,V](config: RichProducerConfig,
+                        partitioner: Partitioner[K],
+                        serializer: Encoder[V]) {
+  private val logger = Logger.getLogger(classOf[RichProducer[K, V]])
+  if(config.zkConnect == null && config.brokerPartitionInfo == null)
+    throw new InvalidConfigException("At least one of zk.connect or broker.partition.info must be specified")
 
-  private val zkClient = new ZkClient(config.zkConnect, config.zkSessionTimeoutMs, config.zkConnectionTimeoutMs,
-                                      StringSerializer)
+  private val random = new java.util.Random
+  private var brokerPartitionInfo: BrokerPartitionInfo = null
+  // check if zookeeper based auto partition discovery is enabled
+  private val zkEnabled = if(config.zkConnect == null) false else true
 
-  def this(config: RichProducerConfig) {
-    this(config, Utils.getObject(config.partitionerClass))
+  zkEnabled match {
+    case true =>
+      val zkProps = new Properties()
+      zkProps.put("zk.connect", config.zkConnect)
+      zkProps.put("zk.sessiontimeout.ms", config.zkSessionTimeoutMs.toString)
+      zkProps.put("zk.connectiontimeout.ms", config.zkConnectionTimeoutMs.toString)
+      zkProps.put("zk.synctime.ms", config.zkSyncTimeMs.toString)
+      brokerPartitionInfo = new ZKBrokerPartitionInfo(new ZKConfig(zkProps), producerCbk)
+    case false =>
+      brokerPartitionInfo = new ConfigBrokerPartitionInfo(config)
   }
 
-  def send(topic: String, data: Message) {
+  // pool of producers, one per broker
+  private val producerPool = new ProducerPool[V](config, serializer, brokerPartitionInfo.getAllBrokerInfo)
+
+  def this(config: RichProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
+    Utils.getObject(config.serializerClass))
+
+  /**
+   * Sends the data, partitioned by key to the topic using either the
+   * synchronous or the asynchronous producer 
+   * @param topic the topic under which the message is to be published
+   * @param key the key used by the partitioner to pick a broker partition
+   * @param data the data to be published as Kafka messages under topic
+   */
+  def send(topic: String, key: K, data: V*) {
     // find the number of broker partitions registered for this topic
-    val brokerTopicPath = ZkUtils.brokerTopicsPath + "/" + topic
-    val brokerList = ZkUtils.getChildren(zkClient, brokerTopicPath)
-    val numPartitions = brokerList.map(bid => ZkUtils.readData(zkClient, brokerTopicPath + "/" + bid).toInt)
-    val totalNumPartitions = numPartitions.reduceLeft(_ + _)
-    logger.info("Total number of partitions for this topic = " + totalNumPartitions)
-    
-    val brokerIds = brokerList.map(bid => bid.toInt).sortWith((id1, id2) => id1 < id2)
-    logger.info("Sorted list of broker ids = " + brokerIds.toString)
-    
-    val partitionId = partitioner.partition(data, totalNumPartitions)
+    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(topic)    
+    val totalNumPartitions = numBrokerPartitions.map(bp => bp._2).reduceLeft(_ + _)
+
+    var partitionId: Int = 0
+    if(key == null)
+      partitionId = random.nextInt(totalNumPartitions)
+    else
+      partitionId = partitioner.partition(key, totalNumPartitions)
     logger.info("Selected partition id = " + partitionId)
     if(partitionId < 0 || partitionId >= totalNumPartitions)
       throw new InvalidPartitionException("Invalid partition id : " + partitionId +
               "\n Valid values are in the range inclusive [0, " + (totalNumPartitions-1) + "]")
 
-    var brokerParts: List[(Int, Int)] = Nil
-    brokerIds.zip(numPartitions).foreach { bp =>
-      for(i <- 0 until bp._2) {
-        brokerParts ::= (bp._1, i)
-      }      
-    }
-    brokerParts = brokerParts.reverse
-    logger.info("Broker parts = " + brokerParts.toString)
-
-    val brokerPort = brokerParts(partitionId)
+    val brokerIdPartition = numBrokerPartitions(partitionId)
     // find the host and port of the selected broker id
-    val brokerInfo = ZkUtils.readData(zkClient, ZkUtils.brokerIdsPath + "/" + brokerPort._1)
-    val brokerHostPort = brokerInfo.split(":")
-    logger.info("Sending message to broker " + brokerHostPort(1) + ":" + brokerHostPort(2) + " on partition " +
-      brokerPort._2)
+    val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition._1).get
+    logger.info("Sending message to broker " + brokerInfo._1 + ":" + brokerInfo._2 +
+            " on partition " + brokerIdPartition._2)
 
-    val producer = new SimpleProducer(brokerHostPort(1), brokerHostPort(2).toInt, config.bufferSize,
-      config.connectTimeoutMs, config.reconnectInterval)
-    producer.send(topic, brokerPort._2, new ByteBufferMessageSet(data))
+    producerPool.send(topic, brokerIdPartition._1, brokerIdPartition._2, data: _*)
   }
+
+  /**
+   * Callback to add a new producer to the producer pool. Used by ZKBrokerPartitionInfo
+   * on registration of new broker in zookeeper
+   * @param bid the id of the broker
+   * @param host the hostname of the broker
+   * @param port the port of the broker
+   */
+  private def producerCbk(bid: Int, host: String, port: Int) = producerPool.addProducer(bid, host, port)
 }

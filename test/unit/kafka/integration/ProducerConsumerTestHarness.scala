@@ -18,21 +18,24 @@ package kafka.integration
 
 import junit.framework._
 import kafka.consumer.SimpleConsumer
-import kafka.producer.SimpleProducer
+import java.util.Properties
+import kafka.producer.{SyncProducerConfig, SyncProducer}
 
 trait ProducerConsumerTestHarness extends TestCase {
   
     val port: Int
     val host = "localhost"
-    var producer: SimpleProducer = null
+    var producer: SyncProducer = null
     var consumer: SimpleConsumer = null
     
     override def setUp() {
-      producer = new SimpleProducer(host,
-                                   port,
-                                   64*1024,
-                                   100000,
-                                   10000)
+      val props = new Properties()
+      props.put("host", host)
+      props.put("port", port.toString)
+      props.put("buffer.size", "65536")
+      props.put("connect.timeout.ms", "100000")
+      props.put("reconnect.interval", "10000")
+      producer = new SyncProducer(new SyncProducerConfig(props))
       consumer = new SimpleConsumer(host,
                                    port,
                                    1000000,

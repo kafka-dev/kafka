@@ -19,10 +19,10 @@ package kafka.producer
 import async.MissingConfigException
 import org.apache.log4j.spi.LoggingEvent
 import kafka.message.ByteBufferMessageSet
-import java.util.Date
 import org.apache.log4j.{Logger, AppenderSkeleton}
 import kafka.utils.Utils
 import kafka.serializer.Encoder
+import java.util.{Properties, Date}
 
 class KafkaAppender extends AppenderSkeleton {
   var port:Int = 0
@@ -30,7 +30,7 @@ class KafkaAppender extends AppenderSkeleton {
   var topic:String = null
   var encoderClass:String = null
   
-  private var producer:SimpleProducer = null
+  private var producer:SyncProducer = null
   private val logger = Logger.getLogger(classOf[KafkaAppender])
   private var encoder: Encoder[AnyRef] = null
   
@@ -57,8 +57,11 @@ class KafkaAppender extends AppenderSkeleton {
     if(encoderClass == null)
       throw new MissingConfigException("Encoder must be specified by the Kafka log4j appender")
     // instantiate the encoder, if present
-    encoder = Utils.getObject(encoderClass)    
-    producer = new SimpleProducer(host, port, 100*1024, 30000, 10000)
+    encoder = Utils.getObject(encoderClass)
+    val props = new Properties()
+    props.put("host", host)
+    props.put("port", port.toString)
+    producer = new SyncProducer(new SyncProducerConfig(props))
     logger.info("Kafka producer connected to " + host + "," + port)
     logger.info("Logging for topic: " + topic)
   }

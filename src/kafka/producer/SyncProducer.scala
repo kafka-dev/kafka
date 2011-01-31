@@ -25,7 +25,7 @@ import kafka.api._
 import scala.math._
 import org.apache.log4j.{Level, Logger}
 
-object SimpleProducer {
+object SyncProducer {
   val RequestKey: Short = 0
 }
 
@@ -33,11 +33,7 @@ object SimpleProducer {
  * Send a message set.
  */
 @threadsafe
-class SimpleProducer(val host: String, 
-                     val port: Int,
-                     val bufferSize: Int,
-                     val connectTimeoutMs: Int,
-                     val reconnectInterval: Int) {
+class SyncProducer(config: SyncProducerConfig) {
   
   private val logger = Logger.getLogger(getClass())
   private val MaxConnectBackoffMs = 60000
@@ -65,7 +61,7 @@ class SimpleProducer(val host: String,
       }
       // TODO: do we still need this?
       sentOnConnection += 1
-      if(sentOnConnection >= reconnectInterval) {
+      if(sentOnConnection >= config.reconnectInterval) {
         disconnect()
         channel = connect()
         sentOnConnection = 0
@@ -108,7 +104,7 @@ class SimpleProducer(val host: String,
   private def disconnect() {
     try {
       if(channel != null) {
-        logger.debug("Disconnecting from " + host + ":" + port)
+        logger.debug("Disconnecting from " + config.host + ":" + config.port)
         Utils.swallow(logger.warn, channel.close())
         Utils.swallow(logger.warn, channel.socket.close())
         channel = null
@@ -124,19 +120,19 @@ class SimpleProducer(val host: String,
     val beginTimeMs = SystemTime.milliseconds
     while(channel == null && !shutdown) {
       try {
-        logger.debug("Connecting to " + host + ":" + port + " for producing")
+        logger.debug("Connecting to " + config.host + ":" + config.port + " for producing")
         channel = SocketChannel.open()
-        channel.socket.setSendBufferSize(bufferSize)
-        channel.connect(new InetSocketAddress(host, port))
+        channel.socket.setSendBufferSize(config.bufferSize)
+        channel.connect(new InetSocketAddress(config.host, config.port))
         channel.configureBlocking(true)
       }
       catch {
         case e: Exception => {
           disconnect()
           val endTimeMs = SystemTime.milliseconds
-          if ( (endTimeMs - beginTimeMs + connectBackoffMs) > connectTimeoutMs)
+          if ( (endTimeMs - beginTimeMs + connectBackoffMs) > config.connectTimeoutMs)
           {
-            logger.error("Producer connection timing out after " + connectTimeoutMs + " ms")
+            logger.error("Producer connection timing out after " + config.connectTimeoutMs + " ms")
             throw e
           }
           logger.error("Connection attempt failed, next attempt in " + connectBackoffMs + " ms", e)

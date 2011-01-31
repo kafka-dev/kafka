@@ -13,18 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+
 package kafka.producer
 
-import async.AsyncProducerConfig
 import java.util.Properties
 import kafka.utils.Utils
 
-class RichProducerConfig(props: Properties) extends ProducerConfig(props)  {
+class RichProducerConfig(props: Properties) {
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class")
 
-  /** ZK host string */
-  val zkConnect = Utils.getString(props, "zk.connect", "127.0.0.1:2182")
+  /** the serializer class for converting data to kafka messages */
+  val serializerClass = Utils.getString(props, "serializer.class")
+  
+  /** this parameter specifies whether the messages are sent asynchronously *
+   * or not. Valid values are - async for asynchronous send                 *
+   *                            sync for synchronous send                   */
+  val producerType = Utils.getString(props, "producer.type", "sync")
+
+  /** For bypassing zookeeper based auto partition discovery, use this config   *
+   *  to pass in static broker and per-broker partition information. Format-    *
+   *  brokerid1:host1:port1:numPartitions1, brokerid2:host2:port2:numPartitions2*/
+  val brokerPartitionInfo = Utils.getString(props, "broker.partition.info", null)
+
+  /** To enable zookeeper based auto partition discovery, specify the ZK    *
+   * connection string. This will override the brokerPartitionInfo, in case *
+   * both are specified by the user                                         */
+  val zkConnect = Utils.getString(props, "zk.connect", null)
 
   /** zookeeper session timeout */
   val zkSessionTimeoutMs = Utils.getInt(props, "zk.sessiontimeout.ms", 6000)
@@ -34,4 +49,11 @@ class RichProducerConfig(props: Properties) extends ProducerConfig(props)  {
 
   /** how far a ZK follower can be behind a ZK leader */
   val zkSyncTimeMs = Utils.getInt(props, "zk.synctime.ms", 2000)
+
+  val bufferSize = Utils.getInt(props, "buffer.size", 100*1024)
+
+  val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)
+
+  val reconnectInterval = Utils.getInt(props, "reconnect.interval", 30000)
+
 }

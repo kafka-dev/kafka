@@ -16,15 +16,15 @@
 
 package kafka.producer
 
-import async.{AsyncProducerConfig, AsyncKafkaProducer, QueueClosedException, QueueFullException}
+import async._
 import kafka.message.{ByteBufferMessageSet, Message}
 import junit.framework.{Assert, TestCase}
 import java.util.Properties
 import org.easymock.EasyMock
 import kafka.api.ProducerRequest
-import kafka.serializer.SerDeser
 import org.apache.log4j.Level
 import org.junit.Test
+import kafka.serializer.Encoder
 
 class AsyncProducerTest extends TestCase {
 
@@ -38,7 +38,7 @@ class AsyncProducerTest extends TestCase {
 
   @Test
   def testProducerQueueSize() {
-    val basicProducer = EasyMock.createMock(classOf[SimpleProducer])
+    val basicProducer = EasyMock.createMock(classOf[SyncProducer])
     basicProducer.multiSend(EasyMock.aryEq(Array(new ProducerRequest(topic1, ProducerRequest.RandomPartition,
       getMessageSetOfSize(List(message1), 10)))))
     EasyMock.expectLastCall
@@ -53,14 +53,14 @@ class AsyncProducerTest extends TestCase {
     props.put("serializer.class", "kafka.producer.StringSerializer")
     val config = new AsyncProducerConfig(props)
 
-    val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
+    val producer = new AsyncProducer[String](config, basicProducer, new StringSerializer)
 
     //temporarily set log4j to a higher level to avoid error in the output
     producer.setLoggerLevel(Level.FATAL)
 
     try {
       for(i <- 0 until 11) {
-        producer.send(messageContent1)
+        producer.send(messageContent1 + "-topic", messageContent1)
       }
       Assert.fail("Queue should be full")
     }
@@ -75,7 +75,7 @@ class AsyncProducerTest extends TestCase {
 
   @Test
   def testAddAfterQueueClosed() {
-    val basicProducer = EasyMock.createMock(classOf[SimpleProducer])
+    val basicProducer = EasyMock.createMock(classOf[SyncProducer])
     basicProducer.multiSend(EasyMock.aryEq(Array(new ProducerRequest(topic1, ProducerRequest.RandomPartition,
       getMessageSetOfSize(List(message1), 10)))))
     EasyMock.expectLastCall
@@ -90,16 +90,16 @@ class AsyncProducerTest extends TestCase {
     props.put("serializer.class", "kafka.producer.StringSerializer")
     val config = new AsyncProducerConfig(props)
 
-    val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
+    val producer = new AsyncProducer[String](config, basicProducer, new StringSerializer)
 
     producer.start
     for(i <- 0 until 10) {
-      producer.send(messageContent1)
+      producer.send(messageContent1 + "-topic", messageContent1)
     }
     producer.close
 
     try {
-      producer.send(messageContent1)
+      producer.send(messageContent1 + "-topic", messageContent1)
       Assert.fail("Queue should be closed")
     } catch {
       case e: QueueClosedException =>
@@ -109,7 +109,7 @@ class AsyncProducerTest extends TestCase {
 
   @Test
   def testBatchSize() {
-    val basicProducer = EasyMock.createStrictMock(classOf[SimpleProducer])
+    val basicProducer = EasyMock.createStrictMock(classOf[SyncProducer])
     basicProducer.multiSend(EasyMock.aryEq(Array(new ProducerRequest(topic1, ProducerRequest.RandomPartition,
       getMessageSetOfSize(List(message1), 5)))))
     EasyMock.expectLastCall.times(2)
@@ -129,16 +129,16 @@ class AsyncProducerTest extends TestCase {
 
     val config = new AsyncProducerConfig(props)
 
-    val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
+    val producer = new AsyncProducer[String](config, basicProducer, new StringSerializer)
 
     producer.start
     for(i <- 0 until 10) {
-      producer.send(messageContent1)
+      producer.send(messageContent1 + "-topic", messageContent1)
     }
 
     Thread.sleep(100)
     try {
-      producer.send(messageContent1)
+      producer.send(messageContent1 + "-topic", messageContent1)
     } catch {
       case e: QueueFullException =>
         Assert.fail("Queue should not be full")
@@ -150,7 +150,7 @@ class AsyncProducerTest extends TestCase {
 
   @Test
   def testQueueTimeExpired() {
-    val basicProducer = EasyMock.createMock(classOf[SimpleProducer])
+    val basicProducer = EasyMock.createMock(classOf[SyncProducer])
     basicProducer.multiSend(EasyMock.aryEq(Array(new ProducerRequest(topic1, ProducerRequest.RandomPartition,
       getMessageSetOfSize(List(message1), 3)))))
     EasyMock.expectLastCall
@@ -167,13 +167,13 @@ class AsyncProducerTest extends TestCase {
 
     val config = new AsyncProducerConfig(props)
 
-    val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
+    val producer = new AsyncProducer[String](config, basicProducer, new StringSerializer)
     val serializer = new StringSerializer
     val topicFn: (String) => String = serializer.getTopic
 
     producer.start
     for(i <- 0 until 3) {
-      producer.send(messageContent1, topicFn)
+      producer.send(serializer.getTopic(messageContent1), messageContent1, ProducerRequest.RandomPartition)
     }
 
     Thread.sleep(500)
@@ -183,25 +183,31 @@ class AsyncProducerTest extends TestCase {
 
   @Test
   def testSenderThreadShutdown() {
-    val basicProducer = new MockProducer("localhost", 9092, 1000, 1000, 1000)
+    val syncProducerProps = new Properties()
+    syncProducerProps.put("host", "localhost")
+    syncProducerProps.put("port", "9092")
+    syncProducerProps.put("buffer.size", "1000")
+    syncProducerProps.put("connect.timeout.ms", "1000")
+    syncProducerProps.put("reconnect.interval", "1000")
+    val basicProducer = new MockProducer(new SyncProducerConfig(syncProducerProps))
 
-    val props = new Properties()
-    props.put("host", "localhost")
-    props.put("port", "9092")
-    props.put("queue.size", "10")
-    props.put("serializer.class", "kafka.producer.StringSerializer")
-    props.put("queue.time", "100")
+    val asyncProducerProps = new Properties()
+    asyncProducerProps.put("host", "localhost")
+    asyncProducerProps.put("port", "9092")
+    asyncProducerProps.put("queue.size", "10")
+    asyncProducerProps.put("serializer.class", "kafka.producer.StringSerializer")
+    asyncProducerProps.put("queue.time", "100")
 
-    val config = new AsyncProducerConfig(props)
-    val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
+    val config = new AsyncProducerConfig(asyncProducerProps)
+    val producer = new AsyncProducer[String](config, basicProducer, new StringSerializer)
     producer.start
-    producer.send(messageContent1)
+    producer.send(messageContent1 + "-topic", messageContent1)
     producer.close
   }
 
   @Test
   def testCollateEvents() {
-    val basicProducer = EasyMock.createMock(classOf[SimpleProducer])
+    val basicProducer = EasyMock.createMock(classOf[SyncProducer])
     basicProducer.multiSend(EasyMock.aryEq(Array(new ProducerRequest(topic2, ProducerRequest.RandomPartition,
                                                                      getMessageSetOfSize(List(message2), 5)),
                                                  new ProducerRequest(topic1, ProducerRequest.RandomPartition,
@@ -220,14 +226,13 @@ class AsyncProducerTest extends TestCase {
 
     val config = new AsyncProducerConfig(props)
 
-    val producer = new AsyncKafkaProducer[String](config, basicProducer, new StringSerializer)
+    val producer = new AsyncProducer[String](config, basicProducer, new StringSerializer)
 
     producer.start
     val serializer = new StringSerializer
-    val topicFn = (topic: String) => topic + "$" + "topic"
     for(i <- 0 until 5) {
-      producer.send(messageContent1)
-      producer.send(messageContent2, topicFn)
+      producer.send(messageContent1 + "-topic", messageContent1)
+      producer.send(messageContent2 + "$topic", messageContent2, ProducerRequest.RandomPartition)
     }
 
     producer.close
@@ -245,18 +250,12 @@ class AsyncProducerTest extends TestCase {
     new ByteBufferMessageSet(messageList)
   }
 
-  class StringSerializer extends SerDeser[String] {
-    def toEvent(message: Message):String = message.toString
+  class StringSerializer extends Encoder[String] {
     def toMessage(event: String):Message = new Message(event.getBytes)
     def getTopic(event: String): String = event.concat("-topic")
   }
 
-  class MockProducer(override val host: String,
-                     override val port: Int,
-                     override val bufferSize: Int,
-                     override val connectTimeoutMs: Int,
-                     override val reconnectInterval: Int) extends
-  SimpleProducer(host, port, bufferSize, connectTimeoutMs, reconnectInterval) {
+  class MockProducer(val config: SyncProducerConfig) extends SyncProducer(config) {
     override def send(topic: String, messages: ByteBufferMessageSet): Unit = {
       Thread.sleep(1000)
     }

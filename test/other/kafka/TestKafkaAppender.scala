@@ -18,7 +18,7 @@ package kafka
 
 import message.Message
 import org.apache.log4j.{Logger, PropertyConfigurator}
-import serializer.SerDeser
+import serializer.Encoder
 
 object TestKafkaAppender {
 
@@ -44,11 +44,7 @@ object TestKafkaAppender {
   }
 }
 
-class AppenderStringSerializer extends SerDeser[AnyRef] {
-  def toEvent(message: Message):AnyRef = message.toString
-  def toMessage(event: AnyRef):Message = {
-    new Message(event.asInstanceOf[String].getBytes)
-  }
-  def getTopic(event: AnyRef): String = null
+class AppenderStringSerializer extends Encoder[AnyRef] {
+  def toMessage(event: AnyRef):Message = new Message(event.asInstanceOf[String].getBytes)
 }
 

@@ -414,7 +414,8 @@ class ZookeeperConsumerConnector(val config: ConsumerConfig,
         val nPartsPerConsumer = curPartitions.size / curConsumers.size
         val nConsumersWithExtraPart = curPartitions.size % curConsumers.size
 
-        logger.info("Consumer " + consumerIdString + " rebalancing the following partitions: " + curPartitions + " for topic " + topic + " with consumers: " + curConsumers)
+        logger.info("Consumer " + consumerIdString + " rebalancing the following partitions: " + curPartitions +
+                " for topic " + topic + " with consumers: " + curConsumers)
 
         for (consumerThreadId <- consumerThreadIdSet) {
           val myConsumerPosition = curConsumers.findIndexOf(_ == consumerThreadId)

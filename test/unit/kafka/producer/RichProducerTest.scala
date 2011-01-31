@@ -24,6 +24,7 @@ import kafka.{TestZKUtils, TestUtils}
 import kafka.message.{ByteBufferMessageSet, Message}
 import org.junit.{After, Before}
 import junit.framework.{Assert, TestCase}
+import kafka.serializer.Encoder
 
 class RichProducerTest extends TestCase {
   private val topic = "test-topic"
@@ -52,10 +53,16 @@ class RichProducerTest extends TestCase {
     }
     server2 = TestUtils.createServer(config2)
 
-    var producer = new SimpleProducer("localhost", port1, 100*1024, 5000, 30000)
+    val props = new Properties()
+    props.put("host", "localhost")
+    props.put("port", port1.toString)
+
+    var producer = new SyncProducer(new SyncProducerConfig(props))
     producer.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
 
-    producer = new SimpleProducer("localhost", port2, 100*1024, 5000, 30000)
+    producer = new SyncProducer(new SyncProducerConfig(props) {
+      override val port = port2
+    })
     producer.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
 
     // temporarily set request handler logger to a higher level
@@ -79,46 +86,52 @@ class RichProducerTest extends TestCase {
   def testSend() {
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
-    props.put("host", "localhost")
-    props.put("port", "9092")
+    props.put("serializer.class", "kafka.producer.StringSerializer")
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
     val config = new RichProducerConfig(props)
 
-    val richProducer = new RichProducer(config)
-    richProducer.send(topic, new Message("test".getBytes))
+    val richProducer = new RichProducer[String, String](config)
+    richProducer.send(topic, "test", "test")
+
   }
 
   def testInvalidPartition() {
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.NegativePartitioner")
-    props.put("host", "localhost")
-    props.put("port", "9092")
+    props.put("serializer.class", "kafka.producer.StringSerializer")
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
     val config = new RichProducerConfig(props)
 
-    val richProducer = new RichProducer(config)
+    val richProducer = new RichProducer[String, String](config)
     try {
-      richProducer.send(topic, new Message("test".getBytes))
+      richProducer.send(topic, "test", "test")
       Assert.fail("Should fail with InvalidPartitionException")
     }catch {
       case e: InvalidPartitionException => 
     }
-
   }
 }
 
-class NegativePartitioner extends Partitioner {
-  def partition(data: Message, numPartitions: Int): Int = {
+class StringSerializer extends Encoder[String] {
+  def toEvent(message: Message):String = message.toString
+  def toMessage(event: String):Message = new Message(event.getBytes)
+  def getTopic(event: String): String = event.concat("-topic")
+}
+
+class NegativePartitioner extends Partitioner[String] {
+  def partition(data: String, numPartitions: Int): Int = {
     -1
   }
 }
 
-class StaticPartitioner extends Partitioner {
-  def partition(data: Message, numPartitions: Int): Int = {
-    (data.buffer.toString.length % numPartitions)
+class StaticPartitioner extends Partitioner[String] {
+  def partition(data: String, numPartitions: Int): Int = {
+    (data.length % numPartitions)
   }
 }
 
-class HashPartitioner extends Partitioner {
-  def partition(data: Message, numPartitions: Int): Int = {
-    (data.buffer.toString.hashCode % numPartitions)
+class HashPartitioner extends Partitioner[String] {
+  def partition(data: String, numPartitions: Int): Int = {
+    (data.hashCode % numPartitions)
   }
 }
