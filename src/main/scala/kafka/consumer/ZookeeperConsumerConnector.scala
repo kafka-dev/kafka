@@ -125,7 +125,7 @@ class ZookeeperConsumerConnector(val config: ConsumerConfig,
   }
 
   private def connectZk() {
-    logger.info("connecting to ZK: " + config.zkConnect)
+    logger.info("Connecting to zookeeper instance at " + config.zkConnect)
     zkClient = new ZkClient(config.zkConnect, config.zkSessionTimeoutMs, config.zkConnectionTimeoutMs, StringSerializer)
   }
 
