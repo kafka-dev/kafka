@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-package kafka.consumer
+package kafka.log
 
 import junit.framework.TestCase
 import java.io.File
 import kafka.TestUtils
 import kafka.utils.Utils
 import kafka.message.{ByteBufferMessageSet, Message}
-import kafka.log.Log
 import kafka.server.{KafkaConfig, KafkaServer}
 import junit.framework.Assert._
 import java.util.{Random, Properties}
 import kafka.api.{FetchRequest, OffsetRequest}
+import collection.mutable.WrappedArray
+import kafka.consumer.SimpleConsumer
 
-object SimpleConsumerTest {
+object LogOffsetTest {
   val random = new Random()  
 }
 
-class SimpleConsumerTest extends TestCase {
+class LogOffsetTest extends TestCase {
   var logDir: File = null
   var topicLogDir: File = null
   var server: KafkaServer = null
@@ -54,56 +55,26 @@ class SimpleConsumerTest extends TestCase {
     Utils.rm(logDir)
   }
 
-  def testSimpleConsumerEmptyLogs() {
-    val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.LATEST_TIME, 10)
-
-    assertEquals(0, offsets.length)
-  }
-
   def testEmptyLogs() {
-    val topicPartition = "kafka-" + SimpleConsumerTest.random.nextInt(10)
-    val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
-    topicLogDir = new File(topicPartitionPath)
-    topicLogDir.mkdir
-
-    val log = new Log(topicLogDir, logSize, 1000)
-    val topic = topicPartition.split("-").head
-    val part = Integer.valueOf(topicPartition.split("-").last).intValue
-
-    val offsetRequest = new OffsetRequest(topic, part,
-                                          OffsetRequest.LATEST_TIME, 10)
-    val offsets = log.getOffsetsBefore(offsetRequest)
-
-    assertEquals(0, offsets.length)
-
-    val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-                                                          OffsetRequest.LATEST_TIME, 10)
-    assertEquals(0, consumerOffsets.length)
-
     val messageSet: ByteBufferMessageSet = simpleConsumer.fetch(
-      new FetchRequest(topic, 0, 0, 300 * 1024))
+      new FetchRequest("test", 0, 0, 300 * 1024))
     assertFalse(messageSet.iterator.hasNext)
-  }
-  
-  def testEmptyLogsGetOffsets() {
-    val topicPartition = "kafka-" + SimpleConsumerTest.random.nextInt(10)
-    val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
-    topicLogDir = new File(topicPartitionPath)
-    topicLogDir.mkdir
-    
-    val topic = topicPartition.split("-").head
-    val part = Integer.valueOf(topicPartition.split("-").last).intValue
 
-    var offsetChanged = false
-    for(i <- 1 to 14) {
-      val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-        OffsetRequest.EARLIEST_TIME, 1)
-
-      if(consumerOffsets(0) == 1) {
-        offsetChanged = true
-      }
+    {
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.LATEST_TIME, 10)
+      assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
     }
-    assertFalse(offsetChanged)
+
+    {
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.EARLIEST_TIME, 10)
+      assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
+    }
+
+    {
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, 1295978400000L, 10)
+      assertTrue( 0 == offsets.length )
+    }
+
   }
 
   def testGetOffsetsBeforeLatestTime() {
@@ -114,7 +85,7 @@ class SimpleConsumerTest extends TestCase {
 
     val logManager = server.getLogManager
     val log = logManager.getOrCreateLog(topic, part)
-    
+
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
       log.append(new ByteBufferMessageSet(message))
@@ -124,14 +95,14 @@ class SimpleConsumerTest extends TestCase {
 
     val offsetRequest = new OffsetRequest(topic, part,
                                           OffsetRequest.LATEST_TIME, 10)
-    
+
     val offsets = log.getOffsetsBefore(offsetRequest)
 
-    assertEquals(220L, offsets.head)
+    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           OffsetRequest.LATEST_TIME, 10)
-    assertEquals(220L, consumerOffsets.head)
+    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
 
     // try to fetch using latest offset
     val messageSet: ByteBufferMessageSet = simpleConsumer.fetch(
@@ -140,7 +111,7 @@ class SimpleConsumerTest extends TestCase {
   }
 
   def testGetOffsetsBeforeNow() {
-    val topicPartition = "kafka-" + SimpleConsumerTest.random.nextInt(10)
+    val topicPartition = "kafka-" + LogOffsetTest.random.nextInt(10)
     val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
     val topic = topicPartition.split("-").head
     val part = Integer.valueOf(topicPartition.split("-").last).intValue
@@ -155,18 +126,17 @@ class SimpleConsumerTest extends TestCase {
     Thread.sleep(100)
 
     val offsetRequest = new OffsetRequest(topic, part,
-                                          System.currentTimeMillis, 10)
+                                           System.currentTimeMillis, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
-
-    assertEquals(220L, offsets.head)
+    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           System.currentTimeMillis, 10)
-    assertEquals(220L, consumerOffsets.head)
+    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
   }
 
   def testGetOffsetsBeforeEarliestTime() {
-    val topicPartition = "kafka-" + SimpleConsumerTest.random.nextInt(10)
+    val topicPartition = "kafka-" + LogOffsetTest.random.nextInt(10)
     val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
     val topic = topicPartition.split("-").head
     val part = Integer.valueOf(topicPartition.split("-").last).intValue
@@ -184,11 +154,11 @@ class SimpleConsumerTest extends TestCase {
                                           OffsetRequest.EARLIEST_TIME, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
 
-    assertEquals(0L, offsets.head)
+    assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
                                                           OffsetRequest.EARLIEST_TIME, 10)
-    assertEquals(0L, consumerOffsets.head)
+    assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
   }
 
   private def createBrokerConfig(nodeId: Int, port: Int): Properties = {

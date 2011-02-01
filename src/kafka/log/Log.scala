@@ -303,44 +303,39 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
 
   def getOffsetsBefore(request: OffsetRequest): Array[Long] = {
     val segsArray = segments.view
+    var offsetTimeArray: Array[Tuple2[Long, Long]] = null
+    if (segsArray.last.size > 0)
+      offsetTimeArray = new Array[Tuple2[Long, Long]](segsArray.length + 1)
+    else
+      offsetTimeArray = new Array[Tuple2[Long, Long]](segsArray.length)
+
+    for (i <- 0 until segsArray.length)
+      offsetTimeArray(i) = (segsArray(i).start, segsArray(i).file.lastModified)
+    if (segsArray.last.size > 0)
+      offsetTimeArray(segsArray.length) = (segsArray.last.start + segsArray.last.messageSet.highWaterMark, SystemTime.milliseconds)
+
     var startIndex = -1
-    val retOffset = segsArray.last.start + segsArray.last.messageSet.highWaterMark
     request.time match {
-    // TODO: Latest offset is approximate right now. Change to exact
       case OffsetRequest.LATEST_TIME =>
-        if(segsArray.last.size > 0)
-          startIndex = segsArray.length - 1
-        else
-          startIndex = segsArray.length - 2
-      case OffsetRequest.EARLIEST_TIME => startIndex = 0
+        startIndex = offsetTimeArray.length - 1
+      case OffsetRequest.EARLIEST_TIME =>
+        startIndex = 0
       case _ =>
-        if (request.time >= 0) {
           var isFound = false
-          startIndex = segsArray.length - 1
+          startIndex = offsetTimeArray.length - 1
           while (startIndex >= 0 && !isFound) {
-            if (segsArray(startIndex).file.lastModified <= request.time)
+            if (offsetTimeArray(startIndex)._2 <= request.time)
               isFound = true
             else
               startIndex -=1
           }
-        }
     }
+
     val retSize = request.maxNumOffsets.min(startIndex + 1)
     val ret = new Array[Long](retSize)
-    if(retSize > 0) {
-      request.time match {
-        case OffsetRequest.EARLIEST_TIME =>
-          for (j <- 0 until retSize) {
-            ret(j) = segsArray(startIndex).start
-            startIndex -= 1
-          }
-        case _ =>
-          ret(0) = retOffset
-          for (j <- 1 until retSize) {
-            ret(j) = segsArray(startIndex).start
-            startIndex -= 1
-          }
-      }
+    for (j <- 0 until retSize) {
+      ret(j) = offsetTimeArray(startIndex)._1
+      startIndex -= 1
     }
     ret
   }
