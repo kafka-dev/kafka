@@ -27,18 +27,18 @@ import kafka.common.InvalidConfigException
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
-                      private val allBrokers: Map[Int, (String, Int)]) {
+                      private val syncProducers: Map[Int, SyncProducer],
+                      private val asyncProducers: Map[Int, AsyncProducer[V]]) {
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
   config.producerType match {
     case "sync" =>
     case "async" =>
     case _ => throw new InvalidConfigException("Valid values for producer.type are sync/async")
   }
-  private val syncProducers = new HashMap[Int, SyncProducer]()
-  private val asyncProducers = new HashMap[Int, AsyncProducer[V]]()
 
-  allBrokers.foreach(b => addProducer(b._1, b._2._1, b._2._2))
-
+  def this(config: ProducerConfig, serializer: Encoder[V]) = this(config, serializer,
+                                                                  new HashMap[Int, SyncProducer](),
+                                                                  new HashMap[Int, AsyncProducer[V]]())
   /**
    * add a new producer, either synchronous or asynchronous, connecting
    * to the specified broker 
@@ -88,4 +88,16 @@ class ProducerPool[V](private val config: ProducerConfig,
         data.foreach(d => producer.send(topic, d, partition))
     }
   }
+
+  def close() = {
+    config.producerType match {
+      case "sync" =>
+        logger.info("Closing all sync producers")
+        syncProducers.foreach(_._2.close)
+      case "async" =>
+        logger.info("Closing all async producers")
+        asyncProducers.foreach(_._2.close)
+    }
+  }
+
 }

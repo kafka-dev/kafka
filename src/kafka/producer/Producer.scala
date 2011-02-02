@@ -24,16 +24,17 @@ import java.util.Properties
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
-                    serializer: Encoder[V]) {
+                    serializer: Encoder[V],
+                    producerPool: ProducerPool[V],
+                    populateProducerPool: Boolean = true) /* for testing purpose only. Applications should ideally */
+                     /* use the auxiliary constructor and use this one only for testing using mock objects */ {
   private val logger = Logger.getLogger(classOf[Producer[K, V]])
   if(config.zkConnect == null && config.brokerPartitionInfo == null)
     throw new InvalidConfigException("At least one of zk.connect or broker.partition.info must be specified")
-
   private val random = new java.util.Random
   private var brokerPartitionInfo: BrokerPartitionInfo = null
   // check if zookeeper based auto partition discovery is enabled
   private val zkEnabled = if(config.zkConnect == null) false else true
-
   zkEnabled match {
     case true =>
       val zkProps = new Properties()
@@ -45,12 +46,15 @@ class Producer[K,V](config: ProducerConfig,
     case false =>
       brokerPartitionInfo = new ConfigBrokerPartitionInfo(config)
   }
-
+  
   // pool of producers, one per broker
-  private val producerPool = new ProducerPool[V](config, serializer, brokerPartitionInfo.getAllBrokerInfo)
-
+  if(populateProducerPool) {
+    val allBrokers = brokerPartitionInfo.getAllBrokerInfo
+    allBrokers.foreach(b => producerPool.addProducer(b._1, b._2._1, b._2._2))
+  }
+  
   def this(config: ProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
-    Utils.getObject(config.serializerClass))
+    Utils.getObject(config.serializerClass), new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
 
   /**
    * Sends the data, partitioned by key to the topic using either the
@@ -61,8 +65,8 @@ class Producer[K,V](config: ProducerConfig,
    */
   def send(topic: String, key: K, data: V*) {
     // find the number of broker partitions registered for this topic
-    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(topic)
-    val totalNumPartitions = numBrokerPartitions.map(bp => bp._2).reduceLeft(_ + _)
+    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(topic).toSeq
+    val totalNumPartitions = numBrokerPartitions.length
 
     var partitionId: Int = 0
     if(key == null)
@@ -90,5 +94,13 @@ class Producer[K,V](config: ProducerConfig,
    * @param host the hostname of the broker
    * @param port the port of the broker
    */
-  private def producerCbk(bid: Int, host: String, port: Int) = producerPool.addProducer(bid, host, port)
+  private def producerCbk(bid: Int, host: String, port: Int) =  {
+    if(populateProducerPool) producerPool.addProducer(bid, host, port)
+    else logger.info("Skipping the callback..")
+  }
+                                       
+  def close() = {
+    producerPool.close
+  }
+
 }

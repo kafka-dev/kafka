@@ -19,10 +19,12 @@ import collection.mutable.HashMap
 import collection.mutable.Map
 import kafka.common.InvalidConfigException
 import org.apache.log4j.Logger
+import collection.SortedSet
+import collection.immutable.TreeSet
 
 class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionInfo {
   private val logger = Logger.getLogger(classOf[ConfigBrokerPartitionInfo])
-  private val brokerPartitions: Seq[(Int, Int)] = getConfigTopicPartitionInfo
+  private val brokerPartitions: SortedSet[(Int, Int)] = getConfigTopicPartitionInfo
   private val allBrokers = getConfigBrokerInfo
 
   /**
@@ -30,7 +32,7 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
    * @param topic this value is null 
    * @return a sequence of (brokerId, numPartitions)
    */
-  def getBrokerPartitionInfo(topic: String = null): Seq[(Int, Int)] = brokerPartitions
+  def getBrokerPartitionInfo(topic: String = null): SortedSet[(Int, Int)] = brokerPartitions
 
   /**
    * Generate the host and port information for the broker identified
@@ -53,7 +55,7 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
    * specified in the producer configuration
    * @return sequence of (brokerId, numPartitions)
    */
-  private def getConfigTopicPartitionInfo(): Seq[(Int, Int)] = {
+  private def getConfigTopicPartitionInfo(): SortedSet[(Int, Int)] = {
     val brokerInfoList = config.brokerPartitionInfo.split(",")
     if(brokerInfoList.size == 0) throw new InvalidConfigException("broker.partition.info has invalid value")
     // check if each individual broker info is valid => (brokerId: brokerHost: brokerPort: numPartitions)
@@ -61,7 +63,15 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
       val brokerInfo = bInfo.split(":")
       if(brokerInfo.size != 4) throw new InvalidConfigException("broker.partition.info has invalid value")
     }
-    brokerInfoList.map(bInfo => (bInfo.split(":").first.toInt, bInfo.split(":").last.toInt))
+    val brokerPartitions = brokerInfoList.map(bInfo => (bInfo.split(":").first.toInt, bInfo.split(":").last.toInt))
+    var brokerParts = SortedSet.empty[Tuple2[Int, Int]]
+    brokerPartitions.foreach { bp =>
+      for(i <- 0 until bp._2) {
+        val bidPid = (bp._1, i)
+        brokerParts = brokerParts + bidPid
+      }
+    }
+    brokerParts
   }
 
   /**
