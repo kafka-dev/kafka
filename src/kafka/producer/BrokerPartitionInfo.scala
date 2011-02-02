@@ -17,6 +17,7 @@ package kafka.producer
 
 import collection.mutable.Map
 import collection.SortedSet
+import kafka.cluster.{Broker, Partition}
 
 trait BrokerPartitionInfo {
   /**
@@ -24,7 +25,7 @@ trait BrokerPartitionInfo {
    * @param topic the topic for which this information is to be returned
    * @return a sequence of (brokerId, numPartitions) 
    */  
-  def getBrokerPartitionInfo(topic: String = null): SortedSet[(Int, Int)]
+  def getBrokerPartitionInfo(topic: String = null): SortedSet[Partition]
 
   /**
    * Generate the host and port information for the broker identified
@@ -32,11 +33,16 @@ trait BrokerPartitionInfo {
    * @param brokerId the broker for which the info is to be returned
    * @return host and port of brokerId
    */
-  def getBrokerInfo(brokerId: Int): Option[(String, Int)]
+  def getBrokerInfo(brokerId: Int): Option[Broker]
 
   /**
    * Generate a mapping from broker id to the host and port for all brokers
    * @return mapping from id to host and port of all brokers
    */
-  def getAllBrokerInfo: Map[Int, (String, Int)]
+  def getAllBrokerInfo: Map[Int, Broker]
+
+  /**
+   * Cleanup
+   */
+  def close
 }

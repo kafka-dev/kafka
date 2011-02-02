@@ -21,7 +21,7 @@ import kafka.utils.Utils
 
 class ProducerConfig(props: Properties) {
   /** the partitioner class for partitioning events amongst sub-topics */
-  val partitionerClass = Utils.getString(props, "partitioner.class")
+  val partitionerClass = Utils.getString(props, "partitioner.class", "kafka.producer.DefaultPartitioner")
 
   /** the serializer class for converting data to kafka messages */
   val serializerClass = Utils.getString(props, "serializer.class")

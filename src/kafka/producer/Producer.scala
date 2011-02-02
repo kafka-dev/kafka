@@ -21,13 +21,14 @@ import kafka.serializer.Encoder
 import kafka.utils._
 import kafka.common.InvalidConfigException
 import java.util.Properties
+import kafka.cluster.Broker
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
                     serializer: Encoder[V],
                     producerPool: ProducerPool[V],
                     populateProducerPool: Boolean = true) /* for testing purpose only. Applications should ideally */
-                     /* use the auxiliary constructor and use this one only for testing using mock objects */ {
+{
   private val logger = Logger.getLogger(classOf[Producer[K, V]])
   if(config.zkConnect == null && config.brokerPartitionInfo == null)
     throw new InvalidConfigException("At least one of zk.connect or broker.partition.info must be specified")
@@ -46,13 +47,13 @@ class Producer[K,V](config: ProducerConfig,
     case false =>
       brokerPartitionInfo = new ConfigBrokerPartitionInfo(config)
   }
-  
+
   // pool of producers, one per broker
   if(populateProducerPool) {
     val allBrokers = brokerPartitionInfo.getAllBrokerInfo
-    allBrokers.foreach(b => producerPool.addProducer(b._1, b._2._1, b._2._2))
+    allBrokers.foreach(b => producerPool.addProducer(new Broker(b._1, b._2.host, b._2.host, b._2.port)))
   }
-  
+
   def this(config: ProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
     Utils.getObject(config.serializerClass), new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
 
@@ -73,18 +74,18 @@ class Producer[K,V](config: ProducerConfig,
       partitionId = random.nextInt(totalNumPartitions)
     else
       partitionId = partitioner.partition(key, totalNumPartitions)
-    logger.info("Selected partition id = " + partitionId)
+    logger.info("Selected partition id: " + partitionId)
     if(partitionId < 0 || partitionId >= totalNumPartitions)
       throw new InvalidPartitionException("Invalid partition id : " + partitionId +
               "\n Valid values are in the range inclusive [0, " + (totalNumPartitions-1) + "]")
 
     val brokerIdPartition = numBrokerPartitions(partitionId)
     // find the host and port of the selected broker id
-    val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition._1).get
-    logger.info("Sending message to broker " + brokerInfo._1 + ":" + brokerInfo._2 +
-            " on partition " + brokerIdPartition._2)
+    val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
+    logger.info("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
+            " on partition " + brokerIdPartition.partId)
 
-    producerPool.send(topic, brokerIdPartition._1, brokerIdPartition._2, data: _*)
+    producerPool.send(topic, brokerIdPartition.brokerId, brokerIdPartition.partId, data: _*)
   }
 
   /**
@@ -95,12 +96,12 @@ class Producer[K,V](config: ProducerConfig,
    * @param port the port of the broker
    */
   private def producerCbk(bid: Int, host: String, port: Int) =  {
-    if(populateProducerPool) producerPool.addProducer(bid, host, port)
-    else logger.info("Skipping the callback..")
-  }
-                                       
-  def close() = {
-    producerPool.close
+    if(populateProducerPool) producerPool.addProducer(new Broker(bid, host, host, port))
+    else logger.debug("Skipping the callback..")
   }
 
+  def close() = {
+    producerPool.close
+    brokerPartitionInfo.close
+  }
 }

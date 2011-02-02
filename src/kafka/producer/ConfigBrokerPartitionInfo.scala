@@ -20,11 +20,11 @@ import collection.mutable.Map
 import kafka.common.InvalidConfigException
 import org.apache.log4j.Logger
 import collection.SortedSet
-import collection.immutable.TreeSet
+import kafka.cluster.{Broker, Partition}
 
 class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionInfo {
   private val logger = Logger.getLogger(classOf[ConfigBrokerPartitionInfo])
-  private val brokerPartitions: SortedSet[(Int, Int)] = getConfigTopicPartitionInfo
+  private val brokerPartitions: SortedSet[Partition] = getConfigTopicPartitionInfo
   private val allBrokers = getConfigBrokerInfo
 
   /**
@@ -32,7 +32,7 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
    * @param topic this value is null 
    * @return a sequence of (brokerId, numPartitions)
    */
-  def getBrokerPartitionInfo(topic: String = null): SortedSet[(Int, Int)] = brokerPartitions
+  def getBrokerPartitionInfo(topic: String = null): SortedSet[Partition] = brokerPartitions
 
   /**
    * Generate the host and port information for the broker identified
@@ -40,7 +40,7 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
    * @param brokerId the broker for which the info is to be returned
    * @return host and port of brokerId
    */
-  def getBrokerInfo(brokerId: Int): Option[(String, Int)] = {
+  def getBrokerInfo(brokerId: Int): Option[Broker] = {
     allBrokers.get(brokerId)
   }
 
@@ -48,14 +48,16 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
    * Generate a mapping from broker id to the host and port for all brokers
    * @return mapping from id to host and port of all brokers
    */
-  def getAllBrokerInfo: Map[Int, (String, Int)] = allBrokers
+  def getAllBrokerInfo: Map[Int, Broker] = allBrokers
 
+  def close {}
+  
   /**
    * Generate a sequence of (brokerId, numPartitions) for all brokers
    * specified in the producer configuration
    * @return sequence of (brokerId, numPartitions)
    */
-  private def getConfigTopicPartitionInfo(): SortedSet[(Int, Int)] = {
+  private def getConfigTopicPartitionInfo(): SortedSet[Partition] = {
     val brokerInfoList = config.brokerPartitionInfo.split(",")
     if(brokerInfoList.size == 0) throw new InvalidConfigException("broker.partition.info has invalid value")
     // check if each individual broker info is valid => (brokerId: brokerHost: brokerPort: numPartitions)
@@ -64,10 +66,10 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
       if(brokerInfo.size != 4) throw new InvalidConfigException("broker.partition.info has invalid value")
     }
     val brokerPartitions = brokerInfoList.map(bInfo => (bInfo.split(":").first.toInt, bInfo.split(":").last.toInt))
-    var brokerParts = SortedSet.empty[Tuple2[Int, Int]]
+    var brokerParts = SortedSet.empty[Partition]
     brokerPartitions.foreach { bp =>
       for(i <- 0 until bp._2) {
-        val bidPid = (bp._1, i)
+        val bidPid = new Partition(bp._1, i)
         brokerParts = brokerParts + bidPid
       }
     }
@@ -79,12 +81,13 @@ class ConfigBrokerPartitionInfo(config: ProducerConfig) extends BrokerPartitionI
    * specified in the producer configuration
    * @return mapping from brokerId to (host, port) for all brokers
    */
-  private def getConfigBrokerInfo(): Map[Int, (String, Int)] = {
-    val brokerInfo = new HashMap[Int, (String, Int)]()
+  private def getConfigBrokerInfo(): Map[Int, Broker] = {
+    val brokerInfo = new HashMap[Int, Broker]()
     val brokerInfoList = config.brokerPartitionInfo.split(",")
     brokerInfoList.foreach{ bInfo =>
       val brokerIdHostPort = bInfo.split(":").dropRight(1)
-      brokerInfo += (brokerIdHostPort(0).toInt -> (brokerIdHostPort(1), brokerIdHostPort(2).toInt))
+      brokerInfo += (brokerIdHostPort(0).toInt -> new Broker(brokerIdHostPort(0).toInt, brokerIdHostPort(1),
+        brokerIdHostPort(1), brokerIdHostPort(2).toInt))
     }
     brokerInfo
   }

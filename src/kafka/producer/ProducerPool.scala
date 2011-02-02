@@ -20,15 +20,15 @@ import async.{AsyncProducerConfig, AsyncProducer}
 import kafka.message.ByteBufferMessageSet
 import java.util.Properties
 import kafka.serializer.Encoder
-import collection.mutable.HashMap
-import collection.mutable.Map
 import org.apache.log4j.Logger
 import kafka.common.InvalidConfigException
+import kafka.cluster.Broker
+import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
-                      private val syncProducers: Map[Int, SyncProducer],
-                      private val asyncProducers: Map[Int, AsyncProducer[V]]) {
+                      private val syncProducers: ConcurrentMap[Int, SyncProducer],
+                      private val asyncProducers: ConcurrentMap[Int, AsyncProducer[V]]) {
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
   config.producerType match {
     case "sync" =>
@@ -37,8 +37,8 @@ class ProducerPool[V](private val config: ProducerConfig,
   }
 
   def this(config: ProducerConfig, serializer: Encoder[V]) = this(config, serializer,
-                                                                  new HashMap[Int, SyncProducer](),
-                                                                  new HashMap[Int, AsyncProducer[V]]())
+                                                                  new ConcurrentHashMap[Int, SyncProducer](),
+                                                                  new ConcurrentHashMap[Int, AsyncProducer[V]]())
   /**
    * add a new producer, either synchronous or asynchronous, connecting
    * to the specified broker 
@@ -46,26 +46,26 @@ class ProducerPool[V](private val config: ProducerConfig,
    * @param host the hostname of the broker
    * @param port the port of the broker
    */
-  def addProducer(bid: Int, host: String, port: Int) {
+  def addProducer(broker: Broker) {
     config.producerType match {
       case "sync" =>
         val props = new Properties()
-        props.put("host", host)
-        props.put("port", port.toString)
+        props.put("host", broker.host)
+        props.put("port", broker.port.toString)
         props.put("buffer.size", config.bufferSize.toString)
         props.put("connect.timeout.ms", config.connectTimeoutMs.toString)
         props.put("reconnect.interval", config.reconnectInterval.toString)
         val producer = new SyncProducer(new SyncProducerConfig(props))
-        logger.info("Creating sync producer for broker id = " + bid + " at " + host + ":" + port)
-        syncProducers += (bid -> producer)
+        logger.info("Creating sync producer for broker id = " + broker.id + " at " + broker.host + ":" + broker.port)
+        syncProducers.put(broker.id, producer)
       case "async" =>
         val props = new Properties()
-        props.put("host", host)
-        props.put("port", port.toString)
+        props.put("host", broker.host)
+        props.put("port", broker.port.toString)
         props.put("serializer.class", config.serializerClass)
         val producer = new AsyncProducer[V](new AsyncProducerConfig(props))
-        logger.info("Creating async producer for broker id = " + bid + " at " + host + ":" + port)
-        asyncProducers += (bid -> producer)
+        logger.info("Creating async producer for broker id = " + broker.id + " at " + broker.host + ":" + broker.port)
+        asyncProducers.put(broker.id, producer)
     }
   }
 
@@ -81,11 +81,14 @@ class ProducerPool[V](private val config: ProducerConfig,
   def send(topic: String, bid: Int, partition: Int, data: V*) {
     config.producerType match {
       case "sync" =>
-        val producer = syncProducers.get(bid).get
-        producer.send(topic, partition, new ByteBufferMessageSet(data.map(d => serializer.toMessage(d)): _*))
+        logger.debug("Fetching producer for broker id: " + bid + " and partition: " + partition)
+        val producer = syncProducers.get(bid)
+        if(producer != null)
+          producer.send(topic, partition, new ByteBufferMessageSet(data.map(d => serializer.toMessage(d)): _*))
       case "async" =>
-        val producer = asyncProducers.get(bid).get
-        data.foreach(d => producer.send(topic, d, partition))
+        val producer = asyncProducers.get(bid)
+        if(producer != null)
+          data.foreach(d => producer.send(topic, d, partition))
     }
   }
 
@@ -93,10 +96,14 @@ class ProducerPool[V](private val config: ProducerConfig,
     config.producerType match {
       case "sync" =>
         logger.info("Closing all sync producers")
-        syncProducers.foreach(_._2.close)
+        val iter = syncProducers.values.iterator
+        while(iter.hasNext)
+          iter.next.close
       case "async" =>
         logger.info("Closing all async producers")
-        asyncProducers.foreach(_._2.close)
+        val iter = asyncProducers.values.iterator
+        while(iter.hasNext)
+          iter.next.close
     }
   }
 
