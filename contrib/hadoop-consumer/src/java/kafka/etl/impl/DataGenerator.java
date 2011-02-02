@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Map.Entry;
+import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
@@ -37,7 +38,8 @@ import kafka.etl.KafkaETLUtils;
 import kafka.etl.Props;
 import kafka.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.producer.SimpleProducer;
+import kafka.producer.SyncProducer;
+import kafka.producer.SyncProducerConfig;
 
 /**
  * Use this class to produce test events to Kafka server. Each event contains a
@@ -50,7 +52,7 @@ public class DataGenerator {
 			System.currentTimeMillis());
 
 	protected Props _props;
-	protected SimpleProducer _producer = null;
+	protected SyncProducer _producer = null;
 	protected URI _uri = null;
 	protected String _topic;
 	protected int _count;
@@ -72,8 +74,13 @@ public class DataGenerator {
 		_uri = new URI (serverUri);
 		
 		System.out.println("server uri:" + _uri.toString());
-		_producer = new SimpleProducer(_uri.getHost(), _uri.getPort(),
-					TCP_BUFFER_SIZE, CONNECT_TIMEOUT, RECONNECT_INTERVAL);
+        Properties producerProps = new Properties();
+        producerProps.put("host", _uri.getHost());
+        producerProps.put("port", String.valueOf(_uri.getPort()));
+        producerProps.put("buffer.size", String.valueOf(TCP_BUFFER_SIZE));
+        producerProps.put("connect.timeout.ms", String.valueOf(CONNECT_TIMEOUT));
+        producerProps.put("reconnect.interval", String.valueOf(RECONNECT_INTERVAL));
+		_producer = new SyncProducer(new SyncProducerConfig(producerProps));
 			
 	}
 

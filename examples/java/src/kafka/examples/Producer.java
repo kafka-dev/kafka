@@ -17,23 +17,26 @@ package kafka.examples;
 
 import kafka.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.producer.SimpleProducer;
-
+import kafka.producer.SyncProducer;
+import kafka.producer.SyncProducerConfig;
+import java.util.Properties;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Producer extends Thread
 {
-  private final SimpleProducer producer;
+  private final SyncProducer producer;
   private final String topic;
-  
+  private final Properties props = new Properties();
+
   public Producer(String topic)
   {
-    producer = new SimpleProducer(KafkaProperties.kafkaServerURL,
-                                  KafkaProperties.kafkaServerPort,
-                                  KafkaProperties.kafkaProducerBufferSize,
-                                  KafkaProperties.connectionTimeOut,
-                                  KafkaProperties.reconnectInterval);
+    props.put("host", KafkaProperties.kafkaServerURL);
+    props.put("port", String.valueOf(KafkaProperties.kafkaServerPort));
+    props.put("buffer.size", String.valueOf(KafkaProperties.kafkaProducerBufferSize));
+    props.put("connect.timeout.ms", String.valueOf(KafkaProperties.connectionTimeOut));
+    props.put("reconnect.interval", String.valueOf(KafkaProperties.reconnectInterval));
+    producer = new SyncProducer(new SyncProducerConfig(props));
     this.topic = topic; 
     
   }
