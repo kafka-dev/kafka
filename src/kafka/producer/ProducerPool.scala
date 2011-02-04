@@ -22,8 +22,8 @@ import java.util.Properties
 import kafka.serializer.Encoder
 import org.apache.log4j.Logger
 import kafka.common.InvalidConfigException
-import kafka.cluster.Broker
 import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
+import kafka.cluster.{Partition, Broker}
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
@@ -78,18 +78,22 @@ class ProducerPool[V](private val config: ProducerConfig,
    * @param partition the broker partition id
    * @param data the data to be published
    */
-  def send(topic: String, bid: Int, partition: Int, data: V*) {
+  def send(topic: String, bidPid: Partition, data: V*) {
     config.producerType match {
       case "sync" =>
-        logger.debug("Fetching producer for broker id: " + bid + " and partition: " + partition)
-        val producer = syncProducers.get(bid)
+        logger.debug("Fetching producer for broker id: " + bidPid.brokerId + " and partition: " + bidPid.partId)
+        val producer = syncProducers.get(bidPid.brokerId)
         if(producer != null)
-          producer.send(topic, partition, new ByteBufferMessageSet(data.map(d => serializer.toMessage(d)): _*))
+          producer.send(topic, bidPid.partId, new ByteBufferMessageSet(data.map(d => serializer.toMessage(d)): _*))
       case "async" =>
-        val producer = asyncProducers.get(bid)
+        val producer = asyncProducers.get(bidPid.brokerId)
         if(producer != null)
-          data.foreach(d => producer.send(topic, d, partition))
+          data.foreach(d => producer.send(topic, d, bidPid.partId))
     }
+  }
+
+  def send(poolData: ProducerPoolData[V]*) {
+    poolData.foreach( pd => send(pd.getTopic, pd.getBidPid, pd.getData: _*))
   }
 
   def close() = {
@@ -107,4 +111,15 @@ class ProducerPool[V](private val config: ProducerConfig,
     }
   }
 
+  def getProducerPoolData(topic: String, bidPid: Partition, data: Seq[V]): ProducerPoolData[V] = {
+    new ProducerPoolData[V](topic, bidPid, data)
+  }
+
+  class ProducerPoolData[V](topic: String,
+                            bidPid: Partition,
+                            data: Seq[V]) {
+    def getTopic: String = topic
+    def getBidPid: Partition = bidPid
+    def getData: Seq[V] = data
+  }
 }

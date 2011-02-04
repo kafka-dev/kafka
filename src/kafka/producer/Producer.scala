@@ -21,7 +21,7 @@ import kafka.serializer.Encoder
 import kafka.utils._
 import kafka.common.InvalidConfigException
 import java.util.Properties
-import kafka.cluster.Broker
+import kafka.cluster.{Partition, Broker}
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
@@ -64,16 +64,17 @@ class Producer[K,V](config: ProducerConfig,
    * @param key the key used by the partitioner to pick a broker partition
    * @param data the data to be published as Kafka messages under topic
    */
-  def send(topic: String, key: K, data: V*) {
+  def send(producerData: ProducerData[K,V]) {
+
     // find the number of broker partitions registered for this topic
-    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(topic).toSeq
+    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(producerData.getTopic).toSeq
     val totalNumPartitions = numBrokerPartitions.length
 
     var partitionId: Int = 0
-    if(key == null)
+    if(producerData.getKey == null)
       partitionId = random.nextInt(totalNumPartitions)
     else
-      partitionId = partitioner.partition(key, totalNumPartitions)
+      partitionId = partitioner.partition(producerData.getKey , totalNumPartitions)
     logger.info("Selected partition id: " + partitionId)
     if(partitionId < 0 || partitionId >= totalNumPartitions)
       throw new InvalidPartitionException("Invalid partition id : " + partitionId +
@@ -85,7 +86,9 @@ class Producer[K,V](config: ProducerConfig,
     logger.info("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
             " on partition " + brokerIdPartition.partId)
 
-    producerPool.send(topic, brokerIdPartition.brokerId, brokerIdPartition.partId, data: _*)
+    producerPool.send(producerPool.getProducerPoolData(producerData.getTopic,
+                      new Partition(brokerIdPartition.brokerId, brokerIdPartition.partId),
+                      producerData.getData))
   }
 
   /**

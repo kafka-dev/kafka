@@ -30,6 +30,7 @@ import collection.mutable.HashMap
 import org.easymock.EasyMock
 import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
+import kafka.cluster.Partition
 
 class ProducerTest extends TestCase {
   private val topic = "test-topic"
@@ -123,7 +124,7 @@ class ProducerTest extends TestCase {
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
     val producer = new Producer[String, String](config, partitioner, serializer, producerPool, false)
 
-    producer.send(topic, "test", "test1")
+    producer.send(new ProducerData[String, String](topic, "test", Array("test1")))
     producer.close
 
     EasyMock.verify(syncProducer1)
@@ -140,7 +141,7 @@ class ProducerTest extends TestCase {
 
     val richProducer = new Producer[String, String](config)
     try {
-      richProducer.send(topic, "test", "test")
+      richProducer.send(new ProducerData[String, String](topic, "test", Array("test")))
       Assert.fail("Should fail with InvalidPartitionException")
     }catch {
       case e: InvalidPartitionException => // expected, do nothing
@@ -171,7 +172,7 @@ class ProducerTest extends TestCase {
     props.put("serializer.class", "kafka.producer.StringSerializer")
     val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
       syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
-    producerPool.send("test-topic", brokerId1, 0, "test1")
+    producerPool.send("test-topic", new Partition(brokerId1, 0), "test1")
 
     producerPool.close
     EasyMock.verify(syncProducer1)
@@ -203,7 +204,7 @@ class ProducerTest extends TestCase {
     props.put("producer.type", "async")
     val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
       new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
-    producerPool.send(topic, brokerId1, 0, "test1")
+    producerPool.send(topic, new Partition(brokerId1, 0), "test1")
 
     producerPool.close
     EasyMock.verify(asyncProducer1)
@@ -242,7 +243,7 @@ class ProducerTest extends TestCase {
     val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
     val producer = new Producer[String, String](config, partitioner, serializer, producerPool, false)
 
-    producer.send(topic, "test1", "test1")
+    producer.send(new ProducerData[String, String](topic, "test1", Array("test1")))
     producer.close
 
     EasyMock.verify(asyncProducer1)
@@ -281,7 +282,7 @@ class ProducerTest extends TestCase {
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
     val producer = new Producer[String, String](config, partitioner, serializer, producerPool, false)
 
-    producer.send("test-topic1", "test", "test1")
+    producer.send(new ProducerData[String, String]("test-topic1", "test", Array("test1")))
 
     // now send again to this topic using a real producer, this time all brokers would have registered
     // their partitions in zookeeper
@@ -290,7 +291,7 @@ class ProducerTest extends TestCase {
     // wait for zookeeper to register the new topic
     Thread.sleep(500)
     
-    producer.send("test-topic1", "test1", "test1")
+    producer.send(new ProducerData[String, String]("test-topic1", "test1", Array("test1")))
     producer.close
 
     EasyMock.verify(syncProducer1)
@@ -348,7 +349,7 @@ class ProducerTest extends TestCase {
 
     Thread.sleep(500)
     
-    producer.send("test-topic", "test-topic", "test1")
+    producer.send(new ProducerData[String, String]("test-topic", "test-topic", Array("test1")))
     producer.close
 
     EasyMock.verify(syncProducer1)
@@ -390,7 +391,7 @@ class ProducerTest extends TestCase {
     val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
     val producer = new Producer[String, String](config, partitioner, serializer, producerPool, false)
 
-    producer.send(topic, "test", "test1")
+    producer.send(new ProducerData[String, String](topic, "test", Array("test1")))
     producer.close
 
     EasyMock.verify(asyncProducer1)
