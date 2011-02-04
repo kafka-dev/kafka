@@ -64,33 +64,40 @@ class Producer[K,V](config: ProducerConfig,
    * @param key the key used by the partitioner to pick a broker partition
    * @param data the data to be published as Kafka messages under topic
    */
-  def send(producerData: ProducerData[K,V]) {
-
-    // find the number of broker partitions registered for this topic
-    val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(producerData.getTopic).toSeq
-    val totalNumPartitions = numBrokerPartitions.length
-
-    var partitionId: Int = 0
-    if(producerData.getKey == null)
-      partitionId = random.nextInt(totalNumPartitions)
-    else
-      partitionId = partitioner.partition(producerData.getKey , totalNumPartitions)
-    logger.info("Selected partition id: " + partitionId)
-    if(partitionId < 0 || partitionId >= totalNumPartitions)
-      throw new InvalidPartitionException("Invalid partition id : " + partitionId +
-              "\n Valid values are in the range inclusive [0, " + (totalNumPartitions-1) + "]")
-
-    val brokerIdPartition = numBrokerPartitions(partitionId)
-    // find the host and port of the selected broker id
-    val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
-    logger.info("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
-            " on partition " + brokerIdPartition.partId)
-
-    producerPool.send(producerPool.getProducerPoolData(producerData.getTopic,
-                      new Partition(brokerIdPartition.brokerId, brokerIdPartition.partId),
-                      producerData.getData))
+  def send(producerData: ProducerData[K,V]*) {
+    val producerPoolRequests = producerData.map { pd =>
+      // find the number of broker partitions registered for this topic
+      val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(pd.getTopic).toSeq
+      val totalNumPartitions = numBrokerPartitions.length
+      // get the partition id
+      val partitionId = getPartition(pd.getKey, totalNumPartitions)
+      val brokerIdPartition = numBrokerPartitions(partitionId)
+      val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
+      logger.info("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
+              " on partition " + brokerIdPartition.partId)
+      producerPool.getProducerPoolData(pd.getTopic,
+                                       new Partition(brokerIdPartition.brokerId, brokerIdPartition.partId),
+                                       pd.getData)
+    }
+    producerPool.send(producerPoolRequests: _*)
   }
 
+  /**
+   * Retrieves the partition id and throws an InvalidPartitionException if
+   * the value of partition is not between 0 and numPartitions-1
+   * @param key the partition key
+   * @param numPartitions the total number of available partitions
+   * @returns the partition id
+   */
+  private def getPartition(key: K, numPartitions: Int): Int = {
+    val partition = if(key == null) random.nextInt(numPartitions)
+                    else partitioner.partition(key , numPartitions)
+    if(partition < 0 || partition >= numPartitions)
+      throw new InvalidPartitionException("Invalid partition id : " + partition +
+              "\n Valid values are in the range inclusive [0, " + (numPartitions-1) + "]")
+    partition
+  }
+  
   /**
    * Callback to add a new producer to the producer pool. Used by ZKBrokerPartitionInfo
    * on registration of new broker in zookeeper

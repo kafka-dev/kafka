@@ -24,15 +24,17 @@ import org.apache.log4j.Logger
 import kafka.common.InvalidConfigException
 import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
 import kafka.cluster.{Partition, Broker}
+import kafka.api.ProducerRequest
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
                       private val syncProducers: ConcurrentMap[Int, SyncProducer],
                       private val asyncProducers: ConcurrentMap[Int, AsyncProducer[V]]) {
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
+  private var sync: Boolean = true
   config.producerType match {
     case "sync" =>
-    case "async" =>
+    case "async" => sync = false
     case _ => throw new InvalidConfigException("Valid values for producer.type are sync/async")
   }
 
@@ -47,8 +49,7 @@ class ProducerPool[V](private val config: ProducerConfig,
    * @param port the port of the broker
    */
   def addProducer(broker: Broker) {
-    config.producerType match {
-      case "sync" =>
+    if(sync) {
         val props = new Properties()
         props.put("host", broker.host)
         props.put("port", broker.port.toString)
@@ -58,7 +59,7 @@ class ProducerPool[V](private val config: ProducerConfig,
         val producer = new SyncProducer(new SyncProducerConfig(props))
         logger.info("Creating sync producer for broker id = " + broker.id + " at " + broker.host + ":" + broker.port)
         syncProducers.put(broker.id, producer)
-      case "async" =>
+    } else {
         val props = new Properties()
         props.put("host", broker.host)
         props.put("port", broker.port.toString)
@@ -73,29 +74,41 @@ class ProducerPool[V](private val config: ProducerConfig,
    * selects either a synchronous or an asynchronous producer, for
    * the specified broker id and calls the send API on the selected
    * producer to publish the data to the specified broker partition
-   * @param topic the topic to which the data should be published
-   * @param bid the broker id
-   * @param partition the broker partition id
-   * @param data the data to be published
+   * @param poolData the producer pool request object
    */
-  def send(topic: String, bidPid: Partition, data: V*) {
-    config.producerType match {
-      case "sync" =>
-        logger.debug("Fetching producer for broker id: " + bidPid.brokerId + " and partition: " + bidPid.partId)
-        val producer = syncProducers.get(bidPid.brokerId)
+  def send(poolData: ProducerPoolData[V]*) {
+    val distinctBrokers = poolData.map(pd => pd.getBidPid.brokerId).distinct
+    var remainingRequests = poolData.toSeq
+    distinctBrokers.foreach { bid =>
+      val requestsForThisBid = remainingRequests partition (_.getBidPid.brokerId == bid)
+      remainingRequests = requestsForThisBid._2
+
+      if(sync) {
+        val producerRequests = requestsForThisBid._1.map(req => new ProducerRequest(req.getTopic, req.getBidPid.partId,
+          new ByteBufferMessageSet(req.getData.map(d => serializer.toMessage(d)): _*)))
+        logger.debug("Fetching sync producer for broker id: " + bid)
+        val producer = syncProducers.get(bid)
+        if(producer != null) {
+          if(producerRequests.size > 1)
+            producer.multiSend(producerRequests.toArray)
+          else
+            producer.send(producerRequests(0).topic, producerRequests(0).partition, producerRequests(0).messages)
+          logger.info("Sending message to broker " + bid)
+        }
+      }else {
+        logger.debug("Fetching async producer for broker id: " + bid)
+        val producer = asyncProducers.get(bid)
         if(producer != null)
-          producer.send(topic, bidPid.partId, new ByteBufferMessageSet(data.map(d => serializer.toMessage(d)): _*))
-      case "async" =>
-        val producer = asyncProducers.get(bidPid.brokerId)
-        if(producer != null)
-          data.foreach(d => producer.send(topic, d, bidPid.partId))
+          requestsForThisBid._1.foreach { req =>
+            req.getData.foreach(d => producer.send(req.getTopic, d, req.getBidPid.partId))
+          }
+      }
     }
   }
 
-  def send(poolData: ProducerPoolData[V]*) {
-    poolData.foreach( pd => send(pd.getTopic, pd.getBidPid, pd.getData: _*))
-  }
-
+  /**
+   * Closes all the producers in the pool
+   */
   def close() = {
     config.producerType match {
       case "sync" =>
@@ -111,6 +124,12 @@ class ProducerPool[V](private val config: ProducerConfig,
     }
   }
 
+  /**
+   * This constructs and returns the request object for the producer pool
+   * @param topic the topic to which the data should be published
+   * @param bidPid the broker id and partition id
+   * @param data the data to be published
+   */
   def getProducerPoolData(topic: String, bidPid: Partition, data: Seq[V]): ProducerPoolData[V] = {
     new ProducerPoolData[V](topic, bidPid, data)
   }

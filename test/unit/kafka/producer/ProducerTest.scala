@@ -172,7 +172,7 @@ class ProducerTest extends TestCase {
     props.put("serializer.class", "kafka.producer.StringSerializer")
     val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
       syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
-    producerPool.send("test-topic", new Partition(brokerId1, 0), "test1")
+    producerPool.send(producerPool.getProducerPoolData("test-topic", new Partition(brokerId1, 0), Array("test1")))
 
     producerPool.close
     EasyMock.verify(syncProducer1)
@@ -204,7 +204,7 @@ class ProducerTest extends TestCase {
     props.put("producer.type", "async")
     val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
       new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
-    producerPool.send(topic, new Partition(brokerId1, 0), "test1")
+    producerPool.send(producerPool.getProducerPoolData(topic, new Partition(brokerId1, 0), Array("test1")))
 
     producerPool.close
     EasyMock.verify(asyncProducer1)
