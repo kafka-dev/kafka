@@ -67,6 +67,18 @@ object Log {
 
   def findRange[T <: Range](ranges: Array[T], value: Long): Option[T] =
     findRange(ranges, value, ranges.length)
+
+  /**
+   * Make log segment file name from offset bytes. All this does is pad out the offset number with zeros
+   * so that ls sorts the files numerically
+   */
+  def nameFromOffset(offset: Long): String = {
+    val nf = NumberFormat.getInstance()
+    nf.setMinimumIntegerDigits(20)
+    nf.setMaximumFractionDigits(0)
+    nf.setGroupingUsed(false)
+    nf.format(offset) + Log.FILE_SUFFIX
+  }
 }
 
 /**
@@ -120,7 +132,7 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
 
     if(accum.size == 0) {
       // no existing segments, create a new mutable segment
-      val newFile = new File(dir, nameFromOffset(0))
+      val newFile = new File(dir, Log.nameFromOffset(0))
       val set = new FileMessageSet(newFile, true)
       accum.add(new LogSegment(newFile, set, 0))
     } else {
@@ -259,7 +271,7 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
     lock synchronized {
       val last = segments.view.last
       val newOffset = nextAppendOffset
-      val newFile = new File(dir, nameFromOffset(newOffset))
+      val newFile = new File(dir, Log.nameFromOffset(newOffset))
       if(logger.isDebugEnabled)
         logger.debug("Rolling log '" + name + "' to " + newFile.getName())
       segments.append(new LogSegment(newFile, new FileMessageSet(newFile, true), newOffset))
@@ -289,58 +301,41 @@ class Log(val dir: File, val maxSize: Long, val flushInterval: Int) {
      }
   }
 
-  /**
-   * Make log segment file name from offset bytes. All this does is pad out the offset number with zeros
-   * so that ls sorts the files numerically
-   */
-  private def nameFromOffset(offset: Long): String = {
-    val nf = NumberFormat.getInstance()
-    nf.setMinimumIntegerDigits(20)
-    nf.setMaximumFractionDigits(0)
-    nf.setGroupingUsed(false)
-    nf.format(offset) + Log.FILE_SUFFIX
-  }
-
   def getOffsetsBefore(request: OffsetRequest): Array[Long] = {
     val segsArray = segments.view
+    var offsetTimeArray: Array[Tuple2[Long, Long]] = null
+    if (segsArray.last.size > 0)
+      offsetTimeArray = new Array[Tuple2[Long, Long]](segsArray.length + 1)
+    else
+      offsetTimeArray = new Array[Tuple2[Long, Long]](segsArray.length)
+
+    for (i <- 0 until segsArray.length)
+      offsetTimeArray(i) = (segsArray(i).start, segsArray(i).file.lastModified)
+    if (segsArray.last.size > 0)
+      offsetTimeArray(segsArray.length) = (segsArray.last.start + segsArray.last.messageSet.highWaterMark, SystemTime.milliseconds)
+
     var startIndex = -1
-    val retOffset = segsArray.last.start + segsArray.last.messageSet.highWaterMark
     request.time match {
-    // TODO: Latest offset is approximate right now. Change to exact
       case OffsetRequest.LATEST_TIME =>
-        if(segsArray.last.size > 0)
-          startIndex = segsArray.length - 1
-        else
-          startIndex = segsArray.length - 2
-      case OffsetRequest.EARLIEST_TIME => startIndex = 0
+        startIndex = offsetTimeArray.length - 1
+      case OffsetRequest.EARLIEST_TIME =>
+        startIndex = 0
       case _ =>
-        if (request.time >= 0) {
           var isFound = false
-          startIndex = segsArray.length - 1
+          startIndex = offsetTimeArray.length - 1
           while (startIndex >= 0 && !isFound) {
-            if (segsArray(startIndex).file.lastModified <= request.time)
+            if (offsetTimeArray(startIndex)._2 <= request.time)
               isFound = true
             else
               startIndex -=1
           }
-        }
     }
+
     val retSize = request.maxNumOffsets.min(startIndex + 1)
     val ret = new Array[Long](retSize)
-    if(retSize > 0) {
-      request.time match {
-        case OffsetRequest.EARLIEST_TIME =>
-          for (j <- 0 until retSize) {
-            ret(j) = segsArray(startIndex).start
-            startIndex -= 1
-          }
-        case _ =>
-          ret(0) = retOffset
-          for (j <- 1 until retSize) {
-            ret(j) = segsArray(startIndex).start
-            startIndex -= 1
-          }
-      }
+    for (j <- 0 until retSize) {
+      ret(j) = offsetTimeArray(startIndex)._1
+      startIndex -= 1
     }
     ret
   }

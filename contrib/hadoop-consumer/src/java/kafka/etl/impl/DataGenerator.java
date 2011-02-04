@@ -20,10 +20,19 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Map.Entry;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.mapred.JobConf;
 
-import kafka.etl.KafkaETLCommons;
+import kafka.etl.KafkaETLKey;
+import kafka.etl.KafkaETLRequest;
 import kafka.etl.KafkaETLUtils;
 import kafka.etl.Props;
 import kafka.message.ByteBufferMessageSet;
@@ -34,15 +43,18 @@ import kafka.producer.SimpleProducer;
  * Use this class to produce test events to Kafka server. Each event contains a
  * random timestamp in text format.
  */
+@SuppressWarnings("deprecation")
 public class DataGenerator {
 
 	protected final static Random RANDOM = new Random(
 			System.currentTimeMillis());
 
 	protected Props _props;
-	protected List<SimpleProducer> _producers = null;
+	protected SimpleProducer _producer = null;
+	protected URI _uri = null;
 	protected String _topic;
 	protected int _count;
+	protected String _offsetsDir;
 	protected final int TCP_BUFFER_SIZE = 300 * 1000;
 	protected final int CONNECT_TIMEOUT = 20000; // ms
 	protected final int RECONNECT_INTERVAL = Integer.MAX_VALUE; // ms
@@ -53,23 +65,19 @@ public class DataGenerator {
 		System.out.println("topics=" + _topic);
 		_count = props.getInt("event.count");
 
+		_offsetsDir = _props.getProperty("input");
+		
 		// initialize kafka producer to generate count events
-		String nodePath = KafkaETLCommons.getNodesPath(_props);
-		System.out.println("node path=" + nodePath);
-		Props nodesProps = KafkaETLUtils.readProps(nodePath);
-		_producers = new ArrayList<SimpleProducer>();
-		for (String key : nodesProps.stringPropertyNames()) {
-			URI uri = nodesProps.getUri(key);
-			System.out.println("server uri:" + uri.toString());
-			_producers.add(new SimpleProducer(uri.getHost(), uri.getPort(),
-					TCP_BUFFER_SIZE, CONNECT_TIMEOUT, RECONNECT_INTERVAL));
-		}
+		String serverUri = _props.getProperty("kafka.server.uri");
+		_uri = new URI (serverUri);
+		
+		System.out.println("server uri:" + _uri.toString());
+		_producer = new SimpleProducer(_uri.getHost(), _uri.getPort(),
+					TCP_BUFFER_SIZE, CONNECT_TIMEOUT, RECONNECT_INTERVAL);
+			
 	}
 
-	public void run() throws IOException, URISyntaxException {
-
-		int producerId = RANDOM.nextInt() % _producers.size();
-		SimpleProducer producer = _producers.get(producerId);
+	public void run() throws Exception {
 
 		List<Message> list = new ArrayList<Message>();
 		for (int i = 0; i < _count; i++) {
@@ -80,16 +88,36 @@ public class DataGenerator {
 			list.add(message);
 		}
 		// send events
-		System.out.println(" send " + list.size() + " " + _topic
-				+ " count events to " + producerId);
-		producer.send(_topic, new ByteBufferMessageSet(list));
+		System.out.println(" send " + list.size() + " " + _topic + " count events to " + _uri);
+		_producer.send(_topic, new ByteBufferMessageSet(list));
 
-		// close all producers
-		for (SimpleProducer p : _producers) {
-			p.close();
-		}
+		// close the producer
+		_producer.close();
+		
+		// generate offset files
+		generateOffsets();
 	}
 
+    protected void generateOffsets() throws Exception {
+        JobConf conf = new JobConf();
+        conf.set("hadoop.job.ugi", _props.getProperty("hadoop.job.ugi"));
+        
+        Path outPath = new Path(_offsetsDir + Path.SEPARATOR + "1.dat");
+        FileSystem fs = outPath.getFileSystem(conf);
+        if (fs.exists(outPath)) fs.delete(outPath);
+        
+        KafkaETLRequest request =
+            new KafkaETLRequest(_topic, "tcp://" + _uri.getHost() + ":" + _uri.getPort(), 0);
+
+        System.out.println("Dump " + request.toString() + " to " + outPath.toUri().toString());
+        byte[] bytes = request.toString().getBytes("UTF-8");
+        KafkaETLKey dummyKey = new KafkaETLKey();
+        SequenceFile.Writer writer = SequenceFile.createWriter(fs, conf, outPath, 
+                                        KafkaETLKey.class, BytesWritable.class);
+        writer.append(dummyKey, new BytesWritable(bytes));
+        writer.close();
+    }
+    
 	public static void main(String[] args) throws Exception {
 
 		if (args.length < 1)

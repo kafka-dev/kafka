@@ -22,10 +22,10 @@ import junit.framework.Assert._
 import kafka.TestUtils
 import kafka.api.{ProducerRequest, FetchRequest}
 import kafka.message.{Message, ByteBufferMessageSet}
-import kafka.server.KafkaConfig
 import kafka.common.{WrongPartitionException, OffsetOutOfRangeException}
+import kafka.server.{KafkaRequestHandlers, KafkaConfig}
+import org.apache.log4j.{Level, Logger}
 import org.junit.Test
-
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -38,6 +38,7 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
                  override val enableZookeeper = false
                }
   val configs = List(config)
+  val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
   
   @Test
   def testProduceAndFetch() {
@@ -60,6 +61,9 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
       fetched3 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
     TestUtils.checkEquals(sent3.iterator, fetched3.iterator)
 
+    // temporarily set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.FATAL)
+
     // send an invalid offset
     try {
       val fetchedWithError = consumer.fetch(new FetchRequest(topic, 0, -1, 10000))
@@ -69,6 +73,9 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
     catch {
       case e: OffsetOutOfRangeException => "this is good"
     }
+
+    // restore set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.ERROR)
   }
 
   @Test
@@ -92,6 +99,9 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
       for((topic, resp) <- topics.zip(response.toList))
     	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
     }
+
+    // temporarily set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.FATAL)
 
     {
       // send some invalid offsets
@@ -127,6 +137,8 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
       }
     }
 
+    // restore set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.ERROR)
   }
 
   @Test

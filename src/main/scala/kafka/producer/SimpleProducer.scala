@@ -48,33 +48,25 @@ class SimpleProducer(val host: String,
   private var shutdown: Boolean = false
 
   /**
-   * Send a message
+   * Common functionality for the public send methods
    */
-  def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+  private def send(send: BoundedByteBufferSend) {
     lock synchronized {
       val startTime = SystemTime.nanoseconds
       getOrMakeConnection()
-      val setSize = messages.sizeInBytes.asInstanceOf[Int]
-      if(logger.isTraceEnabled)
-        logger.trace("Got message set with " + setSize + " bytes to send")
-      val send = new BoundedByteBufferSend(new ProducerRequest(topic, partition, messages))
+
       try {
         send.writeCompletely(channel)
       } catch {
         case e : java.io.IOException =>
-          // retry once
-          try {
-            if(channel != null)
-              disconnect(channel)
-            channel = connect
-          }catch {
-            case ioe: java.io.IOException => channel = null; throw ioe;
-          }
+          // no way to tell if write succeeded. Disconnect and re-throw exception to let client handle retry
+          disconnect()
+          throw e
       }
       // TODO: do we still need this?
       sentOnConnection += 1
       if(sentOnConnection >= reconnectInterval) {
-        disconnect(channel)
+        disconnect()
         channel = connect()
         sentOnConnection = 0
       }
@@ -82,57 +74,45 @@ class SimpleProducer(val host: String,
       KafkaProducerStats.recordProduceRequest(endTime - startTime)
     }
   }
+
+  /**
+   * Send a message
+   */
+  def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+    val setSize = messages.sizeInBytes.asInstanceOf[Int]
+    if(logger.isTraceEnabled)
+      logger.trace("Got message set with " + setSize + " bytes to send")
+    send(new BoundedByteBufferSend(new ProducerRequest(topic, partition, messages)))
+  }
  
   def send(topic: String, messages: ByteBufferMessageSet): Unit = send(topic, ProducerRequest.RandomPartition, messages)
-  
+
   def multiSend(produces: Array[ProducerRequest]) {
-    lock synchronized {
-      val startTime = SystemTime.nanoseconds
-      getOrMakeConnection()
-      val setSize = produces.foldLeft(0L)(_ + _.messages.sizeInBytes)
-      if(logger.isTraceEnabled)
-        logger.trace("Got multi message sets with " + setSize + " bytes to send")
-      val send = new BoundedByteBufferSend(new MultiProducerRequest(produces))
-      try {
-        send.writeCompletely(channel)
-      } catch {
-        case e : java.io.IOException =>
-          // retry once
-          try {
-            if(channel != null)
-            {
-              disconnect(channel)
-              channel = null
-            }
-            channel = connect
-          }catch {
-            case ioe: java.io.IOException => channel = null; throw ioe;
-          }
-      }
-      sentOnConnection += 1
-      if(sentOnConnection >= reconnectInterval) {
-        disconnect(channel)
-        channel = null        
-        this.channel = connect()
-        sentOnConnection = 0
-      }
-      val endTime = SystemTime.nanoseconds
-      KafkaProducerStats.recordProduceRequest(endTime - startTime)
-    }
+    val setSize = produces.foldLeft(0L)(_ + _.messages.sizeInBytes)
+    if(logger.isTraceEnabled)
+      logger.trace("Got multi message sets with " + setSize + " bytes to send")
+    send(new BoundedByteBufferSend(new MultiProducerRequest(produces)))
   }
 
   def close() = {
-    if (channel != null)
-      disconnect(channel)
-    channel = null
-    shutdown = true
+    lock synchronized {
+      disconnect()
+      shutdown = true
+    }
   }
-    
-  private def disconnect(channel: SocketChannel) {
+
+  /**
+   * Disconnect from current channel, closing connection.
+   * Side effect: channel field is set to null on successful disconnect
+   */
+  private def disconnect() {
     try {
-      logger.debug("Disconnecting from " + host + ":" + port)
-      Utils.swallow(logger.warn, channel.close())
-      Utils.swallow(logger.warn, channel.socket.close())
+      if(channel != null) {
+        logger.debug("Disconnecting from " + host + ":" + port)
+        Utils.swallow(logger.warn, channel.close())
+        Utils.swallow(logger.warn, channel.socket.close())
+        channel = null
+      }
     } catch {
       case e: Exception => logger.error("Error on disconnect: ", e)
     }
@@ -152,11 +132,7 @@ class SimpleProducer(val host: String,
       }
       catch {
         case e: Exception => {
-          if(channel != null)
-          {
-            disconnect(channel)
-            channel = null
-          }            
+          disconnect()
           val endTimeMs = SystemTime.milliseconds
           if ( (endTimeMs - beginTimeMs + connectBackoffMs) > connectTimeoutMs)
           {
@@ -177,9 +153,6 @@ class SimpleProducer(val host: String,
       channel = connect()
     }
   }
-
-  // for testing only
-  def setLoggerLevel(level: Level) = logger.setLevel(level)  
 }
 
 trait KafkaProducerStatsMBean {

@@ -65,7 +65,4 @@ class AsyncKafkaProducer[T](config: ProducerConfig,
     sendThread.shutdown
     closed.set(true)
   }
-  
-  // for testing only
-  def setLoggerLevel(level: Level) = logger.setLevel(level)
 }

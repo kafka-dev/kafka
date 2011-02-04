@@ -30,6 +30,10 @@ import kafka.utils.Utils
 import kafka.utils.ZkUtils
 import kafka.utils.StringSerializer
 
+/**
+ * Consumer that dumps messages out to standard out.
+ *
+ */
 object ConsoleConsumer {
   
   private val logger = Logger.getLogger(getClass())
@@ -53,12 +57,12 @@ object ConsoleConsumer {
     val fetchSizeOpt = parser.accepts("fetch-size", "The amount of data to fetch in a single request.")
                            .withRequiredArg
                            .describedAs("size")
-                           .ofType(classOf[Integer])
+                           .ofType(classOf[java.lang.Integer])
                            .defaultsTo(1024 * 1024)   
     val socketBufferSizeOpt = parser.accepts("socket-buffer-size", "The size of the tcp RECV size.")
                            .withRequiredArg
                            .describedAs("size")
-                           .ofType(classOf[Integer])
+                           .ofType(classOf[java.lang.Integer])
                            .defaultsTo(2 * 1024 * 1024)
     val messageFormatterOpt = parser.accepts("formatter", "The name of a class to use for formatting kafka messages for display.")
                            .withRequiredArg
@@ -69,6 +73,8 @@ object ConsoleConsumer {
                            .withRequiredArg
                            .describedAs("prop")
                            .ofType(classOf[String])
+    val resetBeginningOpt = parser.accepts("from-beginning", "If the consumer does not already have an established offset to consume from, " +
+    		"start with the earliest message present in the log rather than the latest message.")
     
     val options: OptionSet = tryParse(parser, args)
     checkRequiredArgs(parser, options, topicIdOpt, zkConnectOpt)
@@ -78,7 +84,7 @@ object ConsoleConsumer {
     props.put("socket.buffer.size", options.valueOf(socketBufferSizeOpt).toString)
     props.put("fetch.size", options.valueOf(fetchSizeOpt).toString)
     props.put("auto.commit", "true")
-    props.put("autooffset.reset", "largest")
+    props.put("autooffset.reset", if(options.has(resetBeginningOpt)) "smallest" else "largest")
     props.put("zk.connect", options.valueOf(zkConnectOpt))
     val config = new ConsumerConfig(props)
     

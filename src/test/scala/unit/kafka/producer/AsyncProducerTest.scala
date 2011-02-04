@@ -23,7 +23,7 @@ import java.util.Properties
 import org.easymock.EasyMock
 import kafka.api.ProducerRequest
 import kafka.serializer.SerDeser
-import org.apache.log4j.Level
+import org.apache.log4j.{Logger, Level}
 import org.junit.Test
 
 class AsyncProducerTest extends TestCase {
@@ -35,6 +35,7 @@ class AsyncProducerTest extends TestCase {
   private val messageContent2 = "test1"
   private val topic2 = "test1-topic"
   private val message2: Message = new Message(messageContent2.getBytes)
+  val asyncProducerLogger = Logger.getLogger(classOf[AsyncKafkaProducer[String]])
 
   @Test
   def testProducerQueueSize() {
@@ -57,7 +58,7 @@ class AsyncProducerTest extends TestCase {
 
     producer.start
     //temporarily set log4j to a higher level to avoid error in the output
-    producer.setLoggerLevel(Level.FATAL)
+    asyncProducerLogger.setLevel(Level.FATAL)
     
     try {
       for(i <- 0 until 11) {
@@ -70,7 +71,9 @@ class AsyncProducerTest extends TestCase {
     }
     producer.close
     EasyMock.verify(basicProducer)
-    producer.setLoggerLevel(Level.ERROR)    
+
+    // restore log4j level
+    asyncProducerLogger.setLevel(Level.ERROR)
   }
 
   @Test
