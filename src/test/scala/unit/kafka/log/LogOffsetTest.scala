@@ -27,6 +27,7 @@ import java.util.{Random, Properties}
 import kafka.api.{FetchRequest, OffsetRequest}
 import collection.mutable.WrappedArray
 import kafka.consumer.SimpleConsumer
+import org.junit.Test
 
 object LogOffsetTest {
   val random = new Random()  
@@ -55,6 +56,7 @@ class LogOffsetTest extends TestCase {
     Utils.rm(logDir)
   }
 
+  @Test
   def testEmptyLogs() {
     val messageSet: ByteBufferMessageSet = simpleConsumer.fetch(
       new FetchRequest("test", 0, 0, 300 * 1024))
@@ -77,6 +79,7 @@ class LogOffsetTest extends TestCase {
 
   }
 
+  @Test
   def testGetOffsetsBeforeLatestTime() {
     val topicPartition = "kafka-" + 0
     val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
@@ -110,6 +113,29 @@ class LogOffsetTest extends TestCase {
     assertFalse(messageSet.iterator.hasNext)
   }
 
+  @Test
+  def testEmptyLogsGetOffsets() {
+    val topicPartition = "kafka-" + LogOffsetTest.random.nextInt(10)
+    val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
+    topicLogDir = new File(topicPartitionPath)
+    topicLogDir.mkdir
+
+    val topic = topicPartition.split("-").head
+    val part = Integer.valueOf(topicPartition.split("-").last).intValue
+
+    var offsetChanged = false
+    for(i <- 1 to 14) {
+      val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
+        OffsetRequest.EARLIEST_TIME, 1)
+
+      if(consumerOffsets(0) == 1) {
+        offsetChanged = true
+      }
+    }
+    assertFalse(offsetChanged)
+  }
+  
+  @Test
   def testGetOffsetsBeforeNow() {
     val topicPartition = "kafka-" + LogOffsetTest.random.nextInt(10)
     val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition
@@ -135,6 +161,7 @@ class LogOffsetTest extends TestCase {
     assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
   }
 
+  @Test
   def testGetOffsetsBeforeEarliestTime() {
     val topicPartition = "kafka-" + LogOffsetTest.random.nextInt(10)
     val topicPartitionPath = getLogDir.getAbsolutePath + "/" + topicPartition

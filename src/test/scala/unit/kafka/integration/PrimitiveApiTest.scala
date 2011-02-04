@@ -188,24 +188,4 @@ class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with Ka
     for((topic, resp) <- topics.zip(response.toList))
   	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
   }
-
-  @Test
-  def testGetOffsets() {
-    // send some messages
-    val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
-    producer.send(topic, sent)
-
-    // wait a bit until the log file is created
-    Thread.sleep(100)
-    val now = System.currentTimeMillis
-    val actualOffsets1 = consumer.getOffsetsBefore(topic, 0, now, 10)
-    val expectedOffsets1 = Array(28L)
-    TestUtils.checkEquals(actualOffsets1.iterator, expectedOffsets1.iterator)
-
-    val oldTime = now - 1000000
-    val actualOffsets2 = consumer.getOffsetsBefore(topic, 0, oldTime, 10)
-    val expectedOffsets2 = new Array[Long](0)
-    TestUtils.checkEquals(actualOffsets2.iterator, expectedOffsets2.iterator)
-  }
 }

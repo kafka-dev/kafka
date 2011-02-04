@@ -152,18 +152,4 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
     for((topic, resp) <- topics.zip(response.toList))
   	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
   }
-
-  @Test
-  def testGetOffsets() {
-    // send some messages
-    val topic = "test"
-    val sent = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
-    producer.send(topic, sent)
-
-    Thread.sleep(200)
-    val now = System.currentTimeMillis
-    val actualOffsets = consumer.getOffsetsBefore(topic, 0, now, 10)
-    val expectedOffsets = Array(28L)
-    TestUtils.checkEquals(actualOffsets.iterator, expectedOffsets.iterator)
-  }
 }
