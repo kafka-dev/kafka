@@ -2,13 +2,13 @@
 /**
  * Kafka Client
  *
- * @category   Libraries
- * @package    Kafka
- * @author     Lorenzo Alberton <l.alberton@quipo.it>
- * @copyright  2011 Lorenzo Alberton
- * @license    http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
- * @version    $Revision: $
- * @link       http://sna-projects.com/kafka/
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
  */
 
 /**
@@ -35,8 +35,19 @@ class Kafka_Message
 	private $headerSize    = 5; // PayloadOffset
 	*/
 	
+	/**
+	 * @var string
+	 */
 	private $payload = null;
+	
+	/**
+	 * @var integer
+	 */
 	private $size    = 0;
+	
+	/**
+	 * @var string
+	 */
 	private $crc     = false;
 	
 	/**

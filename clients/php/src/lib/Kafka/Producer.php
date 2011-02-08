@@ -2,13 +2,13 @@
 /**
  * Kafka Client
  *
- * @category   Libraries
- * @package    Kafka
- * @author     Lorenzo Alberton <l.alberton@quipo.it>
- * @copyright  2011 Lorenzo Alberton
- * @license    http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
- * @version    $Revision: $
- * @link       http://sna-projects.com/kafka/
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
  */
 
 /**
@@ -20,7 +20,8 @@
  * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
  * @link     http://sna-projects.com/kafka/
  */
-class Kafka_Producer {
+class Kafka_Producer
+{
 	/**
 	 * @var integer
 	 */
@@ -42,8 +43,10 @@ class Kafka_Producer {
 	protected $port;
 
 	/**
-	 * @param integer $host
-	 * @param integer $port
+	 * Constructor
+	 * 
+	 * @param integer $host Host 
+	 * @param integer $port Port
 	 */
 	public function __construct($host, $port) {
 		$this->request_key = 0;
@@ -97,8 +100,7 @@ class Kafka_Producer {
 	 * 
 	 * @return array Properties to save
 	 */
-	public function __sleep()
-	{
+	public function __sleep() {
 		$this->close();
 		return array('request_key', 'host', 'port');
 	}
@@ -108,8 +110,7 @@ class Kafka_Producer {
 	 * 
 	 * @return void
 	 */
-	public function __wakeup()
-	{
+	public function __wakeup() {
 		
 	}
 }

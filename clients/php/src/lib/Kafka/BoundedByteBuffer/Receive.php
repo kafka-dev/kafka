@@ -2,13 +2,13 @@
 /**
  * Kafka Client
  *
- * @category   Libraries
- * @package    Kafka
- * @author     Lorenzo Alberton <l.alberton@quipo.it>
- * @copyright  2011 Lorenzo Alberton
- * @license    http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
- * @version    $Revision: $
- * @link       http://sna-projects.com/kafka/
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
  */
 
 /**
@@ -85,7 +85,8 @@ class Kafka_BoundedByteBuffer_Receive
 		if (!$this->sizeRead) {
 			$this->size = fread($stream, 4);
 			if ((false === $this->size) || ('' === $this->size)) {
-				throw new RuntimeException('Received nothing when reading from channel, socket has likely been closed.');
+				$errmsg = 'Received nothing when reading from channel, socket has likely been closed.';
+				throw new RuntimeException($errmsg);
 			}
 			$this->size = array_shift(unpack('N', $this->size));
 			if ($this->size <= 0 || $this->size > $this->maxSize) {
