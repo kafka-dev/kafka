@@ -1,15 +1,44 @@
 <?php
+/**
+ * Kafka Client
+ *
+ * @category   Libraries
+ * @package    Kafka
+ * @author     Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright  2011 Lorenzo Alberton
+ * @license    http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version    $Revision: $
+ * @link       http://sna-projects.com/kafka/
+ */
 
 /**
- * Description of SimpleConsumer
+ * Simple Kafka Consumer
  *
- * @author Lorenzo Alberton <l.alberton@quipo.it>
+ * @category Libraries
+ * @package  Kafka
+ * @author   Lorenzo Alberton <l.alberton@quipo.it>
+ * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @link     http://sna-projects.com/kafka/
  */
 class Kafka_SimpleConsumer {
-	
+	/**
+	 * @var string
+	 */
 	protected $host             = 'localhost';
+	
+	/**
+	 * @var integer
+	 */
 	protected $port             = 9092;
+	
+	/**
+	 * @var integer
+	 */
 	protected $socketTimeout    = 10;
+	
+	/**
+	 * @var integer
+	 */
 	protected $socketBufferSize = 1000000;
 
 	/**
@@ -18,10 +47,12 @@ class Kafka_SimpleConsumer {
 	protected $conn = null;
 	
 	/**
-	 * @param integer $host
-	 * @param integer $port
-	 * @param integer $socketTimeout
-	 * @param integer $socketBufferSize 
+	 * Constructor
+	 * 
+	 * @param integer $host             Kafka Hostname
+	 * @param integer $port             Port
+	 * @param integer $socketTimeout    Socket timeout
+	 * @param integer $socketBufferSize Socket max buffer size
 	 */
 	public function __construct($host, $port, $socketTimeout, $socketBufferSize) {
 		$this->host = $host;
@@ -31,7 +62,9 @@ class Kafka_SimpleConsumer {
 	}
 	
 	/**
+	 * Connect to Kafka via socket
 	 * 
+	 * @return void
 	 */
 	public function connect() {
 		if (!is_resource($this->conn)) {
@@ -47,7 +80,9 @@ class Kafka_SimpleConsumer {
 	}
 
 	/**
-	 *
+	 * Close the connection
+	 * 
+	 * @return void
 	 */
 	public function close() {
 		if (is_resource($this->conn)) {
@@ -56,7 +91,9 @@ class Kafka_SimpleConsumer {
 	}
 
 	/**
-	 * @param Kafka_FetchRequest $req
+	 * Send a request and fetch the response
+	 * 
+	 * @param Kafka_FetchRequest $req Request
 	 *
 	 * @return Kafka_MessageSet $messages
 	 */
@@ -71,7 +108,11 @@ class Kafka_SimpleConsumer {
 	}
 	
 	/**
-	 * @param Kafka_FetchRequest $req 
+	 * Send the request
+	 * 
+	 * @param Kafka_FetchRequest $req Request
+	 * 
+	 * @return void
 	 */
 	protected function sendRequest(Kafka_FetchRequest $req) {
 		$send = new Kafka_BoundedByteBuffer_Send($req);
@@ -79,6 +120,8 @@ class Kafka_SimpleConsumer {
 	}
 	
 	/**
+	 * Get the response
+	 * 
 	 * @return array
 	 */
 	protected function getResponse() {

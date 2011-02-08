@@ -1,4 +1,15 @@
 <?php
+/**
+ * Kafka Client
+ *
+ * @category   Libraries
+ * @package    Kafka
+ * @author     Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright  2011 Lorenzo Alberton
+ * @license    http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version    $Revision: $
+ * @link       http://sna-projects.com/kafka/
+ */
 
 /**
  * A message. The format of an N byte message is the following:
@@ -6,7 +17,11 @@
  * 4 byte CRC32 of the payload
  * N - 5 byte payload
  *
- * @author Lorenzo Alberton <l.alberton@quipo.it>
+ * @category Libraries
+ * @package  Kafka
+ * @author   Lorenzo Alberton <l.alberton@quipo.it>
+ * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @link     http://sna-projects.com/kafka/
  */
 class Kafka_Message
 {
@@ -25,7 +40,9 @@ class Kafka_Message
 	private $crc     = false;
 	
 	/**
-	 * @param string $data
+	 * Constructor
+	 * 
+	 * @param string $data Message payload
 	 */
 	public function __construct($data) {
 		$this->payload = substr($data, 5);
@@ -34,6 +51,8 @@ class Kafka_Message
 	}
 	
 	/**
+	 * Encode a message
+	 * 
 	 * @return string
 	 */
 	public function encode() {
@@ -41,6 +60,8 @@ class Kafka_Message
 	}
 	
 	/**
+	 * Get the message size
+	 * 
 	 * @return integer
 	 */
 	public function size() {
@@ -48,6 +69,8 @@ class Kafka_Message
 	}
   
 	/**
+	 * Get the magic value
+	 * 
 	 * @return integer
 	 */
 	public function magic() {
@@ -55,6 +78,8 @@ class Kafka_Message
 	}
 	
 	/**
+	 * Get the message checksum
+	 * 
 	 * @return integer
 	 */
 	public function checksum() {
@@ -62,6 +87,8 @@ class Kafka_Message
 	}
 	
 	/**
+	 * Get the message payload
+	 * 
 	 * @return string
 	 */
 	public function payload() {
@@ -69,6 +96,8 @@ class Kafka_Message
 	}
 	
 	/**
+	 * Verify the message against the checksum
+	 * 
 	 * @return boolean
 	 */
 	public function isValid() {
@@ -76,6 +105,8 @@ class Kafka_Message
 	}
   
 	/**
+	 * Debug message
+	 * 
 	 * @return string
 	 */
 	public function __toString() {
