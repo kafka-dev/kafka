@@ -3,7 +3,17 @@ import sbt._
 class KafkaProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject {
   override def repositories = Set(ScalaToolsSnapshots, "JBoss Maven 2 Repository" at "http://repository.jboss.com/maven2", "Oracle Maven 2 Repository" at "http://download.oracle.com/maven")
 
-  val log4j = "log4j" % "log4j" % "1.2.14"
+  val log4j = "log4j" % "log4j" % "1.2.15"
+
+  //The issue is going from log4j 1.2.14 to 1.2.15, the developers added some features which required
+  // some dependencies on various sun and javax packages. 
+   override def ivyXML =
+    <dependencies>
+      <exclude module="javax"/>
+      <exclude module="jmxri"/>
+      <exclude module="jmxtools"/>
+    </dependencies>
+
   val jopt = "jopt-simple" % "jopt-simple" + "3.2"
 
   val cglib = "cglib" % "cglib" % "2.1_3" % "test"
