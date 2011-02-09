@@ -17,7 +17,6 @@
 package kafka.integration
 
 import java.util.Properties
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.producer._
 import kafka.consumer._
@@ -25,26 +24,28 @@ import kafka.message._
 import kafka.server._
 import kafka.utils._
 import kafka.TestUtils
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before}
 
 /**
  * A test harness that brings up some number of broker nodes
  */
-trait KafkaServerTestHarness extends TestCase {
+trait KafkaServerTestHarness extends JUnitSuite {
 
   val configs: List[KafkaConfig]
   var servers: List[KafkaServer] = null
 
-  override def setUp() {
+  @Before
+  def init() {
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
     servers = configs.map(TestUtils.createServer(_))
-    super.setUp()
   }
-    
-  override def tearDown() {
+
+  @After
+  def destroy() {
     servers.map(server => server.shutdown())
     servers.map(server => Utils.rm(server.config.logDir))
-    super.tearDown()
   }
 
 }

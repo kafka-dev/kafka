@@ -19,23 +19,25 @@ package kafka.log
 import java.io._
 import java.nio._
 import java.util.ArrayList
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.message._
 import kafka.utils._
 import kafka.common._
 import kafka.TestUtils
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
-class LogTest extends TestCase {
+class LogTest extends JUnitSuite {
   
   var logDir: File = null
-  
-  override def setUp() {
+
+  @Before
+  def setUp() {
     logDir = TestUtils.tempDir()
   }
-  
-  override def tearDown() {
+
+  @After
+  def tearDown() {
     Utils.rm(logDir)
   }
   

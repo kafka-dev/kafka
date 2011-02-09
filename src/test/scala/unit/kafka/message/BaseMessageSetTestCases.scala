@@ -17,27 +17,31 @@
 package kafka.message
 
 import java.util.Arrays
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.TestUtils._
+import org.scalatest.junit.JUnitSuite
+import org.junit.Test
 
-abstract class BaseMessageSetTestCases extends TestCase {
+trait BaseMessageSetTestCases extends JUnitSuite {
   
   val messages = Array(new Message("abcd".getBytes()), new Message("efgh".getBytes()))
   
   def createMessageSet(messages: Seq[Message]): MessageSet
-  
+
+  @Test
   def testWrittenEqualsRead {
     val messageSet = createMessageSet(messages)
     checkEquals(messages.iterator, messageSet.iterator)
   }
-  
+
+  @Test
   def testIteratorIsConsistent() {
     val m = createMessageSet(messages)
     // two iterators over the same set should give the same results
     checkEquals(m.iterator, m.iterator)
   }
-  
+
+  @Test
   def testSizeInBytes() {
     assertEquals("Empty message set should have 0 bytes.",
                  0L,
@@ -46,14 +50,15 @@ abstract class BaseMessageSetTestCases extends TestCase {
                  MessageSet.messageSetSize(messages).toLong, 
                  createMessageSet(messages).sizeInBytes)
   }
-  
+
+  @Test
   def testWriteTo() {
     // test empty message set
-    testWriteTo(createMessageSet(Array[Message]()))
-    testWriteTo(createMessageSet(messages))
+    testWriteToWithMessageSet(createMessageSet(Array[Message]()))
+    testWriteToWithMessageSet(createMessageSet(messages))
   }
-  
-  def testWriteTo(set: MessageSet) {
+
+  def testWriteToWithMessageSet(set: MessageSet) {
     val channel = tempChannel()
     val written = set.writeTo(channel, 0, 1024)
     assertEquals("Expect to write the number of bytes in the set.", set.sizeInBytes, written)

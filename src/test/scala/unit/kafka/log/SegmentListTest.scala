@@ -16,11 +16,11 @@
 
 package kafka.log
 
-import junit.framework.TestCase
 import junit.framework.Assert._
 import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
-class SegmentListTest extends TestCase {
+class SegmentListTest extends JUnitSuite {
 
   @Test
   def testAppend() {

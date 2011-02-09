@@ -16,7 +16,6 @@
 
 package kafka.zk
 
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.utils._
 import java.util.Collections
@@ -24,9 +23,10 @@ import kafka.cluster.{Broker, Cluster}
 import kafka.consumer.{Fetcher, ConsumerConfig, ZookeeperConsumerConnector}
 import java.lang.Thread
 import kafka.{TestZKUtils, TestUtils}
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{Before, Test}
 
-class ZKLoadBalanceTest extends TestCase with ZooKeeperTestHarness {
+class ZKLoadBalanceTest extends JUnitSuite with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect
   var dirs : ZKGroupTopicDirs = null
   val topic = "topic1"
@@ -34,6 +34,7 @@ class ZKLoadBalanceTest extends TestCase with ZooKeeperTestHarness {
   val firstConsumer = "consumer1"
   val secondConsumer = "consumer2"
 
+  @Before
   override def setUp() {
     super.setUp()
 

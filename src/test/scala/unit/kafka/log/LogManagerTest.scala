@@ -20,20 +20,22 @@ import java.io._
 import kafka.utils._
 import kafka.message._
 import kafka.common._
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.TestUtils
 import kafka.server.KafkaConfig
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
-class LogManagerTest extends TestCase {
+class LogManagerTest extends JUnitSuite {
 
   val time: MockTime = new MockTime()
   val maxLogAge = 1000
   var logDir: File = null
   var logManager: LogManager = null
   var config:KafkaConfig = null
-  override def setUp() {
+
+  @Before
+  def setUp() {
     val props = TestUtils.createBrokerConfig(0, -1)
     config = new KafkaConfig(props) {
                    override val logFileSize = 1024
@@ -43,8 +45,9 @@ class LogManagerTest extends TestCase {
     logManager.startup
     logDir = logManager.logDir
   }
-  
-  override def tearDown() {
+
+  @After
+  def tearDown() {
     logManager.close()
     Utils.rm(logDir)
   }

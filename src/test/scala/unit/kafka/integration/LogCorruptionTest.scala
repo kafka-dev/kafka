@@ -14,8 +14,10 @@ import kafka.{TestZKUtils, TestUtils}
 import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.consumer.{FetcherRunnable, ZookeeperConsumerConnector, ConsumerConfig}
 import org.apache.log4j.{Level, Logger}
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
-class LogCorruptionTest extends TestCase with ProducerConsumerTestHarness with KafkaServerTestHarness with ZooKeeperTestHarness {
+class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with KafkaServerTestHarness with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect  
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
@@ -27,6 +29,7 @@ class LogCorruptionTest extends TestCase with ProducerConsumerTestHarness with K
   val partition = 0
   val fetcherRunnableLogger = Logger.getLogger(classOf[FetcherRunnable])
 
+  @Test
   def testMessageSizeTooLarge() {
     // send some messages
     val sent1 = new ByteBufferMessageSet(new Message("hello".getBytes()))

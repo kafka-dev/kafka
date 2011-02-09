@@ -17,7 +17,6 @@
 package kafka.integration
 
 import scala.collection._
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.common.OffsetOutOfRangeException
 import kafka.TestUtils
@@ -26,12 +25,13 @@ import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.utils.Utils
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
 /**
  * End to end tests of the primitive apis against a local server
  */
-class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
+class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness   {
 
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
@@ -42,8 +42,9 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
   var servers: List[KafkaServer] = null
   val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
-  override def setUp() {
-    super.setUp()
+  @Before
+  override def initialize() {
+    super.initialize
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
     servers = configs.map(TestUtils.createServer(_))
@@ -52,11 +53,12 @@ class LazyInitProducerTest extends TestCase with ProducerConsumerTestHarness   {
     requestHandlerLogger.setLevel(Level.FATAL)    
   }
 
-  override def tearDown() {
+  @After
+  override def close() {
     // restore set request handler logger to a higher level
     requestHandlerLogger.setLevel(Level.ERROR)
 
-    super.tearDown()
+    super.close    
     servers.map(server => server.shutdown())
     servers.map(server => Utils.rm(server.config.logDir))
   }

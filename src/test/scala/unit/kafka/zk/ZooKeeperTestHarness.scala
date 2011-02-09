@@ -23,23 +23,23 @@ import org.apache.zookeeper.data._
 import org.apache.zookeeper.server.ZooKeeperServer
 import org.apache.zookeeper.server.NIOServerCnxn
 import org.apache.zookeeper.ZooDefs
-import junit.framework._
-import junit.framework.Assert._
 import kafka.TestUtils
 import kafka.utils._
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before}
 
-trait ZooKeeperTestHarness extends TestCase {
+trait ZooKeeperTestHarness extends JUnitSuite {
   val zkConnect: String
   var zookeeper: EmbeddedZookeeper = null
-  
-  override def setUp() {
+
+  @Before
+  def setUp() {
     zookeeper = new EmbeddedZookeeper(zkConnect)
-    super.setUp()
   }
-  
-  override def tearDown() {
+
+  @After
+  def tearDown() {
     zookeeper.shutdown()
-    super.tearDown()
   }
 
 }

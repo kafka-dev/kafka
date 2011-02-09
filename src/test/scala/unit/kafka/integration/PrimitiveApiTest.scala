@@ -25,12 +25,13 @@ import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.common.{WrongPartitionException, OffsetOutOfRangeException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
 /**
  * End to end tests of the primitive apis against a local server
  */
-class PrimitiveApiTest extends TestCase with ProducerConsumerTestHarness with KafkaServerTestHarness {
+class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with KafkaServerTestHarness {
   
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)

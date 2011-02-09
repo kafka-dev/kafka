@@ -22,8 +22,9 @@ import org.I0Itec.zkclient.ZkClient
 import kafka.utils.{ZkUtils, StringSerializer}
 import kafka.{TestZKUtils, TestUtils}
 import org.junit.{Test, Assert}
+import org.scalatest.junit.JUnitSuite
 
-class ZKEphemeralTest extends TestCase with ZooKeeperTestHarness {
+class ZKEphemeralTest extends JUnitSuite with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect
   var zkSessionTimeoutMs = 1000
 

@@ -51,7 +51,6 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
     testPartialWrite(6)
   }
   
-  @Test
   def testPartialWrite(size: Int) {
     val buffer = ByteBuffer.allocate(size)
     val originalPosition = messageSet.channel.position

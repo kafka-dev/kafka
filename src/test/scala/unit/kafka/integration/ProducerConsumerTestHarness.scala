@@ -16,18 +16,20 @@
 
 package kafka.integration
 
-import junit.framework._
 import kafka.consumer.SimpleConsumer
 import kafka.producer.SimpleProducer
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before}
 
-trait ProducerConsumerTestHarness extends TestCase {
+trait ProducerConsumerTestHarness extends JUnitSuite {
   
     val port: Int
     val host = "localhost"
     var producer: SimpleProducer = null
     var consumer: SimpleConsumer = null
-    
-    override def setUp() {
+
+    @Before
+    def initialize() {
       producer = new SimpleProducer(host,
                                    port,
                                    64*1024,
@@ -36,13 +38,12 @@ trait ProducerConsumerTestHarness extends TestCase {
       consumer = new SimpleConsumer(host,
                                    port,
                                    1000000,
-                                   64*1024)
-      super.setUp()
+                                   64*1024)      
     }
-    
-    override def tearDown() {
-      producer.close()
-      consumer.close()
-      super.tearDown()
-    }
+
+  @After
+   def close() {
+     producer.close()
+     consumer.close()
+   }
 }

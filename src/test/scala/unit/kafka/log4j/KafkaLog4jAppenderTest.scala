@@ -24,15 +24,15 @@ import kafka.consumer.SimpleConsumer
 import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.TestUtils
 import kafka.utils.Utils
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.api.FetchRequest
 import kafka.serializer.Encoder
 import kafka.message.{MessageSet, Message}
 import kafka.producer.async.MissingConfigException
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
-class KafkaLog4jAppenderTest extends TestCase {
+class KafkaLog4jAppenderTest extends JUnitSuite {
 
   var logDir: File = null
   //  var topicLogDir: File = null
@@ -41,7 +41,8 @@ class KafkaLog4jAppenderTest extends TestCase {
   var simpleConsumer: SimpleConsumer = null
   val tLogger = Logger.getLogger(getClass())
 
-  override def setUp() {
+  @Before
+  def setUp() {
     val config: Properties = createBrokerConfig(1, brokerPort)
     val logDirPath = config.getProperty("log.dir")
     logDir = new File(logDirPath)
@@ -51,7 +52,8 @@ class KafkaLog4jAppenderTest extends TestCase {
     simpleConsumer = new SimpleConsumer("localhost", brokerPort, 1000000, 64*1024)
   }
 
-  override def tearDown() {
+  @After
+  def tearDown() {
     simpleConsumer.close
     server.shutdown
     Thread.sleep(100)

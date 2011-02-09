@@ -28,10 +28,10 @@ import kafka.message._
 import kafka.server._
 import kafka.utils._
 import kafka.TestUtils
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{Before, After, Test}
 
-
-class FetcherTest extends TestCase with KafkaServerTestHarness {
+class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
 
   val numNodes = 2
   val configs = 
@@ -53,16 +53,18 @@ class FetcherTest extends TestCase with KafkaServerTestHarness {
                                                       new AtomicInteger(0)))
   
   var fetcher: Fetcher = null
-  
-  override def setUp() {
-    super.setUp()
+
+  @Before
+  override def init() {
+    super.init
     fetcher = new Fetcher(new ConsumerConfig(TestUtils.createConsumerProperties("", "", "")), null)
     fetcher.initConnections(topicInfos, cluster)
   }
-  
-  override def tearDown() {
+
+  @After
+  override def destroy() {
     fetcher.shutdown
-    super.tearDown
+    super.destroy
   }
     
   @Test

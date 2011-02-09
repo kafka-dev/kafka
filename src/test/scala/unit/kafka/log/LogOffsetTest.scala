@@ -27,13 +27,14 @@ import java.util.{Random, Properties}
 import kafka.api.{FetchRequest, OffsetRequest}
 import collection.mutable.WrappedArray
 import kafka.consumer.SimpleConsumer
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
 object LogOffsetTest {
   val random = new Random()  
 }
 
-class LogOffsetTest extends TestCase {
+class LogOffsetTest extends JUnitSuite {
   var logDir: File = null
   var topicLogDir: File = null
   var server: KafkaServer = null
@@ -41,7 +42,8 @@ class LogOffsetTest extends TestCase {
   val brokerPort: Int = 9099
   var simpleConsumer: SimpleConsumer = null
 
-  override def setUp() {
+  @Before
+  def setUp() {
     val config: Properties = createBrokerConfig(1, brokerPort)
     val logDirPath = config.getProperty("log.dir")
     logDir = new File(logDirPath)
@@ -50,7 +52,8 @@ class LogOffsetTest extends TestCase {
     simpleConsumer = new SimpleConsumer("localhost", brokerPort, 1000000, 64*1024)
   }
 
-  override def tearDown() {
+  @After
+  def tearDown() {
     simpleConsumer.close
     server.shutdown
     Utils.rm(logDir)

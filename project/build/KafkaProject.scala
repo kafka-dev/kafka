@@ -21,10 +21,9 @@ class KafkaProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProj
   val easymock = "org.easymock" % "easymock" % "3.0" % "test"
   val asm = "asm" % "asm" % "3.3" % "test"
   val junit = "junit" % "junit" % "4.1" % "test"
-  val junitInterface = "com.novocode" % "junit-interface" % "0.4" % "test"
+  val scalaTest = "org.scalatest" % "scalatest" % "1.2" % "test"
   
   override def artifactID = "kafka"
-//  override def version = projectVersion.value
   override def filterScalaJars = false
 
   // build the executable jar's classpath.

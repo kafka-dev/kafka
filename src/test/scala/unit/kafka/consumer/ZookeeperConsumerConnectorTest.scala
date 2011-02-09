@@ -16,7 +16,6 @@
 
 package kafka.consumer
 
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.zk.ZooKeeperTestHarness
 import kafka.integration.KafkaServerTestHarness
@@ -26,9 +25,10 @@ import org.apache.log4j.Logger
 import scala.collection._
 import kafka.utils.Utils
 import kafka.{TestZKUtils, TestUtils}
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
-class ZookeeperConsumerConnectorTest extends TestCase with KafkaServerTestHarness with ZooKeeperTestHarness {
+class ZookeeperConsumerConnectorTest extends JUnitSuite with KafkaServerTestHarness with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
 
   val zookeeperConnect = TestZKUtils.zookeeperConnect
@@ -49,11 +49,7 @@ class ZookeeperConsumerConnectorTest extends TestCase with KafkaServerTestHarnes
   val consumer2 = "consumer2"
   val consumer3 = "consumer3"
   val nMessages = 2
-  
-  override def setUp() {
-    super.setUp()
-  }
-  
+
   @Test
   def testBasic() {
     var actualMessages: List[Message] = Nil

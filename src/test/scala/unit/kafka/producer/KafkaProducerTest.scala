@@ -22,21 +22,24 @@ import kafka.utils.SystemTime
 import kafka.TestUtils
 import kafka.server.{KafkaServer, KafkaConfig}
 import org.apache.log4j.{Logger, Level}
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{After, Before, Test}
 
-class KafkaProducerTest extends TestCase {
+class KafkaProducerTest extends JUnitSuite {
   private var messageBytes =  new Array[Byte](2);
   private var server: KafkaServer = null
   val simpleProducerLogger = Logger.getLogger(classOf[SimpleProducer])
 
-  override def setUp() {
+  @Before
+  def setUp() {
     server = TestUtils.createServer(new KafkaConfig(TestUtils.createBrokerConfig(0, 9092))
     {
       override val enableZookeeper = false
     })
   }
 
-  override def tearDown() {
+  @After
+  def tearDown() {
     server.shutdown
   }
 

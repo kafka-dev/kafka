@@ -23,14 +23,16 @@ import java.io._
 import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.TestUtils
-import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import org.junit.{Before, Test}
 
-class MessageTest extends TestCase {
+class MessageTest extends JUnitSuite {
   
   var message: Message = null
   val payload = "some bytes".getBytes()
 
-  override def setUp(): Unit = {
+  @Before
+  def setUp(): Unit = {
     message = new Message(payload)
   }
   

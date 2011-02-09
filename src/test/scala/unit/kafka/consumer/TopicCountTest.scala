@@ -16,11 +16,12 @@
 
 package kafka.consumer
 
-import junit.framework.TestCase
 import junit.framework.Assert._
 import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
-class TopicCountTest extends TestCase {
+
+class TopicCountTest extends JUnitSuite {
 
   @Test
   def testBasic() {

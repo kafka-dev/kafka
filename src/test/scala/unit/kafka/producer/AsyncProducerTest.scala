@@ -25,8 +25,9 @@ import kafka.api.ProducerRequest
 import kafka.serializer.SerDeser
 import org.apache.log4j.{Logger, Level}
 import org.junit.Test
+import org.scalatest.junit.JUnitSuite
 
-class AsyncProducerTest extends TestCase {
+class AsyncProducerTest extends JUnitSuite {
 
   private val messageContent1 = "test"
   private val topic1 = "test-topic"
