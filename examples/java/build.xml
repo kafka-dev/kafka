@@ -5,10 +5,12 @@
   <property name="build.dir" location="../../dist/examples-java-classes"/>
   <property name="javac.debug" location="true"/>
   <path id="classpath.base">
-    <fileset dir="${lib.dir}"/>
-    <fileset dir="../../dist/"/>
+    <fileset dir="${lib.dir}">
+       <exclude name="sbt-launch.jar"/>
+    </fileset>
+    <fileset dir="../../target/scala_2.8.0"/>
   </path>
-  
+ 
   <target name="clean">
     <delete dir="${build.dir}"/>
     <mkdir dir="${build.dir}"/>

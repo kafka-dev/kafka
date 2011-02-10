@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
 <project name="kafka-etl" basedir="./../../" default="all">
-  <property file="build.properties" />
-
+  <property file="project/build.properties" />
+  
   <property name="name" value="kafka-etl" />
   <property name="display.name" value="Kafka ETL Hadoop Job" />
   <property name="author" value="Lin Guo" />
@@ -11,8 +11,9 @@
   <path id="main-classpath">
     <fileset dir="${lib.dir}">
       <include name="*.jar" />
+      <exclude name="sbt-launch.jar" />
     </fileset>
-    <fileset dir="${dist.dir}">
+    <fileset dir="${target.dir}">
       <include name="*.jar" />
     </fileset>
     <fileset dir="${contrib.root.dir}/hadoop-consumer/lib/">

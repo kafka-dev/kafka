@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <project name="kafka-deploy" basedir="./../../" default="all">
-  <property file="build.properties" />
+  <property file="project/build.properties" />
   <property name="name" value="kafka-deploy" />
   <property name="display.name" value="Kafka Deploy" />
   <property name="author" value="Roshan Sumbaly" />
@@ -9,6 +9,7 @@
   <path id="main-classpath">
     <fileset dir="${lib.dir}">
       <include name="*.jar" />
+      <exclude name="sbt-launch.jar" />
     </fileset>
     <fileset dir="${contrib.root.dir}/deploy/lib/">
       <include name="*.jar" />
