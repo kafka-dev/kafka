@@ -49,7 +49,7 @@ object ErrorMapping {
   def codeFor(exception: Class[Throwable]): Int = exceptionToCode(exception)
   
   def maybeThrowException(code: Int) =
-    if(code > 0)
+    if(code != 0)
       throw codeToException(code).newInstance()
 }
 

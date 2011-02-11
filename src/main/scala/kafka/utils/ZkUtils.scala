@@ -89,8 +89,10 @@ object ZkUtils {
           case e1: ZkNoNodeException => // the node disappeared; treat as if node existed and let caller handles this
           case e2 => throw e2
         }
-        if (storedData == null || storedData != data)
+        if (storedData == null || storedData != data) {
+          logger.info("conflict in " + path + " data: " + data + " stored data: " + storedData)
           throw e
+        }
         else {
           // otherwise, the creation succeeded, return normally
           logger.info(path + " exists with value " + data + " during connection loss; this is ok")

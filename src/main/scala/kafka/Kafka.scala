@@ -36,26 +36,26 @@ object Kafka {
       System.exit(1)
     }
   
-    val props = Utils.loadProps(args(0))
-    val server = new KafkaServer(new KafkaConfig(props))
-    var embeddedConsumer: EmbeddedConsumer = null
-    if (args.length == 2) {
-      val consumerConfig = new ConsumerConfig(Utils.loadProps(args(1)))
-      embeddedConsumer = new EmbeddedConsumer(consumerConfig,
-                                              getConsumerTopicMap(consumerConfig.embeddedConsumerTopics),
-                                              server)
-    }
-
-    // attach shutdown handler to catch control-c
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      override def run() = {
-        if (embeddedConsumer != null)
-          embeddedConsumer.stop
-        server.shutdown
-      }
-    });
-
     try {
+      val props = Utils.loadProps(args(0))
+      val server = new KafkaServer(new KafkaConfig(props))
+      var embeddedConsumer: EmbeddedConsumer = null
+      if (args.length == 2) {
+        val consumerConfig = new ConsumerConfig(Utils.loadProps(args(1)))
+        embeddedConsumer = new EmbeddedConsumer(consumerConfig,
+                                                getConsumerTopicMap(consumerConfig.embeddedConsumerTopics),
+                                                server)
+      }
+
+      // attach shutdown handler to catch control-c
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+        override def run() = {
+          if (embeddedConsumer != null)
+            embeddedConsumer.stop
+          server.shutdown
+        }
+      });
+
       server.startup
       if (embeddedConsumer != null)
         embeddedConsumer.start
