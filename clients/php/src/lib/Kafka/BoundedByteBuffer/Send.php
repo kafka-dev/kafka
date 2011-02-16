@@ -1,9 +1,24 @@
 <?php
+/**
+ * Kafka Client
+ *
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
+ */
 
 /**
- * Description of Kafka_BoundedByteBuffer_Send
+ * Send a request to Kafka
  *
- * @author Lorenzo Alberton <l.alberton@quipo.it>
+ * @category Libraries
+ * @package  Kafka
+ * @author   Lorenzo Alberton <l.alberton@quipo.it>
+ * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @link     http://sna-projects.com/kafka/
  */
 class Kafka_BoundedByteBuffer_Send
 {
@@ -28,7 +43,9 @@ class Kafka_BoundedByteBuffer_Send
 	protected $complete = false;
 	
 	/**
-	 * @param Kafka_FetchRequest $req
+	 * Constructor
+	 * 
+	 * @param Kafka_FetchRequest $req Request object
 	 */
 	public function __construct(Kafka_FetchRequest $req) {
 		$this->size = $req->sizeInBytes() + 2;
@@ -42,7 +59,7 @@ class Kafka_BoundedByteBuffer_Send
 	/**
 	 * Try to write the request size if we haven't already
 	 * 
-	 * @param resource $stream
+	 * @param resource $stream Stream resource
 	 *
 	 * @return integer Number of bytes read
 	 * @throws RuntimeException when size is <=0 or >= $maxSize
@@ -59,7 +76,9 @@ class Kafka_BoundedByteBuffer_Send
 	}
 	
 	/**
-	 * @param resource $stream
+	 * Write a chunk of data to the stream
+	 * 
+	 * @param resource $stream Stream resource
 	 * 
 	 * @return integer number of written bytes
 	 * @throws RuntimeException
@@ -82,7 +101,9 @@ class Kafka_BoundedByteBuffer_Send
 	}
 	
 	/**
-	 * @param resource $stream
+	 * Write the entire request to the stream
+	 * 
+	 * @param resource $stream Stream resource
 	 * 
 	 * @return integer number of written bytes
 	 */

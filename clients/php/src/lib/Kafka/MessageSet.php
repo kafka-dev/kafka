@@ -1,12 +1,27 @@
 <?php
+/**
+ * Kafka Client
+ *
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
+ */
 
 /**
  * A sequence of messages stored in a byte buffer
  *
- * @author Lorenzo Alberton <l.alberton@quipo.it>
+ * @category Libraries
+ * @package  Kafka
+ * @author   Lorenzo Alberton <l.alberton@quipo.it>
+ * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @link     http://sna-projects.com/kafka/
  */
-class Kafka_MessageSet implements Iterator {
-	
+class Kafka_MessageSet implements Iterator
+{	
 	/**
 	 * @var integer
 	 */
@@ -23,8 +38,10 @@ class Kafka_MessageSet implements Iterator {
 	private $array = array();
 	
 	/**
-	 * @param resource $stream
-	 * @param integer  $errorCode
+	 * Constructor
+	 * 
+	 * @param resource $stream    Stream resource
+	 * @param integer  $errorCode Error code
 	 */
 	public function __construct($stream, $errorCode = 0) {
 		$data = stream_get_contents($stream);
@@ -41,6 +58,8 @@ class Kafka_MessageSet implements Iterator {
 	}
 	
 	/**
+	 * Get message set size in bytes
+	 * 
 	 * @return integer
 	 */
 	public function validBytes() {
@@ -48,6 +67,8 @@ class Kafka_MessageSet implements Iterator {
 	}
 	
 	/**
+	 * Get message set size in bytes
+	 * 
 	 * @return integer
 	 */
 	public function sizeInBytes() {
@@ -55,13 +76,17 @@ class Kafka_MessageSet implements Iterator {
 	}
 	
 	/**
+	 * next
 	 * 
+	 * @return void
 	 */
 	public function next() {
 		$this->valid = (FALSE !== next($this->array)); 
 	}	
 	
 	/**
+	 * valid
+	 * 
 	 * @return boolean
 	 */
 	public function valid() {
@@ -69,6 +94,8 @@ class Kafka_MessageSet implements Iterator {
 	}
 	
 	/**
+	 * key
+	 * 
 	 * @return integer
 	 */
 	public function key() {
@@ -76,6 +103,8 @@ class Kafka_MessageSet implements Iterator {
 	}
 	
 	/**
+	 * current
+	 * 
 	 * @return Kafka_Message 
 	 */
 	public function current() {
@@ -83,7 +112,9 @@ class Kafka_MessageSet implements Iterator {
 	}
 	
 	/**
+	 * rewind
 	 * 
+	 * @return void
 	 */
 	public function rewind() {
 		$this->valid = (FALSE !== reset($this->array)); 

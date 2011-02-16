@@ -1,9 +1,24 @@
 <?php
+/**
+ * Kafka Client
+ *
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
+ */
 
 /**
  * Read an entire message set from a stream into an internal buffer
  *
- * @author Lorenzo Alberton <l.alberton@quipo.it>
+ * @category Libraries
+ * @package  Kafka
+ * @author   Lorenzo Alberton <l.alberton@quipo.it>
+ * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @link     http://sna-projects.com/kafka/
  */
 class Kafka_BoundedByteBuffer_Receive
 {
@@ -39,13 +54,19 @@ class Kafka_BoundedByteBuffer_Receive
 	protected $maxSize = PHP_INT_MAX;
 	
 	/**
+	 * Constructor
 	 *
-	 * @param integer $maxSize 
+	 * @param integer $maxSize Max buffer size
 	 */
 	public function __construct($maxSize = PHP_INT_MAX) {
 		$this->maxSize = $maxSize;
 	}
 	
+	/**
+	 * Destructor
+	 * 
+	 * @return void
+	 */
 	public function __destruct() {
 		if (is_resource($this->buffer)) {
 			fclose($this->buffer);
@@ -55,7 +76,7 @@ class Kafka_BoundedByteBuffer_Receive
 	/**
 	 * Read the request size (4 bytes) if not read yet
 	 * 
-	 * @param resource $stream
+	 * @param resource $stream Stream resource
 	 *
 	 * @return integer Number of bytes read
 	 * @throws RuntimeException when size is <=0 or >= $maxSize
@@ -64,7 +85,8 @@ class Kafka_BoundedByteBuffer_Receive
 		if (!$this->sizeRead) {
 			$this->size = fread($stream, 4);
 			if ((false === $this->size) || ('' === $this->size)) {
-				throw new RuntimeException('Received nothing when reading from channel, socket has likely been closed.');
+				$errmsg = 'Received nothing when reading from channel, socket has likely been closed.';
+				throw new RuntimeException($errmsg);
 			}
 			$this->size = array_shift(unpack('N', $this->size));
 			if ($this->size <= 0 || $this->size > $this->maxSize) {
@@ -78,7 +100,9 @@ class Kafka_BoundedByteBuffer_Receive
 	}
 	
 	/**
-	 * @param resource $stream 
+	 * Read a chunk of data from the stream
+	 * 
+	 * @param resource $stream Stream resource
 	 * 
 	 * @return integer number of read bytes
 	 * @throws RuntimeException when size is <=0 or >= $maxSize
@@ -109,7 +133,9 @@ class Kafka_BoundedByteBuffer_Receive
 	}
 	
 	/**
-	 * @param resource $stream
+	 * Read all the available bytes in the stream
+	 * 
+	 * @param resource $stream Stream resource
 	 * 
 	 * @return integer number of read bytes
 	 * @throws RuntimeException when size is <=0 or >= $maxSize

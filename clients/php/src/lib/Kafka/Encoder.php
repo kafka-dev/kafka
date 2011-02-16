@@ -1,9 +1,24 @@
 <?php
+/**
+ * Kafka Client
+ *
+ * @category  Libraries
+ * @package   Kafka
+ * @author    Lorenzo Alberton <l.alberton@quipo.it>
+ * @copyright 2011 Lorenzo Alberton
+ * @license   http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @version   $Revision: $
+ * @link      http://sna-projects.com/kafka/
+ */
 
 /**
- * Description of Encoder
+ * Encode messages and messages sets into the kafka protocol
  *
- * @author Lorenzo Alberton <l.alberton@quipo.it>
+ * @category Libraries
+ * @package  Kafka
+ * @author   Lorenzo Alberton <l.alberton@quipo.it>
+ * @license  http://www.apache.org/licenses/LICENSE-2.0 Apache License, Version 2.0
+ * @link     http://sna-projects.com/kafka/
  */
 class Kafka_Encoder
 {
@@ -20,8 +35,7 @@ class Kafka_Encoder
      *  - 4 bytes: CRC32 of the payload
      *  - (N - 5) bytes: payload
 	 * 
-	 * 
-	 * @param string $msg
+	 * @param string $msg Message to encode
 	 *
 	 * @return string
 	 */
@@ -32,9 +46,11 @@ class Kafka_Encoder
 	}
 
 	/**
-	 * @param string  $topic
-	 * @param integer $partition
-	 * @param array   $messages
+	 * Encode a complete request
+	 * 
+	 * @param string  $topic     Topic
+	 * @param integer $partition Partition number
+	 * @param array   $messages  Array of messages to send
 	 *
 	 * @return string
 	 */
