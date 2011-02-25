@@ -123,7 +123,10 @@
       (read-from channel)
       (flip)
       (with-error-code
-        (repeat (get-int) (get-long))))))
+        (loop [c (get-int) res []]
+          (if (> c 0)
+            (recur (dec c) (conj res (get-long)))
+            (if (empty? res) [0] res)))))))
  
 ; Messages
 
@@ -146,7 +149,7 @@
   "Read response from buffer. Returns a pair [new offset, messages sequence]."
   [offset]
   (with-error-code
-    (loop [off offset msg (clojure.lang.PersistentQueue/EMPTY)]
+    (loop [off offset msg []]
       (if (has-remaining)
         (let [size    (get-int)  ; message size
               magic   (get-byte) ; magic
