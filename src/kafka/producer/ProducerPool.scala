@@ -93,7 +93,7 @@ class ProducerPool[V](private val config: ProducerConfig,
             producer.multiSend(producerRequests.toArray)
           else
             producer.send(producerRequests(0).topic, producerRequests(0).partition, producerRequests(0).messages)
-          logger.info("Sending message to broker " + bid)
+          logger.debug("Sending message to broker " + bid)
         }
       }else {
         logger.debug("Fetching async producer for broker id: " + bid)

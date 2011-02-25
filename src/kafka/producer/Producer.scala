@@ -73,7 +73,7 @@ class Producer[K,V](config: ProducerConfig,
       val partitionId = getPartition(pd.getKey, totalNumPartitions)
       val brokerIdPartition = numBrokerPartitions(partitionId)
       val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
-      logger.info("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
+      logger.debug("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
               " on partition " + brokerIdPartition.partId)
       producerPool.getProducerPoolData(pd.getTopic,
                                        new Partition(brokerIdPartition.brokerId, brokerIdPartition.partId),
