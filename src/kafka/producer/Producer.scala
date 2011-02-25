@@ -28,6 +28,7 @@ class Producer[K,V](config: ProducerConfig,
                     serializer: Encoder[V],
                     producerPool: ProducerPool[V],
                     populateProducerPool: Boolean = true) /* for testing purpose only. Applications should ideally */
+                                                          /* use the other constructor*/
 {
   private val logger = Logger.getLogger(classOf[Producer[K, V]])
   if(config.zkConnect == null && config.brokerPartitionInfo == null)

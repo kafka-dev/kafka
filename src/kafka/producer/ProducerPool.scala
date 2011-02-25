@@ -21,10 +21,10 @@ import kafka.message.ByteBufferMessageSet
 import java.util.Properties
 import kafka.serializer.Encoder
 import org.apache.log4j.Logger
-import kafka.common.InvalidConfigException
 import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
 import kafka.cluster.{Partition, Broker}
 import kafka.api.ProducerRequest
+import kafka.common.{UnavailableProducerException, InvalidConfigException}
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
@@ -94,14 +94,20 @@ class ProducerPool[V](private val config: ProducerConfig,
           else
             producer.send(producerRequests(0).topic, producerRequests(0).partition, producerRequests(0).messages)
           logger.debug("Sending message to broker " + bid)
-        }
+        }else
+          throw new UnavailableProducerException("Producer pool has not been initialized correctly. " +
+            "Sync Producer for broker " + bid + " does not exist in the pool")
       }else {
         logger.debug("Fetching async producer for broker id: " + bid)
         val producer = asyncProducers.get(bid)
-        if(producer != null)
+        if(producer != null) {
           requestsForThisBid._1.foreach { req =>
             req.getData.foreach(d => producer.send(req.getTopic, d, req.getBidPid.partId))
           }
+        }
+        else
+          throw new UnavailableProducerException("Producer pool has not been initialized correctly. " +
+            "Async Producer for broker " + bid + " does not exist in the pool")
       }
     }
   }

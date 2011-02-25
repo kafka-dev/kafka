@@ -31,6 +31,7 @@ import org.easymock.EasyMock
 import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
+import kafka.common.UnavailableProducerException
 
 class ProducerTest extends TestCase {
   private val topic = "test-topic"
@@ -95,7 +96,6 @@ class ProducerTest extends TestCase {
   }
 
   def testSend() {
-//    println("testSend()")
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
@@ -132,7 +132,6 @@ class ProducerTest extends TestCase {
   }
 
   def testInvalidPartition() {
-//    println("testInvalidPartition()")
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.NegativePartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
@@ -149,7 +148,6 @@ class ProducerTest extends TestCase {
   }
 
   def testSyncProducerPool() {
-//    println("\n\ntestSyncProducerPool()")
     // 2 sync producers
     val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
     val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
@@ -180,7 +178,6 @@ class ProducerTest extends TestCase {
   }
 
   def testAsyncProducerPool() {
-//    println("\n\ntestAsyncProducerPool()")
     // 2 async producers
     val asyncProducers = new ConcurrentHashMap[Int, AsyncProducer[String]]()
     val asyncProducer1 = EasyMock.createMock(classOf[AsyncProducer[String]])
@@ -211,8 +208,66 @@ class ProducerTest extends TestCase {
     EasyMock.verify(asyncProducer2)
   }
 
+  def testSyncUnavailableProducerException() {
+    val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
+    val syncProducer2 = EasyMock.createMock(classOf[SyncProducer])
+    syncProducer2.close
+    EasyMock.expectLastCall
+    EasyMock.replay(syncProducer1)
+    EasyMock.replay(syncProducer2)
+
+    syncProducers.put(brokerId2, syncProducer2)
+
+    // default for producer.type is "sync"
+    val props = new Properties()
+    props.put("partitioner.class", "kafka.producer.NegativePartitioner")
+    props.put("serializer.class", "kafka.producer.StringSerializer")
+    val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
+      syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
+    try {
+      producerPool.send(producerPool.getProducerPoolData("test-topic", new Partition(brokerId1, 0), Array("test1")))
+      Assert.fail("Should fail with UnavailableProducerException")
+    }catch {
+      case e: UnavailableProducerException => // expected
+    }
+
+    producerPool.close
+    EasyMock.verify(syncProducer1)
+    EasyMock.verify(syncProducer2)
+  }
+
+  def testAsyncUnavailableProducerException() {
+    val asyncProducers = new ConcurrentHashMap[Int, AsyncProducer[String]]()
+    val asyncProducer1 = EasyMock.createMock(classOf[AsyncProducer[String]])
+    val asyncProducer2 = EasyMock.createMock(classOf[AsyncProducer[String]])
+    asyncProducer2.close
+    EasyMock.expectLastCall
+    EasyMock.replay(asyncProducer1)
+    EasyMock.replay(asyncProducer2)
+
+    asyncProducers.put(brokerId2, asyncProducer2)
+
+    // change producer.type to "async"
+    val props = new Properties()
+    props.put("partitioner.class", "kafka.producer.NegativePartitioner")
+    props.put("serializer.class", "kafka.producer.StringSerializer")
+    props.put("producer.type", "async")
+    val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
+      new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
+    try {
+      producerPool.send(producerPool.getProducerPoolData(topic, new Partition(brokerId1, 0), Array("test1")))
+      Assert.fail("Should fail with UnavailableProducerException")
+    }catch {
+      case e: UnavailableProducerException => // expected
+    }
+
+    producerPool.close
+    EasyMock.verify(asyncProducer1)
+    EasyMock.verify(asyncProducer2)
+  }
+
   def testConfigBrokerPartitionInfo() {
-//    println("\n\ntestConfigBrokerPartitionInfo()")
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
@@ -247,16 +302,15 @@ class ProducerTest extends TestCase {
     producer.close
 
     EasyMock.verify(asyncProducer1)
-    EasyMock.verify(asyncProducer2)    
+    EasyMock.verify(asyncProducer2)
   }
 
   def testPartitionedSendToNewTopic() {
-//    println("\n\ntestPartitionedSendToNewTopic")
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("zk.connect", TestZKUtils.zookeeperConnect)
-        
+
     val config = new ProducerConfig(props)
     val partitioner = new StaticPartitioner
     val serializer = new StringSerializer
@@ -290,7 +344,7 @@ class ProducerTest extends TestCase {
 
     // wait for zookeeper to register the new topic
     Thread.sleep(500)
-    
+
     producer.send(new ProducerData[String, String]("test-topic1", "test1", Array("test1")))
     producer.close
 
@@ -300,7 +354,6 @@ class ProducerTest extends TestCase {
   }
 
   def testPartitionedSendToNewBrokerInExistingTopic() {
-//    println("testPartitionedSendToNewBrokerInExistingTopic")
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
@@ -348,7 +401,7 @@ class ProducerTest extends TestCase {
     tempProducer.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
 
     Thread.sleep(500)
-    
+
     producer.send(new ProducerData[String, String]("test-topic", "test-topic", Array("test1")))
     producer.close
 
@@ -361,7 +414,6 @@ class ProducerTest extends TestCase {
   }
 
   def testDefaultPartitioner() {
-//    println("testDefaultPartitioner")
     val props = new Properties()
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
@@ -395,7 +447,7 @@ class ProducerTest extends TestCase {
     producer.close
 
     EasyMock.verify(asyncProducer1)
-    EasyMock.verify(asyncProducer2)        
+    EasyMock.verify(asyncProducer2)
   }
 }
 
