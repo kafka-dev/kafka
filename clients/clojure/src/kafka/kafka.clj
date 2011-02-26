@@ -56,7 +56,7 @@
   [request & body]
   `(let [error-code# (get-short)] ; error code
      (if (not= error-code# 0)
-       (error (str "Request " ~request " returned with error code: " error-code# "."))
+       (error (str "Request " ~request " returned error code: " error-code# "."))
        ~@body)))
 
 ; 
@@ -208,7 +208,7 @@
   "Sequence constructor."
   [offset fetch-fn]
   (let [offset (atom offset)
-        queue  (atom [])]
+        queue  (atom (seq []))]
     (reify
       clojure.lang.IPersistentCollection
         (seq [this]    this)

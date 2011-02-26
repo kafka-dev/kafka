@@ -10,14 +10,15 @@
      (try
        ~@body
        (catch Exception e#
-         (error "Consumer exception." e#)))))
+         (error "Exception." e#)))))
 
 (defn start-consumer
   []
   (thread
     (with-open [c (consumer "localhost" 9092)]
       (doseq [m (consume-seq c "test" 0 {:blocking true})]
-        (println "Consumed <-- " m)))))
+        (println "Consumed <-- " m)))
+    (println "Finished consuming.")))
 
 (defn start-producer
   []
@@ -27,7 +28,8 @@
         (let [m (str "Message " i)]
           (produce p "test" 0 m)
           (println "Produced --> " m)
-          (Thread/sleep 1000))))))
+          (Thread/sleep 1000))))
+    (println "Finished producing.")))
 
 (defn run
   []
