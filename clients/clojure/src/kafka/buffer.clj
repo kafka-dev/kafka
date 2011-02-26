@@ -7,6 +7,9 @@
 (def #^{:doc "Buffer stack bind in with-buffer."}
   *buf* [])
 
+(def #^{:doc "Number of attempts to read a complete buffer from channel."}
+  *channel-read-count* 3)
+
 (defn ^ByteBuffer top
   "Retrieve top buffer from *buf* stack."
   []
@@ -145,6 +148,18 @@
     (if (< size 0)
       (throw (java.net.ConnectException. "Channel closed?"))
       size)))
+
+(defn read-completely-from
+  "Read the complete top buffer from the channel."
+  [^SocketChannel channel]
+  (loop [t *channel-read-count* size 0]
+    (let [s (read-from channel)]
+      (cond
+        (< t 0)
+          (throw (Exception. "Unable to read complete buffer from channel."))
+        (has-remaining)
+          (recur (dec t) (+ size s))
+        :else size))))
 
 (defn write-to
   "Writes underlying top buffer to channel."

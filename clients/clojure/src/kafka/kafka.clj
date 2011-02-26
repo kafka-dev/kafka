@@ -27,7 +27,7 @@
   :so-timeout  - socket timeout."
   [host port opts]
   (let [buffer-size (or (:buffer-size opts) 65536)
-        so-timeout  (or (:so-timeout opts) 50000)
+        so-timeout  (or (:so-timeout opts) 60000)
         ch (SocketChannel/open)]
     (doto (.socket ch)
       (.setReceiveBufferSize buffer-size)
@@ -47,16 +47,16 @@
   "Read first four bytes from channel as an integer."
   [channel]
   (with-buffer (ByteBuffer/allocate 4)
-    (read-from channel)
+    (read-completely-from channel)
     (flip)
     (get-int)))
 
 (defmacro with-error-code
   "Convenience response error code check."
-  [ & body]
+  [request & body]
   `(let [error-code# (get-short)] ; error code
      (if (not= error-code# 0)
-       (error (str "Error code: " error-code#))
+       (error (str "Request " ~request " returned with error code: " error-code# "."))
        ~@body)))
 
 ; 
@@ -122,11 +122,11 @@
     (with-buffer (ByteBuffer/allocate rsp-size)
       (read-from channel)
       (flip)
-      (with-error-code
+      (with-error-code "Fetch-Offsets"
         (loop [c (get-int) res []]
           (if (> c 0)
             (recur (dec c) (conj res (get-long)))
-            (if (empty? res) [0] res)))))))
+            (doall res)))))))
  
 ; Messages
 
@@ -148,7 +148,7 @@
 (defn- read-response
   "Read response from buffer. Returns a pair [new offset, messages sequence]."
   [offset]
-  (with-error-code
+  (with-error-code "Fetch-Messages"
     (loop [off offset msg []]
       (if (has-remaining)
         (let [size    (get-int)  ; message size
@@ -156,7 +156,7 @@
               crc     (get-int)  ; crc
               message (get-array (- size 5))]
           (recur (+ off size 4) (conj msg (unpack (Message. message)))))
-          [off msg]))))
+          [off (doall msg)]))))
 
 (defn- fetch-messages
   "Message fetch, returns a pair [new offset, messages sequence]."
@@ -164,7 +164,7 @@
   (message-fetch-request channel topic partition offset max-size)
   (let [rsp-size (response-size channel)]
     (with-buffer (ByteBuffer/allocate rsp-size)
-      (read-from channel)
+      (read-completely-from channel)
       (flip)
       (read-response offset))))
 
@@ -191,15 +191,15 @@
               (do
                 (Thread/sleep repeat-timeout)
                 (recur (dec c)))
-              rs))
+              (doall rs)))
           (debug "Stopping blocking seq fetch."))))))
 
 (defn- fetch-queue
   [offset queue fetch-fn]
   (if (empty? @queue)
-    (if-let [[new-offset msg] (fetch-fn @offset)]
-      (do
-        (debug (str "Fetched " (count msg) " messages."))
+    (let [[new-offset msg] (fetch-fn @offset)]
+      (when new-offset
+        (debug (str "Fetched " (count msg) " messages:"))
         (debug (str "New offset " new-offset "."))
         (swap! queue #(reduce conj % (reverse msg)))
         (reset! offset new-offset)))))
@@ -208,7 +208,7 @@
   "Sequence constructor."
   [offset fetch-fn]
   (let [offset (atom offset)
-        queue  (atom (clojure.lang.PersistentQueue/EMPTY))]
+        queue  (atom [])]
     (reify
       clojure.lang.IPersistentCollection
         (seq [this]    this)
@@ -249,7 +249,7 @@
       (consume-seq [this topic partition]
         (let [[offset] (fetch-offsets channel topic partition -1 1)]
           (debug (str "Initializing last offset to " offset "."))
-          (consumer-seq offset (seq-fetch channel topic partition opts))))
+          (consumer-seq (or offset 0) (seq-fetch channel topic partition opts))))
 
       (consume-seq [this topic partition opts]
         (let [[offset] (or (:offset opts)
@@ -258,7 +258,7 @@
                          (blocking-seq-fetch channel topic partition opts)
                          (seq-fetch channel topic partition opts))]
           (debug (str "Initializing last offset to " offset "."))
-          (consumer-seq offset fetch-fn)))
+          (consumer-seq (or offset 0) fetch-fn)))
 
       (close [this]
         (close-channel channel)))))
