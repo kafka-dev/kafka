@@ -1,7 +1,10 @@
 (ns leiningen.run-example
-  (:use kafka.example))
+  (:use [leiningen.compile :only (eval-in-project)]))
 
 (defn run-example
   [project & args]
-  (run))
+  (eval-in-project project
+    `(do
+       (require 'kafka.example)
+       (kafka.example/run))))
 
