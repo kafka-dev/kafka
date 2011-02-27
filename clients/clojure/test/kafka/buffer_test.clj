@@ -1,10 +1,9 @@
 (ns kafka.buffer-test
   (:use (kafka buffer)
-        clojure.test)
-  (:import (java.nio ByteBuffer)))
+        clojure.test))
 
 (deftest test-put-get
-  (with-buffer (ByteBuffer/allocate 64)
+  (with-buffer (buffer 64)
     (put (byte 5))
     (put (short 10))
     (put (int 20))
@@ -24,7 +23,7 @@
       (is (= (nth ba 2) (byte 3))))))
 
 (deftest test-with-put
-  (with-buffer (ByteBuffer/allocate 64)
+  (with-buffer (buffer 64)
     (with-put 4 count
       (put "test 1"))
     (flip)
@@ -33,7 +32,7 @@
     (is (= (get-string 6) "test 1"))))
 
 (deftest test-length-encoded
-  (with-buffer (ByteBuffer/allocate 64)
+  (with-buffer (buffer 64)
     (length-encoded short
       (put "test 1"))
     (length-encoded int

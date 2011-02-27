@@ -1,5 +1,5 @@
 # kafka-clj
-kafka-clj provides a producer and consumer client that supports a basic fetch API as well as a managed sequence interface for lazy message fetching. Multifetch is not supported yet.
+kafka-clj provides a producer and consumer that supports a basic fetch API as well as a managed sequence interface. Multifetch is not supported yet.
 
 ## Quick Start
 
@@ -35,7 +35,7 @@ And run the example:
 
 Following options are supported:
 
-* :blocking _boolean_ default false, seq returns nil as soon all messages are consumed. If set to true, the sequence tries to fetch new messages :repeat-count times every :repeat-timeout milliseconds. 
+* :blocking _boolean_ default false, sequence returns nil the first time fetch does not return new messages. If set to true, the sequence tries to fetch new messages :repeat-count times every :repeat-timeout milliseconds. 
 * :repeat-count _int_ number of attempts to fetch new messages before terminating, default 10.
 * :repeat-timeout _int_ wait time in milliseconds between fetch attempts, default 1000.
 * :offset   _long_ initialized to highest offset if not provided.
@@ -43,8 +43,7 @@ Following options are supported:
 
 ### Serialization
 
-Load _kafka.print_ for basic print_dup or _kafka.serializeable_ for Java object serialization.
-For custom serialization implement Pack and Unpack protocols.
+Load namespace _kafka.print_ for basic print_dup/read-string serialization or _kafka.serializeable_ for Java object serialization. For custom serialization implement Pack and Unpack protocols.
 
 
 Questions? Email adam.smyczek \_at\_ gmail.com.

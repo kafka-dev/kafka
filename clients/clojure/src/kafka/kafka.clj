@@ -4,9 +4,8 @@
   (:use (kafka types buffer)
         (clojure.contrib logging))
   (:import (kafka.types Message)
-           (java.nio ByteBuffer)
            (java.nio.channels SocketChannel)
-           (java.net InetSocketAddress)
+           (java.net Socket InetSocketAddress)
            (java.util.zip CRC32)))
 
 ; 
@@ -21,17 +20,19 @@
     (.intValue (bit-and lv 0xffffffff))))
 
 (defn- new-channel
-  "Create and setup a new channel for a host and port.
+  "Create and setup a new channel for a host name, port and options.
   Supported options:
-  :buffer-size - socket buffer size for send and receive buffer.
-  :so-timeout  - socket timeout."
-  [host port opts]
-  (let [buffer-size (or (:buffer-size opts) 65536)
-        so-timeout  (or (:so-timeout opts) 60000)
+  :receive-buffer-size - receive socket buffer size, default 65536.
+  :send-buffer-size    - send socket buffer size, default 65536.
+  :socket-timeout      - socket timeout."
+  [^String host ^Integer port opts]
+  (let [receive-buf-size (or (:receive-buffer-size opts) 65536)
+        send-buf-size    (or (:send-buffer-size opts) 65536)
+        so-timeout       (or (:socket-timeout opts) 60000)
         ch (SocketChannel/open)]
     (doto (.socket ch)
-      (.setReceiveBufferSize buffer-size)
-      (.setSendBufferSize buffer-size)
+      (.setReceiveBufferSize receive-buf-size)
+      (.setSendBufferSize send-buf-size)
       (.setSoTimeout so-timeout))
     (doto ch
       (.configureBlocking true)
@@ -39,14 +40,14 @@
 
 (defn- close-channel
   "Close the channel."
-  [channel]
+  [^SocketChannel channel]
   (.close channel)
   (.close (.socket channel)))
 
 (defn- response-size
   "Read first four bytes from channel as an integer."
   [channel]
-  (with-buffer (ByteBuffer/allocate 4)
+  (with-buffer (buffer 4)
     (read-completely-from channel)
     (flip)
     (get-int)))
@@ -66,24 +67,25 @@
 (defn- send-message
   "Send messages."
   [channel topic partition messages opts]
-  (let [size (or (:buffer-size opts) 65536)]
-    (with-buffer (ByteBuffer/allocate size)
-        (length-encoded int                       ; request size
-          (put (short 0))                         ; request type
-          (length-encoded short                   ; topic size
-            (put topic))                          ; topic
-          (put (int partition))                   ; partition
-          (length-encoded int                     ; messages size
+  (let [size (or (:send-buffer-size opts) 65536)]
+    (with-buffer (buffer size)
+        (length-encoded int                   ; request size
+          (put (short 0))                     ; request type
+          (length-encoded short               ; topic size
+            (put topic))                      ; topic
+          (put (int partition))               ; partition
+          (length-encoded int                 ; messages size
             (doseq [m messages]
-              (length-encoded int                 ; message size
-                (put (byte 0))                    ; magic
-                (with-put 4 crc32-int             ; crc
-                  (put (.message (pack m))))))))  ; message
+              (let [^Message pm (pack m)]
+                (length-encoded int           ; message size
+                  (put (byte 0))              ; magic
+                  (with-put 4 crc32-int       ; crc
+                    (put (.message pm)))))))) ; message
         (flip)
         (write-to channel))))
 
 (defn producer
-  "Producer factory."
+  "Producer factory. See new-channel for list of supported options."
   [host port & [opts]]
   (let [channel (new-channel host port opts)]
     (reify Producer
@@ -103,7 +105,7 @@
   "Fetch offsets request."
   [channel topic partition time max-offsets]
   (let [size     (+ 4 2 2 (count topic) 4 8 4)]
-    (with-buffer (ByteBuffer/allocate size)
+    (with-buffer (buffer size)
       (length-encoded int         ; request size
         (put (short 4))           ; request type
         (length-encoded short     ; topic size
@@ -119,8 +121,8 @@
   [channel topic partition time max-offsets]
   (offset-fetch-request channel topic partition time max-offsets)
   (let [rsp-size (response-size channel)]
-    (with-buffer (ByteBuffer/allocate rsp-size)
-      (read-from channel)
+    (with-buffer (buffer rsp-size)
+      (read-completely-from channel)
       (flip)
       (with-error-code "Fetch-Offsets"
         (loop [c (get-int) res []]
@@ -134,7 +136,7 @@
   "Fetch messages request."
   [channel topic partition offset max-size]
   (let [size (+ 4 2 2 (count topic) 4 8 4)]
-    (with-buffer (ByteBuffer/allocate size)
+    (with-buffer (buffer size)
       (length-encoded int     ; request size
         (put (short 1))       ; request type
         (length-encoded short ; topic size
@@ -163,7 +165,7 @@
   [channel topic partition offset max-size]
   (message-fetch-request channel topic partition offset max-size)
   (let [rsp-size (response-size channel)]
-    (with-buffer (ByteBuffer/allocate rsp-size)
+    (with-buffer (buffer rsp-size)
       (read-completely-from channel)
       (flip)
       (read-response offset))))
@@ -236,7 +238,7 @@
 ; Consumer factory 
 
 (defn consumer
-  "Consumer factory."
+  "Consumer factory. See new-channel for list of supported options."
   [host port & [opts]]
   (let [channel (new-channel host port opts)]
     (reify Consumer

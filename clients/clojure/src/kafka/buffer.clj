@@ -8,22 +8,45 @@
   *buf* [])
 
 (def #^{:doc "Number of attempts to read a complete buffer from channel."}
-  *channel-read-count* 3)
+  *channel-read-count* 5)
+
+;
+; Main buffer functions
+;
+
+(defn buffer
+  "Creates a new ByteBuffer of argument size."
+  [^int size]
+  (ByteBuffer/allocate size))
 
 (defn ^ByteBuffer top
-  "Retrieve top buffer from *buf* stack."
+  "Returns top buffer from *buf* stack."
   []
   (peek *buf*))
 
+(defn flip
+  []
+  (.flip (top)))
+
+(defn rewind
+  []
+  (.rewind (top)))
+
+(defn clear
+  []
+  (.clear (top)))
+
+(defn has-remaining
+  []
+  (.hasRemaining (top)))
+
 ;
-; Writing to buffer
+; Write to buffer
 ;
 
 (defprotocol Put
   "Put protocol defines a generic buffer put method."
   (put [this]))
-
-; Put implementations
 
 (extend-type Byte
   Put
@@ -123,22 +146,6 @@
   [buffer & body]
   `(binding [*buf* (conj *buf* ~buffer)]
      ~@body))
-
-(defn flip
-  []
-  (.flip (top)))
-
-(defn rewind
-  []
-  (.rewind (top)))
-
-(defn clear
-  []
-  (.clear (top)))
-
-(defn has-remaining
-  []
-  (.hasRemaining (top)))
 
 (defn read-from
   "Reads from channel to the underlying top buffer.

@@ -5,8 +5,8 @@
   Message [^bytes message])
 
 (defprotocol Pack
-  "Pack protocol converts an object into a Message."
-  (pack [this] "Convert object to a message."))
+  "Pack protocol converts an object to a Message."
+  (pack [this] "Convert object to a Message."))
 
 (defprotocol Unpack
   "Unpack protocol, reads an object from a Message."
@@ -23,6 +23,6 @@
   (offsets      [this topic partition time max-offsets] "Query offsets. Returns offsets seq.")
 
   (consume-seq  [this topic partition]                  
-                [this topic partition opts]             "Creates a lazy sequence over the consumer.")
+                [this topic partition opts]             "Creates a sequence over the consumer.")
   (close        [this]                                  "Close the consumer, socket and channel."))
 

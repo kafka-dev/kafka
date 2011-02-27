@@ -24,7 +24,7 @@
   []
   (thread
     (with-open [p (producer "localhost" 9092)]
-      (doseq [i (range 1 30)]
+      (doseq [i (range 1 20)]
         (let [m (str "Message " i)]
           (produce p "test" 0 m)
           (println "Produced --> " m)
