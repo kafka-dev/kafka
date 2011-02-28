@@ -8,18 +8,20 @@ fi
 
 base_dir=$(dirname $0)/..
 
-for file in $base_dir/dist/*.jar;
+for file in $base_dir/target/scala_2.8.0/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
 done
 
 for file in $base_dir/lib/*.jar;
 do
-  CLASSPATH=$CLASSPATH:$file
+  if [ ${file##*/} != "sbt-launch.jar" ]; then
+    CLASSPATH=$CLASSPATH:$file
+  fi
 done
 
 if [ -z "$KAFKA_OPTS" ]; then
-  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=file:$base_dir/dist/log4j.properties "
+  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=file:$base_dir/src/log4j.properties "
 fi
 
 if [ -z "$JAVA_HOME" ]; then
