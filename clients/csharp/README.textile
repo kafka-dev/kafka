@@ -1,4 +1,5 @@
 h3. .NET Kafka Client
+
 Basic usage is:
 
 ```csharp
