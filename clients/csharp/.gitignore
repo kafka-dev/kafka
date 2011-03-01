@@ -1,0 +1,4 @@
+StyleCop.Cache
+bin
+obj
+*.suo
