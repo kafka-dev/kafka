@@ -2,7 +2,7 @@ h3. .NET Kafka Client
 
 Basic usage is:
 
-```csharp
+{% highlight c# %}
 string payload1 = "kafka 1.";
 byte[] payloadData1 = Encoding.UTF8.GetBytes(payload1);
 Message msg1 = new Message(payloadData1);
@@ -13,4 +13,4 @@ Message msg2 = new Message(payloadData2);
 
 Producer producer = new Producer("192.168.50.201", 9092);
 producer.Send("test", 0, new List<Message> { msg1, msg2 });
-```
+{% endhighlight %}
