@@ -37,12 +37,27 @@ namespace Kafka.Client
         /// </summary>
         public int Port { get; private set; }
 
+        /// <summary>
+        /// Consumes messages from Kafka.
+        /// </summary>
+        /// <param name="topic">The topic to consume from.</param>
+        /// <param name="partition">The partition to consume from.</param>
+        /// <param name="offset">The offset to start at.</param>
+        /// <returns>A list of messages from Kafka.</returns>
         public List<Message> Consume(string topic, int partition, long offset)
         {
             return Consume(topic, partition, offset, MaxSize);
         }
 
-        public  List<Message> Consume(string topic, int partition, long offset, int maxSize)
+        /// <summary>
+        /// Consumes messages from Kafka.
+        /// </summary>
+        /// <param name="topic">The topic to consume from.</param>
+        /// <param name="partition">The partition to consume from.</param>
+        /// <param name="offset">The offset to start at.</param>
+        /// <param name="maxSize">The maximum size.</param>
+        /// <returns>A list of messages from Kafka.</returns>
+        public List<Message> Consume(string topic, int partition, long offset, int maxSize)
         {
             // REQUEST TYPE ID + TOPIC LENGTH + TOPIC + PARTITION + OFFSET + MAX SIZE
             int requestSize = 2 + 2 + topic.Length + 4 + 8 + 4;
@@ -72,7 +87,7 @@ namespace Kafka.Client
                     int processed = 0;
                     int length = unbufferedData.Length - 4;
                     int messageSize = 0;
-                    while(processed <= length) 
+                    while (processed <= length) 
                     {
                         messageSize = BitConverter.ToInt32(BitWorks.ReverseBytes(unbufferedData.Skip(processed).Take(4).ToArray<byte>()), 0);
                         messages.Add(Message.ParseFrom(unbufferedData.Skip(processed).Take(messageSize + 4).ToArray<byte>()));
