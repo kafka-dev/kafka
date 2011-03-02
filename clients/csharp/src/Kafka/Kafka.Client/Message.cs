@@ -86,7 +86,7 @@ namespace Kafka.Client
         /// <returns>The message.</returns>
         public static Message ParseFrom(byte[] data)
         {
-            int size = BitConverter.ToInt32(data, 0);
+            int size = BitConverter.ToInt32(BitWorks.ReverseBytes(data.Take(4).ToArray<byte>()), 0);
             byte magic = data[4];
             byte[] checksum = data.Skip(5).Take(4).ToArray<byte>();
             byte[] payload = data.Skip(9).Take(size).ToArray<byte>();

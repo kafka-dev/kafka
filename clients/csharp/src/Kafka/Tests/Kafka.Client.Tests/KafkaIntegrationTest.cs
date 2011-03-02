@@ -10,7 +10,6 @@ namespace Kafka.Client.Tests
     /// Contains tests that go all the way to Kafka and back.
     /// </summary>
     [TestFixture]
-    [Ignore]
     public class KafkaIntegrationTest
     {
         /// <summary>
@@ -29,6 +28,18 @@ namespace Kafka.Client.Tests
 
             Producer producer = new Producer("192.168.50.202", 9092);
             producer.Send("test", 0, new List<Message> { msg1, msg2 });
+        }
+
+        /// <summary>
+        /// Generates messages for Kafka then gets them back.
+        /// </summary>
+        [Test]
+        public void ConsumerGetsMessage()
+        {
+            ProducerSendsMessage();
+
+            Consumer consumer = new Consumer("192.168.50.202", 9092);
+            consumer.Consume("test", 0, 0);
         }
     }
 }

@@ -40,20 +40,18 @@ namespace Kafka.Client
         /// <summary>
         /// Readds data from the server.
         /// </summary>
+        /// <param name="size">The number of bytes to read from the server.</param>
         /// <returns>The data read from the server as a byte array.</returns>
-        public byte[] Read()
+        public byte[] Read(int size)
         {
-            // Get the stream used to read the message sent by the server.
-            NetworkStream networkStream = _client.GetStream();
+            NetworkStream stream = _client.GetStream();
 
             // Set a 10 millisecond timeout for reading.
-            networkStream.ReadTimeout = 10;
-            
-            // Read the server message into a byte buffer.
-            byte[] bytes = new byte[1024];
-            networkStream.Read(bytes, 0, 1024);
+            stream.ReadTimeout = 10;
 
-            networkStream.Close();
+            // Read the server message into a byte buffer.
+            byte[] bytes = new byte[size];
+            stream.Read(bytes, 0, size);
 
             return bytes;
         }
@@ -64,11 +62,10 @@ namespace Kafka.Client
         /// <param name="data">The data to write to the server.</param>
         public void Write(byte[] data)
         {
-            using (NetworkStream stream = _client.GetStream())
-            {
-                // Send the message to the connected TcpServer. 
-                stream.Write(data, 0, data.Length);
-            }
+            NetworkStream stream = _client.GetStream();
+
+            // Send the message to the connected TcpServer. 
+            stream.Write(data, 0, data.Length);
         }
 
         /// <summary>

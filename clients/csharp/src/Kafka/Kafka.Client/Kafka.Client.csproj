@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Consumer.cs" />
     <Compile Include="ProducerRequest.cs" />
     <Compile Include="Util\Crc32.cs" />
     <Compile Include="KafkaConnection.cs" />
