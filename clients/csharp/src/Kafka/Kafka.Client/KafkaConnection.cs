@@ -72,6 +72,15 @@ namespace Kafka.Client
         }
 
         /// <summary>
+        /// Writes a producer request to the server.
+        /// </summary>
+        /// <param name="request">The <see cref="ProducerRequest"/> to send to the server.</param>
+        public void Write(ProducerRequest request)
+        {
+            Write(request.GetBytes());
+        }
+
+        /// <summary>
         /// Close the connection to the server.
         /// </summary>
         public void Dispose()

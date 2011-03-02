@@ -50,47 +50,22 @@ namespace Kafka.Client
         /// <param name="messages">The list of messages to send.</param>
         public void Send(string topic, int partition, IList<Message> messages)
         {
-            using (KafkaConnection connection = new KafkaConnection(Server, Port))
-            {
-                byte[] request = EncodeMessages(topic, partition, messages);
-                connection.Write(request);
-            }
+            Send(new ProducerRequest(topic, partition, messages));
         }
 
         /// <summary>
-        /// Encodes messages to be understood by the Kafka server.
+        /// Sends a request to Kafka.
         /// </summary>
-        /// <param name="topic">The topic to encode.</param>
-        /// <param name="partition">The partition to encode.</param>
-        /// <param name="messages">The messages to encode.</param>
-        /// <returns>Bytes representing the request to send to the server.</returns>
-        private byte[] EncodeMessages(string topic, int partition, IList<Message> messages)
+        /// <param name="request">The request to send to Kafka.</param>
+        public void Send(ProducerRequest request)
         {
-            List<byte> messagePack = new List<byte>();
-            foreach (Message message in messages)
+            if (request.IsValid())
             {
-                byte[] messageBytes = message.GetBytes();
-                messagePack.AddRange(BitWorks.GetBytesReversed(messageBytes.Length));
-                messagePack.AddRange(messageBytes);
+                using (KafkaConnection connection = new KafkaConnection(Server, Port))
+                {
+                    connection.Write(request);
+                }
             }
-
-            byte[] requestBytes = BitWorks.GetBytesReversed(Convert.ToInt16((int)RequestType.Produce));
-            byte[] topicLengthBytes = BitWorks.GetBytesReversed(Convert.ToInt16(topic.Length));
-            byte[] topicBytes = Encoding.UTF8.GetBytes(topic);
-            byte[] partitionBytes = BitWorks.GetBytesReversed(partition);
-            byte[] messagePackLengthBytes = BitWorks.GetBytesReversed(messagePack.Count);
-            byte[] messagePackBytes = messagePack.ToArray();
-            
-            List<byte> encodedMessageSet = new List<byte>();
-            encodedMessageSet.AddRange(requestBytes);
-            encodedMessageSet.AddRange(topicLengthBytes);
-            encodedMessageSet.AddRange(topicBytes);
-            encodedMessageSet.AddRange(partitionBytes);
-            encodedMessageSet.AddRange(messagePackLengthBytes);
-            encodedMessageSet.AddRange(messagePackBytes);
-            encodedMessageSet.InsertRange(0, BitWorks.GetBytesReversed(encodedMessageSet.Count));
-
-            return encodedMessageSet.ToArray();
         }
     }
 }

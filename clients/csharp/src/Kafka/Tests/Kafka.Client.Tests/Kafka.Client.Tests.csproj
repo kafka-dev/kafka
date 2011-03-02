@@ -44,7 +44,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="KafkaIntegrationTest.cs" />
     <Compile Include="MessageTests.cs" />
+    <Compile Include="ProducerRequestTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\BitWorksTests.cs" />
   </ItemGroup>

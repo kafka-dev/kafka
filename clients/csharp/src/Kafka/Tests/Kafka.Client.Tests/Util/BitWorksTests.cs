@@ -16,7 +16,7 @@ namespace Kafka.Client.Tests.Util
         [Test]
         public void GetBytesReversedShortValid()
         {
-            short val = (short) 100;
+            short val = (short)100;
             byte[] normal = BitConverter.GetBytes(val);
             byte[] reversed = BitWorks.GetBytesReversed(val);
 
