@@ -70,15 +70,15 @@ namespace Kafka.Client
             foreach (Message message in messages)
             {
                 byte[] messageBytes = message.GetBytes();
-                messagePack.AddRange(BitWorks.ReverseBytes(BitConverter.GetBytes(messageBytes.Length)));
+                messagePack.AddRange(BitWorks.GetBytesReversed(messageBytes.Length));
                 messagePack.AddRange(messageBytes);
             }
 
-            byte[] requestBytes = BitWorks.ReverseBytes(BitConverter.GetBytes(Convert.ToInt16((int)RequestType.Produce)));
-            byte[] topicLengthBytes = BitWorks.ReverseBytes(BitConverter.GetBytes(Convert.ToInt16(topic.Length)));
+            byte[] requestBytes = BitWorks.GetBytesReversed(Convert.ToInt16((int)RequestType.Produce));
+            byte[] topicLengthBytes = BitWorks.GetBytesReversed(Convert.ToInt16(topic.Length));
             byte[] topicBytes = Encoding.UTF8.GetBytes(topic);
-            byte[] partitionBytes = BitWorks.ReverseBytes(BitConverter.GetBytes(partition));
-            byte[] messagePackLengthBytes = BitWorks.ReverseBytes(BitConverter.GetBytes(messagePack.Count));
+            byte[] partitionBytes = BitWorks.GetBytesReversed(partition);
+            byte[] messagePackLengthBytes = BitWorks.GetBytesReversed(messagePack.Count);
             byte[] messagePackBytes = messagePack.ToArray();
             
             List<byte> encodedMessageSet = new List<byte>();
@@ -88,7 +88,7 @@ namespace Kafka.Client
             encodedMessageSet.AddRange(partitionBytes);
             encodedMessageSet.AddRange(messagePackLengthBytes);
             encodedMessageSet.AddRange(messagePackBytes);
-            encodedMessageSet.InsertRange(0, BitWorks.ReverseBytes(BitConverter.GetBytes(encodedMessageSet.Count)));
+            encodedMessageSet.InsertRange(0, BitWorks.GetBytesReversed(encodedMessageSet.Count));
 
             return encodedMessageSet.ToArray();
         }

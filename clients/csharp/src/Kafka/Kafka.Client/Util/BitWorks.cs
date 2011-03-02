@@ -11,6 +11,36 @@ namespace Kafka.Client.Util
     public class BitWorks
     {
         /// <summary>
+        /// Converts the value to bytes and reverses them.
+        /// </summary>
+        /// <param name="value">The value to convert to bytes.</param>
+        /// <returns>Bytes representing the value.</returns>
+        public static byte[] GetBytesReversed(short value)
+        {
+            return ReverseBytes(BitConverter.GetBytes(value));
+        }
+
+        /// <summary>
+        /// Converts the value to bytes and reverses them.
+        /// </summary>
+        /// <param name="value">The value to convert to bytes.</param>
+        /// <returns>Bytes representing the value.</returns>
+        public static byte[] GetBytesReversed(int value)
+        {
+            return ReverseBytes(BitConverter.GetBytes(value));
+        }
+
+        /// <summary>
+        /// Converts the value to bytes and reverses them.
+        /// </summary>
+        /// <param name="value">The value to convert to bytes.</param>
+        /// <returns>Bytes representing the value.</returns>
+        public static byte[] GetBytesReversed(long value)
+        {
+            return ReverseBytes(BitConverter.GetBytes(value));
+        }
+
+        /// <summary>
         /// Reverse the position of an array of bytes.
         /// </summary>
         /// <param name="inArray">
