@@ -24,6 +24,7 @@ import kafka.server.{KafkaServer, KafkaConfig}
 import org.apache.log4j.{Logger, Level}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.common.MessageSizeTooLargeException
 
 class KafkaProducerTest extends JUnitSuite {
   private var messageBytes =  new Array[Byte](2);
@@ -126,5 +127,18 @@ class KafkaProducerTest extends JUnitSuite {
     val secondEnd = SystemTime.milliseconds
     Assert.assertTrue((secondEnd-secondEnd) < 300)
     simpleProducerLogger.setLevel(Level.ERROR)
+  }
+
+  @Test
+  def testMessageSizeTooLarge() {
+    val producer = new SimpleProducer("localhost", 9091, 100*1024, 300, 500, 100)
+    val bytes = new Array[Byte](101)
+    var failed = false
+    try {
+      producer.send("test", 0, new ByteBufferMessageSet(new Message(bytes)))
+    }catch {
+      case e: MessageSizeTooLargeException => failed = true
+    }
+    Assert.assertTrue(failed)
   }
 }
