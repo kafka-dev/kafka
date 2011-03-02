@@ -24,6 +24,7 @@ import kafka.utils._
 import kafka.api._
 import scala.math._
 import org.apache.log4j.{Level, Logger}
+import kafka.common.MessageSizeTooLargeException
 
 object SimpleProducer {
   val RequestKey: Short = 0
@@ -37,7 +38,8 @@ class SimpleProducer(val host: String,
                      val port: Int,
                      val bufferSize: Int,
                      val connectTimeoutMs: Int,
-                     val reconnectInterval: Int) {
+                     val reconnectInterval: Int,
+                     val maxMessageSize: Int) {
   
   private val logger = Logger.getLogger(getClass())
   private val MaxConnectBackoffMs = 60000
@@ -46,6 +48,10 @@ class SimpleProducer(val host: String,
   private val lock = new Object()
   @volatile
   private var shutdown: Boolean = false
+
+  def this(host: String, port: Int, bufferSize: Int, connectTimeoutMs: Int, reconnectInterval: Int) = {
+    this(host, port, bufferSize, connectTimeoutMs, reconnectInterval, 1000000)
+  }
 
   /**
    * Common functionality for the public send methods
@@ -79,6 +85,7 @@ class SimpleProducer(val host: String,
    * Send a message
    */
   def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+    verifyMessageSize(messages)
     val setSize = messages.sizeInBytes.asInstanceOf[Int]
     if(logger.isTraceEnabled)
       logger.trace("Got message set with " + setSize + " bytes to send")
@@ -88,6 +95,8 @@ class SimpleProducer(val host: String,
   def send(topic: String, messages: ByteBufferMessageSet): Unit = send(topic, ProducerRequest.RandomPartition, messages)
 
   def multiSend(produces: Array[ProducerRequest]) {
+    for (request <- produces)
+      verifyMessageSize(request.messages)
     val setSize = produces.foldLeft(0L)(_ + _.messages.sizeInBytes)
     if(logger.isTraceEnabled)
       logger.trace("Got multi message sets with " + setSize + " bytes to send")
@@ -99,6 +108,12 @@ class SimpleProducer(val host: String,
       disconnect()
       shutdown = true
     }
+  }
+
+  private def verifyMessageSize(messages: ByteBufferMessageSet) {
+    for (message <- messages)
+      if (message.payloadSize > maxMessageSize)
+        throw new MessageSizeTooLargeException
   }
 
   /**

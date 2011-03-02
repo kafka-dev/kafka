@@ -56,3 +56,7 @@ object ErrorMapping {
 class WrongPartitionException(message: String) extends RuntimeException(message) {
   def this() = this(null)  
 }
+
+class MessageSizeTooLargeException(message: String) extends RuntimeException(message) {
+  def this() = this(null)
+}
