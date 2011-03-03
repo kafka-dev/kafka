@@ -39,5 +39,30 @@ namespace Kafka.Client.Tests
             Assert.IsTrue(payloadData.SequenceEqual(message.Payload));
             Assert.IsTrue(checksum.SequenceEqual(message.Checksum));
         }
+
+        /// <summary>
+        /// Ensure that the bytes returned from the message are in valid kafka sequence.
+        /// </summary>
+        [Test]
+        public void GetBytesValidSequence()
+        {
+            Message message = new Message(new byte[10], (byte)245);
+
+            byte[] bytes = message.GetBytes();
+
+            Assert.IsNotNull(bytes);
+
+            // len(payload) + 1 + 4
+            Assert.AreEqual(15, bytes.Length);
+
+            // first 4 bytes = the magic number
+            Assert.AreEqual((byte)245, bytes[0]);
+
+            // next 4 bytes = the checksum
+            Assert.IsTrue(message.Checksum.SequenceEqual(bytes.Skip(1).Take(4).ToArray<byte>()));
+
+            // remaining bytes = the payload
+            Assert.AreEqual(10, bytes.Skip(5).ToArray<byte>().Length);
+        }
     }
 }
