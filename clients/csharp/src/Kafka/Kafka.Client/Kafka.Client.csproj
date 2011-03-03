@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Consumer.cs" />
+    <Compile Include="ConsumerRequest.cs" />
     <Compile Include="ProducerRequest.cs" />
     <Compile Include="Util\Crc32.cs" />
     <Compile Include="KafkaConnection.cs" />

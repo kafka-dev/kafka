@@ -59,22 +59,20 @@ namespace Kafka.Client
         /// <returns>A list of messages from Kafka.</returns>
         public List<Message> Consume(string topic, int partition, long offset, int maxSize)
         {
-            // REQUEST TYPE ID + TOPIC LENGTH + TOPIC + PARTITION + OFFSET + MAX SIZE
-            int requestSize = 2 + 2 + topic.Length + 4 + 8 + 4;
+            return Consume(new ConsumerRequest(topic, partition, offset, maxSize));
+        }
 
-            List<byte> request = new List<byte>();
-            request.AddRange(BitWorks.GetBytesReversed(requestSize));
-            request.AddRange(BitWorks.GetBytesReversed((short)RequestType.Fetch));
-            request.AddRange(BitWorks.GetBytesReversed((short)topic.Length));
-            request.AddRange(Encoding.ASCII.GetBytes(topic));
-            request.AddRange(BitWorks.GetBytesReversed(partition));
-            request.AddRange(BitWorks.GetBytesReversed(offset));
-            request.AddRange(BitWorks.GetBytesReversed(maxSize));
-
+        /// <summary>
+        /// Consumes messages from Kafka.
+        /// </summary>
+        /// <param name="request">The request to send to Kafka.</param>
+        /// <returns>A list of messages from Kafka.</returns>
+        public List<Message> Consume(ConsumerRequest request)
+        {
             List<Message> messages = new List<Message>();
             using (KafkaConnection connection = new KafkaConnection(Server, Port))
             {
-                connection.Write(request.ToArray<byte>());
+                connection.Write(request.GetBytes());
                 int dataLength = BitConverter.ToInt32(BitWorks.ReverseBytes(connection.Read(4)), 0);
 
                 if (dataLength > 0) 
