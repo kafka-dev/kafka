@@ -10,17 +10,17 @@
     byte[] payloadData2 = Encoding.UTF8.GetBytes(payload2);
     Message msg2 = new Message(payloadData2);
 
-    Producer producer = new Producer("192.168.50.201", 9092);
+    Producer producer = new Producer("localhost", 9092);
     producer.Send("test", 0, new List<Message> { msg1, msg2 });
 
 ## Asynchronous Producer Usage
 
     List<Message> messages = GetBunchOfMessages();
 
-    Producer producer = new Producer("192.168.50.202", 9092);
+    Producer producer = new Producer("localhost", 9092);
     producer.SendAsync("test", 0, messages, (requestContext) => { // doing work });
 
 ## Consumer Usage
 
-    Consumer consumer = new Consumer("192.168.50.202", 9092);
+    Consumer consumer = new Consumer("localhost", 9092);
     List<Message> messages = consumer.Consume("test", 0, 0);
