@@ -13,6 +13,13 @@
     Producer producer = new Producer("192.168.50.201", 9092);
     producer.Send("test", 0, new List<Message> { msg1, msg2 });
 
+## Asynchronous Producer Usage
+
+    List<Message> messages = GetBunchOfMessages();
+
+    Producer producer = new Producer("192.168.50.202", 9092);
+    producer.SendAsync("test", 0, messages, (requestContext) => { // doing work });
+
 ## Consumer Usage
 
     Consumer consumer = new Consumer("192.168.50.202", 9092);
