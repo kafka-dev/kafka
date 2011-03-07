@@ -9,7 +9,7 @@ namespace Kafka.Client
     /// <summary>
     /// Constructs a request to send to Kafka.
     /// </summary>
-    public class ConsumerRequest
+    public class ConsumerRequest : AbstractRequest
     {
         /// <summary>
         /// Maximum size.
@@ -48,16 +48,6 @@ namespace Kafka.Client
             Offset = offset;
             MaxSize = maxSize;
         }
-
-        /// <summary>
-        /// Gets or sets the topic to publish to.
-        /// </summary>
-        public string Topic { get; set; }
-
-        /// <summary>
-        /// Gets or sets the partition to publish to.
-        /// </summary>
-        public int Partition { get; set; }
 
         /// <summary>
         /// Gets or sets the offset to request.

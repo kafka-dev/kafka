@@ -67,5 +67,53 @@ namespace Kafka.Client
                 }
             }
         }
+
+        /// <summary>
+        /// Sends a list of messages to Kafka.
+        /// </summary>
+        /// <param name="topic">The topic to publish to.</param>
+        /// <param name="partition">The partition to publish to.</param>
+        /// <param name="messages">The list of messages to send.</param>
+        /// <param name="callback">
+        /// A block of code to execute once the request has been sent to Kafka.  This value may 
+        /// be set to null.
+        /// </param>
+        public void SendAsync(string topic, int partition, IList<Message> messages, MessageSent<ProducerRequest> callback)
+        {
+            SendAsync(new ProducerRequest(topic, partition, messages), callback);
+        }
+
+        /// <summary>
+        /// Send a request to Kafka asynchronously.
+        /// </summary>
+        /// <remarks>
+        /// If the callback is not specified then the method behaves as a fire-and-forget call
+        /// with the callback being ignored.  By the time this callback is executed, the 
+        /// <see cref="RequestContext.NetworkStream"/> will already have been closed given an 
+        /// internal call <see cref="NetworkStream.EndWrite"/>.
+        /// </remarks>
+        /// <param name="request">The request to send to Kafka.</param>
+        /// <param name="callback">
+        /// A block of code to execute once the request has been sent to Kafka.  This value may 
+        /// be set to null.
+        /// </param>
+        public void SendAsync(ProducerRequest request, MessageSent<ProducerRequest> callback)
+        {
+            if (request.IsValid())
+            {
+                KafkaConnection connection = new KafkaConnection(Server, Port);
+
+                if (callback == null)
+                {
+                    // fire and forget
+                    connection.BeginWrite(request.GetBytes());
+                }
+                else
+                {
+                    // execute with callback
+                    connection.BeginWrite(request, callback);
+                }
+            }
+        }
     }
 }

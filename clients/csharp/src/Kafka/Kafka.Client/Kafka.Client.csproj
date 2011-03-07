@@ -40,9 +40,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbstractRequest.cs" />
     <Compile Include="Consumer.cs" />
     <Compile Include="ConsumerRequest.cs" />
     <Compile Include="ProducerRequest.cs" />
+    <Compile Include="RequestContext.cs" />
     <Compile Include="Util\Crc32.cs" />
     <Compile Include="KafkaConnection.cs" />
     <Compile Include="Message.cs" />

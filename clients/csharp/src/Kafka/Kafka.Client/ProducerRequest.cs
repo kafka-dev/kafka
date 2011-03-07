@@ -8,7 +8,7 @@ namespace Kafka.Client
     /// <summary>
     /// Constructs a request to send to Kafka.
     /// </summary>
-    public class ProducerRequest
+    public class ProducerRequest : AbstractRequest
     {
         /// <summary>
         /// Initializes a new instance of the ProducerRequest class.
@@ -29,16 +29,6 @@ namespace Kafka.Client
             Partition = partition;
             Messages = messages;
         }
-
-        /// <summary>
-        /// Gets or sets the topic to publish to.
-        /// </summary>
-        public string Topic { get; set; }
-
-        /// <summary>
-        /// Gets or sets the partition to publish to.
-        /// </summary>
-        public int Partition { get; set; }
 
         /// <summary>
         /// Gets or sets the messages to publish.

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Threading;
 using NUnit.Framework;
 
 namespace Kafka.Client.Tests
@@ -31,6 +31,30 @@ namespace Kafka.Client.Tests
         }
 
         /// <summary>
+        /// Asynchronously sends a pair of message to Kafka.
+        /// </summary>
+        [Test]
+        public void ProducerSendsMessageAsynchronously()
+        {
+            bool waiting = true;
+
+            List<Message> messages = GenerateRandomMessages(50);
+
+            Producer producer = new Producer("192.168.50.202", 9092);
+            producer.SendAsync(
+                "test",
+                0,
+                messages,
+                (requestContext) => { waiting = false; });
+
+            while (waiting)
+            {
+                Console.WriteLine("Keep going...");
+                Thread.Sleep(10);
+            }
+        }
+
+        /// <summary>
         /// Generates messages for Kafka then gets them back.
         /// </summary>
         [Test]
@@ -40,6 +64,36 @@ namespace Kafka.Client.Tests
 
             Consumer consumer = new Consumer("192.168.50.202", 9092);
             consumer.Consume("test", 0, 0);
+        }
+
+        /// <summary>
+        /// Gererates a randome list of messages.
+        /// </summary>
+        /// <param name="numberOfMessages">The number of messages to generate.</param>
+        /// <returns>A list of random messages.</returns>
+        private static List<Message> GenerateRandomMessages(int numberOfMessages)
+        {
+            List<Message> messages = new List<Message>();
+            for (int ix = 0; ix < numberOfMessages; ix++)
+            {
+                messages.Add(new Message(GenerateRandomBytes(10000)));
+            }
+
+            return messages;
+        }
+
+        /// <summary>
+        /// Generate a random set of bytes.
+        /// </summary>
+        /// <param name="length">Length of the byte array.</param>
+        /// <returns>Random byte array.</returns>
+        private static byte[] GenerateRandomBytes(int length)
+        {
+            byte[] randBytes = new byte[length];
+            Random randNum = new Random();
+            randNum.NextBytes(randBytes);
+
+            return randBytes;
         }
     }
 }
