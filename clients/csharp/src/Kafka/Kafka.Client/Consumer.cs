@@ -96,5 +96,55 @@ namespace Kafka.Client
 
             return messages;
         }
+
+        /// <summary>
+        /// Get a list of valid offsets (up to maxSize) before the given time.
+        /// </summary>
+        /// <param name="topic">The topic to check.</param>
+        /// <param name="partition">The partition on the topic.</param>
+        /// <param name="time">time in millisecs (if -1, just get from the latest available)</param>
+        /// <param name="maxNumOffsets">That maximum number of offsets to return.</param>
+        /// <returns>List of offsets, in descending order.</returns>
+        public IList<long> GetOffsetsBefore(string topic, int partition, long time, int maxNumOffsets)
+        {
+            return GetOffsetsBefore(new OffsetRequest(topic, partition, time, maxNumOffsets));
+        }
+
+        /// <summary>
+        /// Get a list of valid offsets (up to maxSize) before the given time.
+        /// </summary>
+        /// <param name="request">The offset request.</param>
+        /// <returns>List of offsets, in descending order.</returns>
+        public IList<long> GetOffsetsBefore(OffsetRequest request)
+        {
+            List<long> offsets = new List<long>();
+
+            using (KafkaConnection connection = new KafkaConnection(Server, Port))
+            {
+                connection.Write(request.GetBytes());
+
+                int dataLength = BitConverter.ToInt32(BitWorks.ReverseBytes(connection.Read(4)), 0);
+                
+                if (dataLength > 0)
+                {
+                    byte[] data = connection.Read(dataLength);
+
+                    // remove two byte buffer
+                    byte[] unbufferedData = data.Skip(2).ToArray();
+
+                    // first four bytes are the number of offsets
+                    int numOfOffsets = BitConverter.ToInt32(BitWorks.ReverseBytes(unbufferedData.Take(4).ToArray<byte>()), 0);
+
+                    int position = 0;
+                    for (int ix = 0; ix < numOfOffsets; ix++)
+                    {
+                        position = (ix * 8) + 4;
+                        offsets.Add(BitConverter.ToInt64(BitWorks.ReverseBytes(unbufferedData.Skip(position).Take(8).ToArray<byte>()), 0));
+                    }
+                }
+            }
+
+            return offsets;
+        }
     }
 }

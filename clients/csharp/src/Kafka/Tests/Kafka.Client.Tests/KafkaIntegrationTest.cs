@@ -67,6 +67,23 @@ namespace Kafka.Client.Tests
         }
 
         /// <summary>
+        /// Gets offsets from Kafka.
+        /// </summary>
+        [Test]
+        public void ConsumerGetsOffsets()
+        {
+            OffsetRequest request = new OffsetRequest("test", 0, OffsetRequest.LatestTime, 10);
+
+            Consumer consumer = new Consumer("192.168.50.202", 9092);
+            IList<long> list = consumer.GetOffsetsBefore(request);
+
+            foreach (long l in list)
+            {
+                Console.Out.WriteLine(l);
+            }
+        }
+
+        /// <summary>
         /// Gererates a randome list of messages.
         /// </summary>
         /// <param name="numberOfMessages">The number of messages to generate.</param>

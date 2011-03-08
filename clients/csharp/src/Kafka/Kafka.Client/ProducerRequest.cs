@@ -48,7 +48,7 @@ namespace Kafka.Client
         /// Gets the bytes matching the expected Kafka structure. 
         /// </summary>
         /// <returns>The byte array of the request.</returns>
-        public byte[] GetBytes()
+        public override byte[] GetBytes()
         {
             List<byte> messagePack = new List<byte>();
             foreach (Message message in Messages)

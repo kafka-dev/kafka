@@ -72,7 +72,7 @@ namespace Kafka.Client
         /// Gets the bytes matching the expected Kafka structure. 
         /// </summary>
         /// <returns>The byte array of the request.</returns>
-        public byte[] GetBytes()
+        public override byte[] GetBytes()
         {
             // REQUEST TYPE ID + TOPIC LENGTH + TOPIC + PARTITION + OFFSET + MAX SIZE
             int requestSize = 2 + 2 + Topic.Length + 4 + 8 + 4;

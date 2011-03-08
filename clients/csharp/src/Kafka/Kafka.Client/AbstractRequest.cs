@@ -19,5 +19,11 @@ namespace Kafka.Client
         /// Gets or sets the partition to publish to.
         /// </summary>
         public int Partition { get; set; }
+
+        /// <summary>
+        /// Converts the request to an array of bytes that is expected by Kafka.
+        /// </summary>
+        /// <returns>An array of bytes that represents the request.</returns>
+        public abstract byte[] GetBytes();
     }
 }
