@@ -18,6 +18,11 @@ Kafka is a new project, and we are interested in building the community; we woul
 To get kafka code:
   git clone git@github.com:kafka-dev/kafka.git kafka
 
+To build: 
+
+1. for the first time: ./sbt update compile
+2. else: ./sbt compile
+
 To run unit tests:
   ./sbt test
 
