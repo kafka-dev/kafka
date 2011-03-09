@@ -72,7 +72,7 @@ namespace Kafka.Client.Tests
         [Test]
         public void ConsumerGetsOffsets()
         {
-            OffsetRequest request = new OffsetRequest("test", 0, OffsetRequest.LatestTime, 10);
+            OffsetRequest request = new OffsetRequest("test", 0, DateTime.Now.AddHours(-6).Ticks, 10);
 
             Consumer consumer = new Consumer("192.168.50.202", 9092);
             IList<long> list = consumer.GetOffsetsBefore(request);

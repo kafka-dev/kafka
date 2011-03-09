@@ -73,7 +73,23 @@ namespace Kafka.Client
             stream.ReadTimeout = readTimeout;
 
             byte[] bytes = new byte[size];
-            stream.Read(bytes, 0, size);
+            bool readComplete = false;
+            int numberOfTries = 0;
+
+            while (!readComplete && numberOfTries < 1000)
+            {
+                if (stream.DataAvailable)
+                {
+                    stream.Read(bytes, 0, size);
+                    readComplete = true;
+                }
+                else
+                {
+                    // wait until the server is ready to send some stuff.
+                    numberOfTries++;
+                    Thread.Sleep(10);
+                }
+            } 
             
             return bytes;
         }
@@ -167,6 +183,7 @@ namespace Kafka.Client
         {
             if (_client != null)
             {
+                _client.GetStream().Close();
                 _client.Close();
             }
         }
