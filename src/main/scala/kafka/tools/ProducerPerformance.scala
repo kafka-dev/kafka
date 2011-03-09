@@ -84,7 +84,7 @@ object ProducerPerformance {
     val url = new URI(options.valueOf(urlOpt))
     val numMessages = options.valueOf(numMessagesOpt).intValue
     val messageSize = options.valueOf(messageSizeOpt).intValue
-    var isFixSize = options.has(varyMessageSizeOpt)
+    var isFixSize = !options.has(varyMessageSizeOpt)
     val batchSize = options.valueOf(batchSizeOpt).intValue
     val numThreads = options.valueOf(numThreadsOpt).intValue
     val topic = options.valueOf(topicOpt)
