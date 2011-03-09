@@ -33,7 +33,8 @@ class LogManager(val config: KafkaConfig,
                  private val scheduler: KafkaScheduler,
                  private val time: Time,
                  val logCleanupIntervalMs: Long,
-                 val logCleanupMinAgeMs: Long) {
+                 val logCleanupMinAgeMs: Long,
+                 needRecovery: Boolean) {
   
   val logDir: File = new File(config.logDir)
   private val numPartitions = config.numPartitions
@@ -64,7 +65,7 @@ class LogManager(val config: KafkaConfig,
         logger.warn("Skipping unexplainable file '" + dir.getAbsolutePath() + "'--should it be there?")
       } else {
         logger.info("Loading log '" + dir.getName() + "'")
-        val log = new Log(dir, maxSize, flushInterval)
+        val log = new Log(dir, maxSize, flushInterval, needRecovery)
         val topicPartion = Utils.getTopicPartition(dir.getName)
         logs.putIfNotExists(topicPartion._1, new Pool[Int, Log]())
         val parts = logs.get(topicPartion._1)
@@ -142,7 +143,7 @@ class LogManager(val config: KafkaConfig,
     logCreationLock synchronized {
       val d = new File(logDir, topic + "-" + partition)
       d.mkdirs()
-      new Log(d, maxSize, flushInterval)
+      new Log(d, maxSize, flushInterval, false)
     }
   }
   

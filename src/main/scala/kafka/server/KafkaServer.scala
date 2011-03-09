@@ -23,31 +23,38 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 import kafka.utils.{Utils, SystemTime, KafkaScheduler}
 import kafka.network.{SocketServerStats, SocketServer}
+import java.io.File
 
 class KafkaServer(val config: KafkaConfig) {
-  
+  val CLEAN_SHUTDOWN_FILE = ".kafka_cleanshutdown"
   val isStarted = new AtomicBoolean(false)
   
   private val logger = Logger.getLogger(classOf[KafkaServer])
   private val shutdownLatch = new CountDownLatch(1)
   private val statsMBeanName = "kafka:type=kafka.SocketServerStats"
   
-  @BeanProperty
   var socketServer: SocketServer = null
   
-  @BeanProperty
   val scheduler = new KafkaScheduler(1, "kafka-logcleaner-", false)
   
-  private val logManager: LogManager = new LogManager(config,
-                                                      scheduler,
-                                                      SystemTime,
-                                                      1000 * 60 * config.logCleanupIntervalMinutes,
-                                                      1000 * 60 * 60 * config.logRetentionHours)
+  private var logManager: LogManager = null
 
   def startup() {
     try {
       logger.info("Starting Kafka server...")
-    
+      var needRecovery = true
+      val cleanShutDownFile = new File(new File(config.logDir), CLEAN_SHUTDOWN_FILE)
+      if (cleanShutDownFile.exists) {
+        needRecovery = false
+        cleanShutDownFile.delete
+      }
+      logManager = new LogManager(config,
+                                  scheduler,
+                                  SystemTime,
+                                  1000L * 60 * config.logCleanupIntervalMinutes,
+                                  1000L * 60 * 60 * config.logRetentionHours,
+                                  needRecovery)
+                                                    
       val handlers = new KafkaRequestHandlers(logManager)
       socketServer = new SocketServer(config.port,
                                       config.numThreads,
@@ -72,10 +79,20 @@ class KafkaServer(val config: KafkaConfig) {
   
   def shutdown() {
     logger.info("Shutting down...")
-    scheduler.shutdown
-    socketServer.shutdown()
-    Utils.swallow(logger.warn, Utils.unregisterMBean(statsMBeanName))
-    logManager.close()
+    try {
+      scheduler.shutdown
+      socketServer.shutdown()
+      Utils.swallow(logger.warn, Utils.unregisterMBean(statsMBeanName))
+      logManager.close()
+
+      val cleanShutDownFile = new File(new File(config.logDir), CLEAN_SHUTDOWN_FILE)
+      cleanShutDownFile.createNewFile
+    }
+    catch {
+      case e =>
+        logger.fatal(e)
+        logger.fatal(Utils.stackTrace(e))
+    }    
     shutdownLatch.countDown()
     logger.info("shut down completed")
   }

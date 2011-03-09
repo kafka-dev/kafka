@@ -41,7 +41,7 @@ class LogManagerTest extends JUnitSuite {
                    override val logFileSize = 1024
                    override val enableZookeeper = false
                  }
-    logManager = new LogManager(config, null, time, -1, maxLogAge)
+    logManager = new LogManager(config, null, time, -1, maxLogAge, false)
     logManager.startup
     logDir = logManager.logDir
   }
@@ -95,7 +95,7 @@ class LogManagerTest extends JUnitSuite {
                    override val flushInterval = Int.MaxValue
                    override val flushIntervalMap = Utils.getTopicFlushIntervals("timebasedflush:100")
                  }
-    logManager = new LogManager(config, null, time, -1, maxLogAge)
+    logManager = new LogManager(config, null, time, -1, maxLogAge, false)
     logManager.startup
     val log = logManager.getOrCreateLog("timebasedflush", 0)
     for(i <- 0 until 200) {
@@ -118,7 +118,7 @@ class LogManagerTest extends JUnitSuite {
                    override val topicPartitionsMap = Utils.getTopicPartitions("testPartition:2")
                  }
     
-    logManager = new LogManager(config, null, time, -1, maxLogAge)
+    logManager = new LogManager(config, null, time, -1, maxLogAge, false)
     logManager.startup
     
     for(i <- 0 until 2) {
