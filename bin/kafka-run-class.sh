@@ -20,6 +20,13 @@ do
   fi
 done
 
+for file in $base_dir/lib_managed/scala_2.8.0/compile/*.jar;
+do
+  if [ ${file##*/} != "sbt-launch.jar" ]; then
+    CLASSPATH=$CLASSPATH:$file
+  fi
+done
+
 if [ -z "$KAFKA_OPTS" ]; then
   KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=file:$base_dir/src/log4j.properties "
 fi

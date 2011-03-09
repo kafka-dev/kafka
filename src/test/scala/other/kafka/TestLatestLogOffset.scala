@@ -35,7 +35,7 @@ object TestLatestLogOffset {
     val partition = args(2).toInt
 
     val topicDir = logDirName + "/" + topic + "-" + partition
-    val log = new Log(new File(topicDir), 50*1024*1024, 5000000)
+    val log = new Log(new File(topicDir), 50*1024*1024, 5000000, false)
     val offsets = log.getOffsetsBefore(new OffsetRequest(topic, partition, OffsetRequest.LATEST_TIME, 1))
     println("# of latest offsets returned " + offsets.length)
 
