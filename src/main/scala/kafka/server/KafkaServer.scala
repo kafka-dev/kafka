@@ -51,8 +51,8 @@ class KafkaServer(val config: KafkaConfig) {
       logManager = new LogManager(config,
                                   scheduler,
                                   SystemTime,
-                                  1000 * 60 * config.logCleanupIntervalMinutes,
-                                  1000 * 60 * 60 * config.logRetentionHours,
+                                  1000L * 60 * config.logCleanupIntervalMinutes,
+                                  1000L * 60 * 60 * config.logRetentionHours,
                                   needRecovery)
                                                     
       val handlers = new KafkaRequestHandlers(logManager)
