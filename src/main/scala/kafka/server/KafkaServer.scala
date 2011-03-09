@@ -26,7 +26,7 @@ import kafka.network.{SocketServerStats, SocketServer}
 import java.io.File
 
 class KafkaServer(val config: KafkaConfig) {
-  val CLEAN_SHUTDOWN_FILE = ".cleanshutdown"
+  val CLEAN_SHUTDOWN_FILE = ".kafka_cleanshutdown"
   val isStarted = new AtomicBoolean(false)
   
   private val logger = Logger.getLogger(classOf[KafkaServer])
