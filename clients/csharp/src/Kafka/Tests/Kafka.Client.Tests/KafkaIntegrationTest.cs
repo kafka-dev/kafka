@@ -26,7 +26,7 @@ namespace Kafka.Client.Tests
             byte[] payloadData2 = Encoding.UTF8.GetBytes(payload2);
             Message msg2 = new Message(payloadData2);
 
-            Producer producer = new Producer("192.168.50.202", 9092);
+            Producer producer = new Producer("192.168.50.203", 9092);
             producer.Send("test", 0, new List<Message> { msg1, msg2 });
         }
 
@@ -40,7 +40,7 @@ namespace Kafka.Client.Tests
 
             List<Message> messages = GenerateRandomMessages(50);
 
-            Producer producer = new Producer("192.168.50.202", 9092);
+            Producer producer = new Producer("192.168.50.203", 9092);
             producer.SendAsync(
                 "test",
                 0,
@@ -62,7 +62,7 @@ namespace Kafka.Client.Tests
         {
             ProducerSendsMessage();
 
-            Consumer consumer = new Consumer("192.168.50.202", 9092);
+            Consumer consumer = new Consumer("192.168.50.203", 9092);
             consumer.Consume("test", 0, 0);
         }
 
@@ -72,9 +72,9 @@ namespace Kafka.Client.Tests
         [Test]
         public void ConsumerGetsOffsets()
         {
-            OffsetRequest request = new OffsetRequest("test", 0, DateTime.Now.AddHours(-6).Ticks, 10);
+            OffsetRequest request = new OffsetRequest("test", 0, DateTime.Now.AddHours(-24).Ticks, 10);
 
-            Consumer consumer = new Consumer("192.168.50.202", 9092);
+            Consumer consumer = new Consumer("192.168.50.203", 9092);
             IList<long> list = consumer.GetOffsetsBefore(request);
 
             foreach (long l in list)

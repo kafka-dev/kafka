@@ -79,7 +79,7 @@ namespace Kafka.Client
                 {
                     byte[] data = connection.Read(dataLength);
 
-                    // remove two byte buffer
+                    // TODO: need to check in on kafka error codes...assume all's good for now
                     byte[] unbufferedData = data.Skip(2).ToArray();
 
                     int processed = 0;
@@ -129,7 +129,7 @@ namespace Kafka.Client
                 {
                     byte[] data = connection.Read(dataLength);
 
-                    // remove two byte buffer
+                    // TODO: need to check in on kafka error codes...assume all's good for now
                     byte[] unbufferedData = data.Skip(2).ToArray();
 
                     // first four bytes are the number of offsets
