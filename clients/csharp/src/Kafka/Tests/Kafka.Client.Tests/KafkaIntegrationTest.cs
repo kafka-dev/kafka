@@ -10,8 +10,19 @@ namespace Kafka.Client.Tests
     /// Contains tests that go all the way to Kafka and back.
     /// </summary>
     [TestFixture]
+    [Ignore("Requires a Kafka server running to execute")]
     public class KafkaIntegrationTest
     {
+        /// <summary>
+        /// Kafka server to test against.
+        /// </summary>
+        private static readonly string KafkaServer = "192.168.50.203";
+
+        /// <summary>
+        /// Port of the Kafka server to test against.
+        /// </summary>
+        private static readonly int KafkaPort = 9092;
+
         /// <summary>
         /// Sends a pair of message to Kafka.
         /// </summary>
@@ -26,7 +37,7 @@ namespace Kafka.Client.Tests
             byte[] payloadData2 = Encoding.UTF8.GetBytes(payload2);
             Message msg2 = new Message(payloadData2);
 
-            Producer producer = new Producer("192.168.50.203", 9092);
+            Producer producer = new Producer(KafkaServer, KafkaPort);
             producer.Send("test", 0, new List<Message> { msg1, msg2 });
         }
 
@@ -40,7 +51,7 @@ namespace Kafka.Client.Tests
 
             List<Message> messages = GenerateRandomMessages(50);
 
-            Producer producer = new Producer("192.168.50.203", 9092);
+            Producer producer = new Producer(KafkaServer, KafkaPort);
             producer.SendAsync(
                 "test",
                 0,
@@ -62,7 +73,7 @@ namespace Kafka.Client.Tests
         {
             ProducerSendsMessage();
 
-            Consumer consumer = new Consumer("192.168.50.203", 9092);
+            Consumer consumer = new Consumer(KafkaServer, KafkaPort);
             consumer.Consume("test", 0, 0);
         }
 
@@ -74,7 +85,7 @@ namespace Kafka.Client.Tests
         {
             OffsetRequest request = new OffsetRequest("test", 0, DateTime.Now.AddHours(-24).Ticks, 10);
 
-            Consumer consumer = new Consumer("192.168.50.203", 9092);
+            Consumer consumer = new Consumer(KafkaServer, KafkaPort);
             IList<long> list = consumer.GetOffsetsBefore(request);
 
             foreach (long l in list)
