@@ -23,7 +23,7 @@ import scala.actors.Actor
 import scala.collection._
 import java.util.concurrent.CountDownLatch
 import kafka.server.{KafkaConfig, KafkaZooKeeper}
-import kafka.common.WrongPartitionException
+import kafka.common.{InvalidTopicException, WrongPartitionException}
 
 /**
  * The guy who creates and hands out logs
@@ -165,6 +165,8 @@ class LogManager(val config: KafkaConfig,
    */
   def getOrCreateLog(topic: String, partition: Int): Log = {
     awaitStartup
+    if (topic.length <= 0)
+      throw new InvalidTopicException("topic name can't be empty")
     if (partition < 0 || partition >= topicPartitionsMap.getOrElse(topic, numPartitions)) {
       logger.warn("Wrong partition " + partition + " valid partitions (0," +
               (topicPartitionsMap.getOrElse(topic, numPartitions) - 1) + ")")

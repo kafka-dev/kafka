@@ -33,13 +33,15 @@ object ErrorMapping {
   val INVALID_MESSAGE_CODE = 2
   val WRONG_PARTITION_CODE = 3
   val INVALID_RETCH_SIZE_CODE = 4
+  val INVALID_TOPIC_CODE = 5
 
   private val exceptionToCode = 
     Map[Class[Throwable], Int](
       classOf[OffsetOutOfRangeException].asInstanceOf[Class[Throwable]] -> OFFSET_OUT_OF_RANGE_CODE,
       classOf[InvalidMessageException].asInstanceOf[Class[Throwable]] -> INVALID_MESSAGE_CODE,
       classOf[WrongPartitionException].asInstanceOf[Class[Throwable]] -> WRONG_PARTITION_CODE,
-      classOf[InvalidMessageSizeException].asInstanceOf[Class[Throwable]] -> INVALID_RETCH_SIZE_CODE
+      classOf[InvalidMessageSizeException].asInstanceOf[Class[Throwable]] -> INVALID_RETCH_SIZE_CODE,
+      classOf[InvalidTopicException].asInstanceOf[Class[Throwable]] -> INVALID_TOPIC_CODE
     ).withDefaultValue(UNKNOWN_CODE)
   
   /* invert the mapping */
@@ -53,8 +55,12 @@ object ErrorMapping {
       throw codeToException(code).newInstance()
 }
 
-class WrongPartitionException(message: String) extends RuntimeException(message) {
+class InvalidTopicException(message: String) extends RuntimeException(message) {
   def this() = this(null)  
+}
+
+class WrongPartitionException(message: String) extends RuntimeException(message) {
+  def this() = this(null)
 }
 
 class MessageSizeTooLargeException(message: String) extends RuntimeException(message) {
