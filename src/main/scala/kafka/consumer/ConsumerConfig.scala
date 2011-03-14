@@ -64,5 +64,5 @@ class ConsumerConfig(props: Properties) extends ZKConfig(props) {
   val consumerTimeoutMs = Utils.getInt(props, "consumer.timeout.ms", -1)
 
   /* embed a consumer in the broker. e.g., topic1:1,topic2:1 */
-  val embeddedConsumerTopics = Utils.getString(props, "embeddedconsumer.topics", null)
+  val embeddedConsumerTopicMap = Utils.getConsumerTopicMap(Utils.getString(props, "embeddedconsumer.topics", ""))
 }

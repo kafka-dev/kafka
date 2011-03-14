@@ -27,7 +27,7 @@ import java.io.File
 
 class KafkaServer(val config: KafkaConfig) {
   val CLEAN_SHUTDOWN_FILE = ".kafka_cleanshutdown"
-  val isStarted = new AtomicBoolean(false)
+  private val isShuttingDown = new AtomicBoolean(false)
   
   private val logger = Logger.getLogger(classOf[KafkaServer])
   private val shutdownLatch = new CountDownLatch(1)
@@ -78,23 +78,26 @@ class KafkaServer(val config: KafkaConfig) {
   }
   
   def shutdown() {
-    logger.info("Shutting down...")
-    try {
-      scheduler.shutdown
-      socketServer.shutdown()
-      Utils.swallow(logger.warn, Utils.unregisterMBean(statsMBeanName))
-      logManager.close()
+    val canShutdown = isShuttingDown.compareAndSet(false, true);
+    if (canShutdown) {
+      logger.info("Shutting down...")
+      try {
+        scheduler.shutdown
+        socketServer.shutdown()
+        Utils.swallow(logger.warn, Utils.unregisterMBean(statsMBeanName))
+        logManager.close()
 
-      val cleanShutDownFile = new File(new File(config.logDir), CLEAN_SHUTDOWN_FILE)
-      cleanShutDownFile.createNewFile
+        val cleanShutDownFile = new File(new File(config.logDir), CLEAN_SHUTDOWN_FILE)
+        cleanShutDownFile.createNewFile
+      }
+      catch {
+        case e =>
+          logger.fatal(e)
+          logger.fatal(Utils.stackTrace(e))
+      }
+      shutdownLatch.countDown()
+      logger.info("shut down completed")
     }
-    catch {
-      case e =>
-        logger.fatal(e)
-        logger.fatal(Utils.stackTrace(e))
-    }    
-    shutdownLatch.countDown()
-    logger.info("shut down completed")
   }
   
   def awaitShutdown(): Unit = shutdownLatch.await()

@@ -508,6 +508,12 @@ object Utils {
     getCSVMap(allPartitions, exceptionMsg, successMsg)
   }
 
+  def getConsumerTopicMap(consumerTopicString: String) : Map[String, Int] = {
+    val exceptionMsg = "Malformed token for embeddedconsumer.topics in consumer.properties: "
+    val successMsg =  "The number of consumer thread for topic  "
+    getCSVMap(consumerTopicString, exceptionMsg, successMsg)
+  }
+
   def getObject[T<:AnyRef](className: String): T = {
     val clazz = Class.forName(className)
     val clazzT = clazz.asInstanceOf[Class[T]]
