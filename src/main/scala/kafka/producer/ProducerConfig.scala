@@ -16,10 +16,12 @@
 
 package kafka.producer
 
+import async.AsyncProducerConfig
 import java.util.Properties
 import kafka.utils.Utils
 
 class ProducerConfig(props: Properties) {
+
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class", "kafka.producer.DefaultPartitioner")
 
@@ -50,6 +52,29 @@ class ProducerConfig(props: Properties) {
   /** how far a ZK follower can be behind a ZK leader */
   val zkSyncTimeMs = Utils.getInt(props, "zk.synctime.ms", 2000)
 
+  /** Async Producer config options */
+  /* maximum time, in milliseconds, for buffering data on the producer queue */
+  val queueTime = Utils.getInt(props, "queue.time", 5000)
+
+  /** the maximum size of the blocking queue for buffering on the producer */
+  val queueSize = Utils.getInt(props, "queue.size", 10000)
+
+  /** the number of messages batched at the producer */
+  val batchSize = Utils.getInt(props, "batch.size", 200)
+
+  /** the callback handler for one or multiple events */
+  val cbkHandler = Utils.getString(props, "callback.handler", null)
+
+  /** properties required to initialize the callback handler */
+  val cbkHandlerProps = Utils.getProps(props, "callback.handler.props", null)
+
+  /** the handler for events */
+  val eventHandler = Utils.getString(props, "event.handler", null)
+
+  /** properties required to initialize the callback handler */
+  val eventHandlerProps = Utils.getProps(props, "event.handler.props", null)
+
+  /** Sync Producer config options */
   val bufferSize = Utils.getInt(props, "buffer.size", 100*1024)
 
   val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)

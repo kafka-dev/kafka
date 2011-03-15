@@ -16,6 +16,7 @@
 
 package kafka.producer
 
+import async.{QueueItem, CallbackHandler, IEventHandler}
 import org.apache.log4j.Logger
 import kafka.serializer.Encoder
 import kafka.utils._
@@ -25,7 +26,6 @@ import kafka.cluster.{Partition, Broker}
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
-                    serializer: Encoder[V],
                     producerPool: ProducerPool[V],
                     populateProducerPool: Boolean = true) /* for testing purpose only. Applications should ideally */
                                                           /* use the other constructor*/
@@ -56,7 +56,14 @@ class Producer[K,V](config: ProducerConfig,
   }
 
   def this(config: ProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
-    Utils.getObject(config.serializerClass), new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
+    new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
+
+  def this(config: ProducerConfig,
+           eventHandler: IEventHandler[V],
+           cbkHandler: CallbackHandler[V],
+           partitioner: Partitioner[K]) =
+    this(config, partitioner,
+         new ProducerPool[V](config, Utils.getObject(config.serializerClass), eventHandler, cbkHandler))
 
   /**
    * Sends the data, partitioned by key to the topic using either the

@@ -98,10 +98,10 @@ class SimpleConsumer(val host: String,
     }
   }
 
-  def multifetch(fetches: java.util.List[FetchRequest]): MultiFetchResponse = {
-    val fetchesArray = fetches.toArray(new Array[FetchRequest](fetches.size))
-    multifetch(fetchesArray:_*)
-  }
+//  def multifetch(fetches: java.util.List[FetchRequest]): MultiFetchResponse = {
+//    val fetchesArray = fetches.toArray(new Array[FetchRequest](fetches.size))
+//    multifetch(fetchesArray:_*)
+//  }
 
   def multifetch(fetches: FetchRequest*): MultiFetchResponse = {
     lock synchronized {

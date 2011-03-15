@@ -23,32 +23,39 @@ import org.apache.log4j.Logger
 import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
+import java.util.Properties
 
 class EventHandler[T](val producer: SyncProducer,
-                      val serializer: Encoder[T]) {
+                      val serializer: Encoder[T],
+                      val cbkHandler: CallbackHandler[T]) extends IEventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[EventHandler[T]])
 
-  def handle(events: Seq[QueueItem[T]]) {
-    send(serialize(collate(events)))
+  override def init(props: Properties) { }
+
+  override def handle(events: Seq[QueueItem[T]], syncProducer: SyncProducer) {
+    var processedEvents = events
+    if(cbkHandler != null)
+      processedEvents = cbkHandler.beforeSendingData(events)
+    send(serialize(collate(processedEvents)), syncProducer)
   }
 
-  def send(messagesPerTopic: Map[(String, Int), ByteBufferMessageSet]) {
+  private def send(messagesPerTopic: Map[(String, Int), ByteBufferMessageSet], syncProducer: SyncProducer) {
     if(messagesPerTopic.size > 0) {
       val requests = messagesPerTopic.map(f => new ProducerRequest(f._1._1, f._1._2, f._2)).toArray
-      producer.multiSend(requests)
+      syncProducer.multiSend(requests)
       if(logger.isDebugEnabled)
         logger.debug("kafka producer sent messages for topics " + messagesPerTopic)
     }
   }
 
-  def serialize(eventsPerTopic: Map[(String,Int), Seq[T]]): Map[(String, Int), ByteBufferMessageSet] = {
+  private def serialize(eventsPerTopic: Map[(String,Int), Seq[T]]): Map[(String, Int), ByteBufferMessageSet] = {
     import scala.collection.JavaConversions._
     val eventsPerTopicMap = eventsPerTopic.map(e => ((e._1._1, e._1._2) , e._2.map(l => serializer.toMessage(l))))
-    eventsPerTopicMap.map(e => ((e._1._1, e._1._2) , new ByteBufferMessageSet(asList(e._2))))
+    eventsPerTopicMap.map(e => ((e._1._1, e._1._2) , new ByteBufferMessageSet(e._2: _*)))
   }
 
-  def collate(events: Seq[QueueItem[T]]): Map[(String,Int), Seq[T]] = {
+  private def collate(events: Seq[QueueItem[T]]): Map[(String,Int), Seq[T]] = {
     val collatedEvents = new HashMap[(String, Int), Seq[T]]
     val distinctTopics = events.map(e => e.getTopic).toSeq.distinct
     val distinctPartitions = events.map(e => e.getPartition).distinct
@@ -67,7 +74,7 @@ class EventHandler[T](val producer: SyncProducer,
     collatedEvents
   }
 
-  def close = {
+  override def close = {
     producer.close
   }
 }

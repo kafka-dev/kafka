@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package kafka.integration
+package kafka.javaapi.integration
 
 import scala.collection._
 import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.TestUtils
-import kafka.api.{ProducerRequest, FetchRequest}
-import kafka.message.{Message, ByteBufferMessageSet}
+import kafka.api.{FetchRequest}
+import kafka.message.{Message}
 import kafka.common.{WrongPartitionException, OffsetOutOfRangeException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.javaapi.message.ByteBufferMessageSet
+import kafka.javaapi.ProducerRequest
+import kafka.javaapi.MultiFetchResponse
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -47,7 +50,7 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     val topic = "test"
 
 //    send an empty messageset first
-    val sent2 = new ByteBufferMessageSet(Seq.empty[Message]: _*)
+    val sent2 = new ByteBufferMessageSet(getMessageList(Seq.empty[Message]: _*))
     producer.send(topic, sent2)
     Thread.sleep(200)
     sent2.buffer.rewind
@@ -55,7 +58,8 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     TestUtils.checkEquals(sent2.iterator, fetched2.iterator)
 
     // send some messages
-    val sent3 = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent3 = new ByteBufferMessageSet(getMessageList(new Message("hello".getBytes()),
+      new Message("there".getBytes())))
     producer.send(topic, sent3)
     Thread.sleep(200)
     sent3.buffer.rewind
@@ -89,7 +93,8 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(getMessageList(new Message(("a_" + topic).getBytes),
+          new Message(("b_" + topic).getBytes)))
         messages += topic -> set
         producer.send(topic, set)
         set.buffer.rewind
@@ -98,7 +103,7 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
 
       // wait a bit for produced message to be available
       Thread.sleep(200)
-      val response = consumer.multifetch(fetches: _*)
+      val response = consumer.multifetch(getFetchRequestList(fetches: _*))
       for((topic, resp) <- topics.zip(response.toList))
     	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
     }
@@ -113,7 +118,7 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
         fetches += new FetchRequest(topic, 0, -1, 10000)
 
       try {
-        val responses = consumer.multifetch(fetches: _*)
+        val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
         for(resp <- responses)
     	    resp.iterator
         fail("expect exception")
@@ -130,7 +135,7 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
         fetches += new FetchRequest(topic, -1, 0, 10000)
 
       try {
-        val responses = consumer.multifetch(fetches: _*)
+        val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
         for(resp <- responses)
     	    resp.iterator
         fail("expect exception")
@@ -145,6 +150,30 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
   }
 
   @Test
+  def testProduceAndMultiFetchJava() {
+    // send some messages
+    val topics = List("test1", "test2", "test3");
+    {
+      val messages = new mutable.HashMap[String, ByteBufferMessageSet]
+      val fetches : java.util.ArrayList[FetchRequest] = new java.util.ArrayList[FetchRequest]
+      for(topic <- topics) {
+        val set = new ByteBufferMessageSet(getMessageList(new Message(("a_" + topic).getBytes),
+          new Message(("b_" + topic).getBytes)))
+        messages += topic -> set
+        producer.send(topic, set)
+        set.buffer.rewind
+        fetches.add(new FetchRequest(topic, 0, 0, 10000))
+      }
+
+      // wait a bit for produced message to be available
+      Thread.sleep(200)
+      val response = consumer.multifetch(fetches)
+      for((topic, resp) <- topics.zip(response.toList))
+    	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+    }
+  }
+
+  @Test
   def testMultiProduce() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -152,7 +181,8 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(getMessageList(new Message(("a_" + topic).getBytes),
+        new Message(("b_" + topic).getBytes)))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)
@@ -164,8 +194,20 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
       
     // wait a bit for produced message to be available
     Thread.sleep(200)
-    val response = consumer.multifetch(fetches: _*)
+    val response = consumer.multifetch(getFetchRequestList(fetches: _*))
     for((topic, resp) <- topics.zip(response.toList))
   	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+  }
+
+  private def getMessageList(messages: Message*): java.util.List[Message] = {
+    val messageList = new java.util.ArrayList[Message]()
+    messages.foreach(m => messageList.add(m))
+    messageList
+  }
+
+  private def getFetchRequestList(fetches: FetchRequest*): java.util.List[FetchRequest] = {
+    val fetchReqs = new java.util.ArrayList[FetchRequest]()
+    fetches.foreach(f => fetchReqs.add(f))
+    fetchReqs
   }
 }

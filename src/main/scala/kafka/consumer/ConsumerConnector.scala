@@ -30,13 +30,6 @@ trait ConsumerConnector {
   def createMessageStreams(topicCountMap: Map[String,Int]) : Map[String,List[KafkaMessageStream]]
 
   /**
-   *  create a list of MessageStreams for each topic.
-   *  java binding.
-   */
-  def createMessageStreams(topicCountMap: java.util.Map[String,java.lang.Integer]):
-    java.util.Map[String,java.util.List[KafkaMessageStream]]
-
-  /**
    *  Commit the offsets of all broker partitions connected by this connector.
    */
   def commitOffsets

@@ -21,10 +21,13 @@ import java.util.concurrent.{TimeUnit, CountDownLatch, BlockingQueue}
 import org.apache.log4j.Logger
 import collection.mutable.ListBuffer
 import kafka.serializer.Encoder
+import kafka.producer.SyncProducer
 
 class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
                             val serializer: Encoder[T],
-                            val handler: EventHandler[T],
+                            val underlyingProducer: SyncProducer,
+                            val handler: IEventHandler[T],
+                            val cbkHandler: CallbackHandler[T],
                             val queueTime: Long,
                             val batchSize: Int,
                             val shutdownCommand: Any) extends Thread {
@@ -65,15 +68,16 @@ class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
     var events = new ListBuffer[QueueItem[T]]
     while(running) {
       val current: QueueItem[T] = queue.poll(scala.math.max(0, queueTime - (lastSend - now)), TimeUnit.MILLISECONDS)
-      if(current != null && current.getData == shutdownCommand) {
+      if(current != null && current.getData == shutdownCommand)
         return events
-      }
 
-      if(current != null && current.getData != null) {
+      if(current != null && current.getData != null)
         events += current
-      }
 
       now = SystemTime.milliseconds
+
+      if(cbkHandler != null)
+        events = new ListBuffer[QueueItem[T]] ++ cbkHandler.afterDequeuingExistingData(events)
 
       // time to send messages
       val expired: Boolean = (now - lastSend) > queueTime
@@ -92,7 +96,7 @@ class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
   def tryToHandle(events: Seq[QueueItem[T]]) {
     try {
       if(logger.isDebugEnabled) logger.debug("Handling " + events.size + " events")
-      handler.handle(events)
+      handler.handle(events, underlyingProducer)
     }catch {
       case e: Exception => logger.error("Error in handling batch of " + events.size + " events")
     }

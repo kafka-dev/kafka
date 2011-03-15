@@ -230,7 +230,49 @@ object Utils {
     else
       throw new IllegalArgumentException("Missing required property '" + name + "'")
   }
-  
+
+  /**
+   * Get a property of type java.util.Properties or throw and exception if no such property is defined.
+   */
+  def getProps(props: Properties, name: String): Properties = {
+    if(props.containsKey(name)) {
+      val propString = props.getProperty(name)
+      val propValues = propString.split(",")
+      val properties = new Properties
+      for(i <- 0 until propValues.length) {
+        val prop = propValues(i).split("=")
+        if(prop.length != 2)
+          throw new IllegalArgumentException("Illegal format of specifying properties '" + propValues(i) + "'")
+        properties.put(prop(0), prop(1))
+      }
+      properties
+    }
+    else
+      throw new IllegalArgumentException("Missing required property '" + name + "'")
+  }
+
+  /**
+   * Get a property of type java.util.Properties or return the default if no such property is defined
+   */
+  def getProps(props: Properties, name: String, default: Properties): Properties = {
+    if(props.containsKey(name)) {
+      val propString = props.getProperty(name)
+      val propValues = propString.split(",")
+      if(propValues.length < 1)
+        throw new IllegalArgumentException("Illegal format of specifying properties '" + propString + "'")
+      val properties = new Properties
+      for(i <- 0 until propValues.length) {
+        val prop = propValues(i).split("=")
+        if(prop.length != 2)
+          throw new IllegalArgumentException("Illegal format of specifying properties '" + propValues(i) + "'")
+        properties.put(prop(0), prop(1))
+      }
+      properties
+    }
+    else
+      default
+  }
+
   /**
    * Open a channel for the given file
    */
@@ -503,12 +545,16 @@ object Utils {
   }
 
   def getObject[T<:AnyRef](className: String): T = {
-    val clazz = Class.forName(className)
-    val clazzT = clazz.asInstanceOf[Class[T]]
-    val constructors = clazzT.getConstructors
-    require(constructors.length == 1)
-    constructors.head.newInstance().asInstanceOf[T]
-  }  
+    className match {
+      case null => null.asInstanceOf[T]
+      case _ =>
+        val clazz = Class.forName(className)
+        val clazzT = clazz.asInstanceOf[Class[T]]
+        val constructors = clazzT.getConstructors
+        require(constructors.length == 1)
+        constructors.head.newInstance().asInstanceOf[T]
+    }
+  }
 }
 
 class SnapshotStats(private val monitorDurationNs: Long = 30L * 1000L * 1000L * 1000L) {

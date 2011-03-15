@@ -14,15 +14,14 @@
  * limitations under the License.
 */
 
-package kafka.producer
+package kafka.javaapi.producer
 
-import async.{AsyncProducerConfig, AsyncProducer}
 import java.util.Properties
 import org.apache.log4j.{Logger, Level}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import kafka.zk.EmbeddedZookeeper
 import kafka.{TestZKUtils, TestUtils}
-import kafka.message.{ByteBufferMessageSet, Message}
+import kafka.message.Message
 import org.junit.{After, Before, Test}
 import junit.framework.Assert
 import kafka.serializer.Encoder
@@ -33,6 +32,11 @@ import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
 import kafka.common.UnavailableProducerException
 import org.scalatest.junit.JUnitSuite
+import kafka.producer.{SyncProducerConfig, Partitioner, ProducerConfig, DefaultPartitioner, InvalidPartitionException}
+import kafka.producer.ProducerPool
+import kafka.javaapi.message.ByteBufferMessageSet
+import kafka.producer.async.{AsyncProducer, AsyncProducerConfig}
+import kafka.javaapi.Implicits._
 
 class ProducerTest extends JUnitSuite {
   private val topic = "test-topic"
@@ -69,12 +73,17 @@ class ProducerTest extends JUnitSuite {
     props.put("port", port1.toString)
 
     producer1 = new SyncProducer(new SyncProducerConfig(props))
-    producer1.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
+    val messages1 = new java.util.ArrayList[Message]
+    messages1.add(new Message("test".getBytes()))
+    producer1.send("test-topic", new ByteBufferMessageSet(messages1))
 
     producer2 = new SyncProducer(new SyncProducerConfig(props) {
       override val port = port2
     })
-    producer2.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
+    val messages2 = new java.util.ArrayList[Message]
+    messages2.add(new Message("test".getBytes()))
+
+    producer2.send("test-topic", new ByteBufferMessageSet(messages2))
 
     // temporarily set request handler logger to a higher level
     requestHandlerLogger.setLevel(Level.FATAL)
@@ -105,11 +114,13 @@ class ProducerTest extends JUnitSuite {
     val serializer = new StringSerializer
 
     // 2 sync producers
-    val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
-    val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
-    val syncProducer2 = EasyMock.createMock(classOf[SyncProducer])
+    val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     // it should send to partition 0 (first partition) on second broker i.e broker2
-    syncProducer2.send(topic, 0, new ByteBufferMessageSet(new Message("test1".getBytes)))
+    val messages = new java.util.ArrayList[Message]
+    messages.add(new Message("test1".getBytes()))
+    syncProducer2.send(topic, 0, new ByteBufferMessageSet(messages))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -121,10 +132,13 @@ class ProducerTest extends JUnitSuite {
     syncProducers.put(brokerId1, syncProducer1)
     syncProducers.put(brokerId2, syncProducer2)
 
-    val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
+    val producerPool = new ProducerPool[String](config, serializer, syncProducers,
+      new ConcurrentHashMap[Int, AsyncProducer[String]]())
     val producer = new Producer[String, String](config, partitioner, producerPool, false)
 
-    producer.send(new ProducerData[String, String](topic, "test", Array("test1")))
+    val messagesContent = new java.util.ArrayList[String]
+    messagesContent.add("test1")
+    producer.send(new ProducerData[String, String](topic, "test", messagesContent))
     producer.close
 
     EasyMock.verify(syncProducer1)
@@ -140,8 +154,10 @@ class ProducerTest extends JUnitSuite {
     val config = new ProducerConfig(props)
 
     val richProducer = new Producer[String, String](config)
+    val messagesContent = new java.util.ArrayList[String]
+    messagesContent.add("test")
     try {
-      richProducer.send(new ProducerData[String, String](topic, "test", Array("test")))
+      richProducer.send(new ProducerData[String, String](topic, "test", messagesContent))
       Assert.fail("Should fail with InvalidPartitionException")
     }catch {
       case e: InvalidPartitionException => // expected, do nothing
@@ -151,10 +167,12 @@ class ProducerTest extends JUnitSuite {
   @Test
   def testSyncProducerPool() {
     // 2 sync producers
-    val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
-    val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
-    val syncProducer2 = EasyMock.createMock(classOf[SyncProducer])
-    syncProducer1.send("test-topic", 0, new ByteBufferMessageSet(new Message("test1".getBytes)))
+    val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val messages = new java.util.ArrayList[Message]
+    messages.add(new Message("test1".getBytes()))
+    syncProducer1.send("test-topic", 0, new ByteBufferMessageSet(messages))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -203,7 +221,7 @@ class ProducerTest extends JUnitSuite {
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
     val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
-      new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
+      new ConcurrentHashMap[Int, kafka.producer.SyncProducer](), asyncProducers)
     producerPool.send(producerPool.getProducerPoolData(topic, new Partition(brokerId1, 0), Array("test1")))
 
     producerPool.close
@@ -213,9 +231,9 @@ class ProducerTest extends JUnitSuite {
 
   @Test
   def testSyncUnavailableProducerException() {
-    val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
-    val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
-    val syncProducer2 = EasyMock.createMock(classOf[SyncProducer])
+    val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     syncProducer2.close
     EasyMock.expectLastCall
     EasyMock.replay(syncProducer1)
@@ -259,7 +277,7 @@ class ProducerTest extends JUnitSuite {
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
     val producerPool = new ProducerPool[String](new ProducerConfig(props), new StringSerializer,
-      new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
+      new ConcurrentHashMap[Int, kafka.producer.SyncProducer](), asyncProducers)
     try {
       producerPool.send(producerPool.getProducerPoolData(topic, new Partition(brokerId1, 0), Array("test1")))
       Assert.fail("Should fail with UnavailableProducerException")
@@ -301,10 +319,13 @@ class ProducerTest extends JUnitSuite {
     asyncProducers.put(brokerId1, asyncProducer1)
     asyncProducers.put(brokerId2, asyncProducer2)
 
-    val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
+    val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, kafka.producer.SyncProducer](),
+      asyncProducers)
     val producer = new Producer[String, String](config, partitioner, producerPool, false)
 
-    producer.send(new ProducerData[String, String](topic, "test1", Array("test1")))
+    val messagesContent = new java.util.ArrayList[String]
+    messagesContent.add("test1")
+    producer.send(new ProducerData[String, String](topic, "test1", messagesContent))
     producer.close
 
     EasyMock.verify(asyncProducer1)
@@ -323,12 +344,14 @@ class ProducerTest extends JUnitSuite {
     val serializer = new StringSerializer
 
     // 2 sync producers
-    val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
-    val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
-    val syncProducer2 = EasyMock.createMock(classOf[SyncProducer])
-    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(new Message("test1".getBytes)))
+    val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val messages1 = new java.util.ArrayList[Message]
+    messages1.add(new Message("test1".getBytes()))
+    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(messages1))
     EasyMock.expectLastCall
-    syncProducer1.send("test-topic1", 1, new ByteBufferMessageSet(new Message("test1".getBytes)))
+    syncProducer1.send("test-topic1", 1, new ByteBufferMessageSet(messages1))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -343,21 +366,24 @@ class ProducerTest extends JUnitSuite {
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
     val producer = new Producer[String, String](config, partitioner, producerPool, false)
 
-    producer.send(new ProducerData[String, String]("test-topic1", "test", Array("test1")))
+    val messagesContent = new java.util.ArrayList[String]
+    messagesContent.add("test1")
+    producer.send(new ProducerData[String, String]("test-topic1", "test", messagesContent))
 
     // now send again to this topic using a real producer, this time all brokers would have registered
     // their partitions in zookeeper
-    producer1.send("test-topic1", new ByteBufferMessageSet(new Message("test".getBytes())))
+    val messages = new java.util.ArrayList[Message]
+    messages.add(new Message("test".getBytes()))
+    producer1.send("test-topic1", new ByteBufferMessageSet(messages))
 
     // wait for zookeeper to register the new topic
     Thread.sleep(500)
 
-    producer.send(new ProducerData[String, String]("test-topic1", "test1", Array("test1")))
+    producer.send(new ProducerData[String, String]("test-topic1", "test1", messagesContent))
     producer.close
 
     EasyMock.verify(syncProducer1)
     EasyMock.verify(syncProducer2)
-
   }
 
   @Test
@@ -372,11 +398,13 @@ class ProducerTest extends JUnitSuite {
     val serializer = new StringSerializer
 
     // 2 sync producers
-    val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()
-    val syncProducer1 = EasyMock.createMock(classOf[SyncProducer])
-    val syncProducer2 = EasyMock.createMock(classOf[SyncProducer])
-    val syncProducer3 = EasyMock.createMock(classOf[SyncProducer])
-    syncProducer3.send("test-topic", 2, new ByteBufferMessageSet(new Message("test1".getBytes)))
+    val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val syncProducer3 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    val messages1 = new java.util.ArrayList[Message]
+    messages1.add(new Message("test1".getBytes()))
+    syncProducer3.send("test-topic", 2, new ByteBufferMessageSet(messages1))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -405,12 +433,16 @@ class ProducerTest extends JUnitSuite {
     val tempProps = new Properties()
     tempProps.put("host", "localhost")
     tempProps.put("port", "9094")
-    val tempProducer = new SyncProducer(new SyncProducerConfig(tempProps))
-    tempProducer.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
+    val tempProducer = new kafka.producer.SyncProducer(new SyncProducerConfig(tempProps))
+    val messages = new java.util.ArrayList[Message]
+    messages.add(new Message("test".getBytes()))
+    tempProducer.send("test-topic", new ByteBufferMessageSet(messages))
 
     Thread.sleep(500)
 
-    producer.send(new ProducerData[String, String]("test-topic", "test-topic", Array("test1")))
+    val messagesContent = new java.util.ArrayList[String]
+    messagesContent.add("test1")
+    producer.send(new ProducerData[String, String]("test-topic", "test-topic", messagesContent))
     producer.close
 
     EasyMock.verify(syncProducer1)
@@ -449,10 +481,13 @@ class ProducerTest extends JUnitSuite {
     asyncProducers.put(brokerId1, asyncProducer1)
     asyncProducers.put(brokerId2, asyncProducer2)
 
-    val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
+    val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, kafka.producer.SyncProducer](),
+      asyncProducers)
     val producer = new Producer[String, String](config, partitioner, producerPool, false)
 
-    producer.send(new ProducerData[String, String](topic, "test", Array("test1")))
+    val messagesContent = new java.util.ArrayList[String]
+    messagesContent.add("test1")
+    producer.send(new ProducerData[String, String](topic, "test", messagesContent))
     producer.close
 
     EasyMock.verify(asyncProducer1)

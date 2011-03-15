@@ -102,23 +102,6 @@ class ZookeeperConsumerConnector(val config: ConsumerConfig,
     consume(topicCountMap)
   }
 
-  // for java client
-  def createMessageStreams(topicCountMap: java.util.Map[String,java.lang.Integer]):
-    java.util.Map[String,java.util.List[KafkaMessageStream]] = {
-    import scala.collection.JavaConversions._
-
-    val scalaTopicCountMap: Map[String,Int] = topicCountMap.asInstanceOf[java.util.Map[String,Int]]
-    val scalaReturn = consume(scalaTopicCountMap)
-    val ret = new java.util.HashMap[String,java.util.List[KafkaMessageStream]]
-    for ((topic, streams) <- scalaReturn) {
-      var javaStreamList = new java.util.ArrayList[KafkaMessageStream]
-      for (stream <- streams)
-        javaStreamList.add(stream)
-      ret.put(topic, javaStreamList)
-    }
-    ret
-  }
-
   private def createFetcher() {
     if (enableFetcher)
       fetcher = Some(new Fetcher(config, zkClient)) 
@@ -147,7 +130,7 @@ class ZookeeperConsumerConnector(val config: ConsumerConfig,
     }
   }
 
-  private def consume(topicCountMap: Map[String,Int]): Map[String,List[KafkaMessageStream]] = {
+  def consume(topicCountMap: scala.collection.Map[String,Int]): Map[String,List[KafkaMessageStream]] = {
     logger.debug("entering consume ")
     if (topicCountMap == null)
       throw new RuntimeException("topicCountMap is null")

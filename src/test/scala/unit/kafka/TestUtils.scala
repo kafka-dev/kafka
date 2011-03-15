@@ -89,7 +89,7 @@ object TestUtils {
   
   /**
    * Create a kafka server instance with appropriate test settings
-   * @config The configuration of the server
+   * @param config The configuration of the server
    */
   def createServer(config: KafkaConfig): KafkaServer = {
     val server = new KafkaServer(config)

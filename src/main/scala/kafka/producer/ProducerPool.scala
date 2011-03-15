@@ -16,7 +16,7 @@
 
 package kafka.producer
 
-import async.{AsyncProducerConfig, AsyncProducer}
+import async._
 import kafka.message.ByteBufferMessageSet
 import java.util.Properties
 import kafka.serializer.Encoder
@@ -25,11 +25,14 @@ import java.util.concurrent.{ConcurrentMap, ConcurrentHashMap}
 import kafka.cluster.{Partition, Broker}
 import kafka.api.ProducerRequest
 import kafka.common.{UnavailableProducerException, InvalidConfigException}
+import kafka.utils.Utils
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
                       private val syncProducers: ConcurrentMap[Int, SyncProducer],
-                      private val asyncProducers: ConcurrentMap[Int, AsyncProducer[V]]) {
+                      private val asyncProducers: ConcurrentMap[Int, AsyncProducer[V]],
+                      private val eventHandler: IEventHandler[V] = null,
+                      private val cbkHandler: CallbackHandler[V] = null) {
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
   private var sync: Boolean = true
   config.producerType match {
@@ -38,9 +41,18 @@ class ProducerPool[V](private val config: ProducerConfig,
     case _ => throw new InvalidConfigException("Valid values for producer.type are sync/async")
   }
 
+  def this(config: ProducerConfig, serializer: Encoder[V],
+           eventHandler: IEventHandler[V], cbkHandler: CallbackHandler[V]) =
+    this(config, serializer,
+         new ConcurrentHashMap[Int, SyncProducer](),
+         new ConcurrentHashMap[Int, AsyncProducer[V]](),
+         eventHandler, cbkHandler)
+
   def this(config: ProducerConfig, serializer: Encoder[V]) = this(config, serializer,
                                                                   new ConcurrentHashMap[Int, SyncProducer](),
-                                                                  new ConcurrentHashMap[Int, AsyncProducer[V]]())
+                                                                  new ConcurrentHashMap[Int, AsyncProducer[V]](),
+                                                                  Utils.getObject(config.eventHandler),
+                                                                  Utils.getObject(config.cbkHandler))
   /**
    * add a new producer, either synchronous or asynchronous, connecting
    * to the specified broker 
@@ -63,8 +75,16 @@ class ProducerPool[V](private val config: ProducerConfig,
         val props = new Properties()
         props.put("host", broker.host)
         props.put("port", broker.port.toString)
+        props.put("queue.time", config.queueTime.toString)
+        props.put("queue.size", config.queueSize.toString)
+        props.put("batch.size", config.batchSize.toString)
         props.put("serializer.class", config.serializerClass)
-        val producer = new AsyncProducer[V](new AsyncProducerConfig(props))
+        val producer = new AsyncProducer[V](new AsyncProducerConfig(props),
+                                            new SyncProducer(new SyncProducerConfig(props)),
+                                            serializer,
+                                            eventHandler, config.eventHandlerProps,
+                                            cbkHandler, config.cbkHandlerProps)
+        producer.start
         logger.info("Creating async producer for broker id = " + broker.id + " at " + broker.host + ":" + broker.port)
         asyncProducers.put(broker.id, producer)
     }

@@ -43,18 +43,6 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
     buffer.rewind()
   }
   
-  def this(messages: java.util.List[Message]) {
-    this(ByteBuffer.allocate(MessageSet.messageSetSize(messages)))
-    val iter = messages.iterator
-    while(iter.hasNext) {
-      val message = iter.next.asInstanceOf[Message]
-      buffer.putInt(message.size)
-      buffer.put(message.buffer)
-      message.buffer.rewind()
-    }
-    buffer.rewind()
-  }
-  
   def validBytes: Int = {
     if(validByteCount < 0) {
       val iter = iterator

@@ -242,13 +242,13 @@ class AsyncProducerTest extends JUnitSuite {
   }
 
   private def getMessageSetOfSize(messages: List[Message], counts: Int): ByteBufferMessageSet = {
-    var messageList = new java.util.ArrayList[Message]()
+    var messageList = new Array[Message](counts)
     for(message <- messages) {
       for(i <- 0 until counts) {
-        messageList.add(message)
+        messageList(i) = message
       }
     }
-    new ByteBufferMessageSet(messageList)
+    new ByteBufferMessageSet(messageList: _*)
   }
 
   class StringSerializer extends Encoder[String] {
@@ -256,7 +256,7 @@ class AsyncProducerTest extends JUnitSuite {
     def getTopic(event: String): String = event.concat("-topic")
   }
 
-  class MockProducer(val config: SyncProducerConfig) extends SyncProducer(config) {
+  class MockProducer(override val config: SyncProducerConfig) extends SyncProducer(config) {
     override def send(topic: String, messages: ByteBufferMessageSet): Unit = {
       Thread.sleep(1000)
     }

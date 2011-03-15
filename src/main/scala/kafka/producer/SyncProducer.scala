@@ -24,6 +24,7 @@ import kafka.utils._
 import kafka.api._
 import scala.math._
 import org.apache.log4j.{Level, Logger}
+import kafka.javaapi.Implicits._
 
 object SyncProducer {
   val RequestKey: Short = 0
@@ -33,7 +34,7 @@ object SyncProducer {
  * Send a message set.
  */
 @threadsafe
-class SyncProducer(config: SyncProducerConfig) {
+class SyncProducer(val config: SyncProducerConfig) {
   
   private val logger = Logger.getLogger(getClass())
   private val MaxConnectBackoffMs = 60000

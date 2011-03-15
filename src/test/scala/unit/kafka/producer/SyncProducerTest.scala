@@ -25,8 +25,9 @@ import org.apache.log4j.{Logger, Level}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
 import java.util.Properties
+import kafka.api.ProducerRequest
 
-class KafkaProducerTest extends JUnitSuite {
+class SyncProducerTest extends JUnitSuite {
   private var messageBytes =  new Array[Byte](2);
   private var server: KafkaServer = null
   val simpleProducerLogger = Logger.getLogger(classOf[SyncProducer])
@@ -111,6 +112,13 @@ class KafkaProducerTest extends JUnitSuite {
     Assert.assertFalse(failed)
     val secondEnd = SystemTime.milliseconds
     Assert.assertTrue((secondEnd-secondEnd) < 500)
+
+    try {
+      producer.multiSend(Array(new ProducerRequest("test", 0, new ByteBufferMessageSet(new Message(messageBytes)))))
+    }catch {
+      case e: Exception => failed=true
+    }
+    Assert.assertFalse(failed)
   }
 
   @Test

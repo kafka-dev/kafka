@@ -23,6 +23,7 @@ import org.apache.log4j.{Level, Logger}
 import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
+import java.util.Properties
 
 object AsyncProducer {
   val shutdown = new Object
@@ -30,40 +31,49 @@ object AsyncProducer {
 
 class AsyncProducer[T](config: AsyncProducerConfig,
                        producer: SyncProducer,
-                       serializer: Encoder[T]) {
+                       serializer: Encoder[T],
+                       eventHandler: IEventHandler[T] = null,
+                       eventHandlerProps: Properties = null,
+                       cbkHandler: CallbackHandler[T] = null,
+                       cbkHandlerProps: Properties = null) {
   private val logger = Logger.getLogger(classOf[AsyncProducer[T]])
   private val closed = new AtomicBoolean(false)
   private val queue = new LinkedBlockingQueue[QueueItem[T]](config.queueSize)
-  private val handler = new EventHandler[T](producer, serializer)
-  private val sendThread = new ProducerSendThread(queue, serializer, handler,
-    config.queueTime, config.batchSize, AsyncProducer.shutdown)
+  // initialize the callback handlers
+  if(eventHandler != null)
+    eventHandler.init(eventHandlerProps)
+  if(cbkHandler != null)
+    cbkHandler.init(cbkHandlerProps)
+  private val sendThread = new ProducerSendThread(queue, serializer, producer,
+    if(eventHandler != null) eventHandler else new EventHandler[T](producer, serializer, cbkHandler),
+    cbkHandler, config.queueTime, config.batchSize, AsyncProducer.shutdown)
   sendThread.setDaemon(false)
 
   def this(config: AsyncProducerConfig) {
     this(config,
       new SyncProducer(config),
-      Utils.getObject(config.serializerClass))
+      Utils.getObject(config.serializerClass),
+      Utils.getObject(config.eventHandler),
+      config.eventHandlerProps,
+      Utils.getObject(config.cbkHandler),
+      config.cbkHandlerProps)
   }
 
   def start = sendThread.start
 
-  def send(topic: String, event: T) {
-    if(closed.get)
-      throw new QueueClosedException("Attempt to add event to a closed queue.")
-
-    val added = queue.offer(new QueueItem(event, topic, ProducerRequest.RandomPartition))
-
-    if(!added) {
-      logger.error("Event queue is full of unsent messages, could not send event: " + event.toString)
-      throw new QueueFullException("Event queue is full of unsent messages, could not send event: " + event.toString)
-    }
-  }
+  def send(topic: String, event: T) { send(topic, event, ProducerRequest.RandomPartition) }
 
   def send(topic: String, event: T, partition:Int) {
     if(closed.get)
       throw new QueueClosedException("Attempt to add event to a closed queue.")
 
-    val added = queue.offer(new QueueItem(event, topic, partition))
+    var data = new QueueItem(event, topic, partition)
+    if(cbkHandler != null)
+      data = cbkHandler.beforeEnqueue(data)
+
+    val added = queue.offer(data)
+    if(cbkHandler != null)
+      cbkHandler.afterEnqueue(data, added)
 
     if(!added) {
       logger.error("Event queue is full of unsent messages, could not send event: " + event.toString)
@@ -72,6 +82,8 @@ class AsyncProducer[T](config: AsyncProducerConfig,
   }
 
   def close = {
+    if(cbkHandler != null)
+      cbkHandler.close
     queue.put(new QueueItem(AsyncProducer.shutdown.asInstanceOf[T], null, -1))
     sendThread.join(3000)
     sendThread.shutdown
