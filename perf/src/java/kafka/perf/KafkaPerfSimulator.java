@@ -33,7 +33,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
   /* Default values */
   private static int numProducer = 20;
   private static int numTopic = 10;
-  private static int numParts = 10;
+  private static int numParts = 1;
   private static int numConsumers = 10;
   private static long timeToRunMs = 60000L * 1; 
 
