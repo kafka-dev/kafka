@@ -9,23 +9,26 @@ fi
 base_dir=$(dirname $0)/..
 
 #CLASSPATH=$CLASSPATH:bin
-
+for file in $base_dir/lib/*.jar;
+do
+  if [ ${file##*/} != "sbt-launch.jar" ]; then
+      CLASSPATH=$CLASSPATH:$file
+  fi
+done
+for file in $base_dir/lib_managed/scala_2.8.0/compile/*.jar;
+do
+  CLASSPATH=$CLASSPATH:$file
+done
+for file in $base_dir/target/scala_2.8.0/*.jar;
+do
+  CLASSPATH=$CLASSPATH:$file
+done
 for file in $base_dir/dist/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
 done
 
-for file in $base_dir/lib/*.jar;
-do
-  CLASSPATH=$CLASSPATH:$file
-done
 
-for file in $base_dir/perf/lib/*.jar;
-do
-  CLASSPATH=$CLASSPATH:$file
-done
-
-CLASSPATH=$base_dir/perf/build/java:$CLASSPATH
 echo $CLASSPATH
 
 if [ -z "$KAFKA_PERF_OPTS" ]; then
