@@ -23,20 +23,20 @@ import kafka.message._
 import kafka.cluster._
 import kafka.common.ErrorMapping
 
-class PartitionTopicInfo(val topic: String, 
-                         val brokerId: Int,
-                         val partition: Partition,
-                         val chunkQueue: BlockingQueue[FetchedDataChunk],
-                         val consumedOffset: AtomicLong,
-                         val fetchedOffset: AtomicLong,
-                         val fetchSize: AtomicInteger) {
-  
+private[consumer] class PartitionTopicInfo(val topic: String,
+                                           val brokerId: Int,
+                                           val partition: Partition,
+                                           val chunkQueue: BlockingQueue[FetchedDataChunk],
+                                           val consumedOffset: AtomicLong,
+                                           val fetchedOffset: AtomicLong,
+                                           val fetchSize: AtomicInteger) {
+
   /**
    * Record the given number of bytes as having been consumed
    */
-  def consumed(messageSize: Int): Unit = 
+  def consumed(messageSize: Int): Unit =
     consumedOffset.addAndGet(messageSize)
-  
+
   /**
    * Enqueue a message set for processing
    * @return the number of valid bytes

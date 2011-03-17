@@ -21,7 +21,7 @@ import java.nio.channels._
 import kafka.utils._
 
 @nonthreadsafe
-class BoundedByteBufferSend(val buffer: ByteBuffer) extends Send {
+private[kafka] class BoundedByteBufferSend(val buffer: ByteBuffer) extends Send {
   
   private var sizeBuffer = ByteBuffer.allocate(4)
   

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic._
 import reflect._
 import scala.math._
 
-object SegmentList {
+private[log] object SegmentList {
   val MaxAttempts: Int = 20
 }
 
@@ -30,7 +30,7 @@ object SegmentList {
  * iterative operations on this sequence such as binary search without locking all access to the list.
  * Even if the range of the underlying list changes no change will be made to the view
  */
-class SegmentList[T](seq: Seq[T])(implicit m: ClassManifest[T]) {
+private[log] class SegmentList[T](seq: Seq[T])(implicit m: ClassManifest[T]) {
   
   val contents: AtomicReference[Array[T]] = new AtomicReference(seq.toArray)
 

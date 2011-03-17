@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package kafka.integration
+package kafka.consumer
 
 import java.util.concurrent._
 import java.util.concurrent.atomic._
@@ -30,6 +30,8 @@ import kafka.utils._
 import kafka.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Before, After, Test}
+import kafka.integration.ProducerConsumerTestHarness
+import kafka.integration.KafkaServerTestHarness
 
 class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
 

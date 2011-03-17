@@ -16,7 +16,7 @@
 
 package kafka.network
 
-object Handler {
+private[kafka] object Handler {
   
   /**
    * A request handler is a function that turns an incoming 

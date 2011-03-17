@@ -25,9 +25,9 @@ import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
 import java.util.Properties
 
-class EventHandler[T](val producer: SyncProducer,
-                      val serializer: Encoder[T],
-                      val cbkHandler: CallbackHandler[T]) extends IEventHandler[T] {
+private[async] class EventHandler[T](val producer: SyncProducer,
+                                     val serializer: Encoder[T],
+                                     val cbkHandler: CallbackHandler[T]) extends IEventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[EventHandler[T]])
 

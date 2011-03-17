@@ -19,7 +19,7 @@ import kafka.producer.ProducerPool
 import kafka.producer.async.QueueItem
 import java.nio.ByteBuffer
 
-object Implicits {
+private[javaapi] object Implicits {
   implicit def javaMessageSetToScalaMessageSet(messageSet: kafka.javaapi.message.ByteBufferMessageSet):
      kafka.message.ByteBufferMessageSet = messageSet.underlying
 

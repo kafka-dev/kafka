@@ -35,7 +35,7 @@ object ProducerRequest {
   }
 }
 
-class ProducerRequest(val topic: String,
+private[kafka] class ProducerRequest(val topic: String,
                       val partition: Int,
                       val messages: ByteBufferMessageSet) extends Request(RequestKeys.Produce) {
 

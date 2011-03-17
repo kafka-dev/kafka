@@ -62,7 +62,7 @@ import org.apache.zookeeper.Watcher.Event.KeeperState
  * Each consumer tracks the offset of the latest message consumed for each partition.
  *
  */
-object ZookeeperConsumerConnector {
+private[kafka] object ZookeeperConsumerConnector {
   val MAX_N_RETRIES = 4
   val shutdownCommand: FetchedDataChunk = new FetchedDataChunk(null, null)
 }
@@ -75,7 +75,7 @@ trait ZookeeperConsumerConnectorMBean {
   def getConsumerGroup: String
 }
 
-class ZookeeperConsumerConnector(val config: ConsumerConfig,
+private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
                                  val enableFetcher: Boolean) // for testing only
     extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
 

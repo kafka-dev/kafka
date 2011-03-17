@@ -25,7 +25,7 @@ import kafka.cluster.{Broker, Partition}
 import org.apache.zookeeper.Watcher.Event.KeeperState
 import org.I0Itec.zkclient.{IZkStateListener, IZkChildListener, ZkClient}
 
-object ZKBrokerPartitionInfo {
+private[producer] object ZKBrokerPartitionInfo {
   private val log = Logger.getLogger(classOf[ZKBrokerPartitionInfo])
   /**
    * Generate a mapping from broker id to (brokerId, numPartitions) for the list of brokers
@@ -57,7 +57,7 @@ object ZKBrokerPartitionInfo {
  * If zookeeper based auto partition discovery is enabled, fetch broker info like
  * host, port, number of partitions from zookeeper
  */
-class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (Int, String, Int) => Unit) extends BrokerPartitionInfo {
+private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (Int, String, Int) => Unit) extends BrokerPartitionInfo {
   private val logger = Logger.getLogger(classOf[ZKBrokerPartitionInfo])
   private val zkClient = new ZkClient(config.zkConnect, config.zkSessionTimeoutMs, config.zkConnectionTimeoutMs,
     StringSerializer)

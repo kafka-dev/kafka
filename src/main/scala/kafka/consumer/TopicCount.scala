@@ -20,7 +20,7 @@ import scala.collection._
 import scala.util.parsing.json.JSON
 import org.apache.log4j.Logger
 
-object TopicCount {
+private[consumer] object TopicCount {
   private val logger = Logger.getLogger(getClass())
   val myConversionFunc = {input : String => input.toInt}
   JSON.globalNumberParser = myConversionFunc
@@ -44,7 +44,7 @@ object TopicCount {
 
 }
 
-class TopicCount(val consumerIdString: String, val topicCountMap: Map[String, Int]) {
+private[consumer] class TopicCount(val consumerIdString: String, val topicCountMap: Map[String, Int]) {
 
   def getConsumerThreadIdsPerTopic()
     : Map[String, Set[String]] = {

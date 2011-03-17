@@ -53,11 +53,13 @@ import kafka.consumer.{KafkaMessageStream, ConsumerConfig, ZookeeperConsumerConn
  *
  */
 
-class ZookeeperConsumerConnector(val config: ConsumerConfig,
+private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
                                  val enableFetcher: Boolean) // for testing only
     extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
 
   val underlying = new kafka.consumer.ZookeeperConsumerConnector(config, enableFetcher)
+
+  def this(config: ConsumerConfig) = this(config, true)
 
  // for java client
   def createMessageStreams(topicCountMap: java.util.Map[String,java.lang.Integer]):

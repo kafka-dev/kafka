@@ -26,7 +26,7 @@ import kafka.utils._
  * A set of message sets prefixed by size
  */
 @nonthreadsafe
-class MultiMessageSetSend(val sets: List[MessageSetSend]) extends MultiSend(new ByteBufferSend(6) :: sets) {
+private[server] class MultiMessageSetSend(val sets: List[MessageSetSend]) extends MultiSend(new ByteBufferSend(6) :: sets) {
   
   val buffer = this.sends.head.asInstanceOf[ByteBufferSend].buffer
   buffer.putInt(2 + sets.foldLeft(0)(_ + _.sendSize))

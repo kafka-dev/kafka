@@ -23,7 +23,7 @@ import collection.mutable.ListBuffer
 import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
 
-class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
+private[async] class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
                             val serializer: Encoder[T],
                             val underlyingProducer: SyncProducer,
                             val handler: IEventHandler[T],

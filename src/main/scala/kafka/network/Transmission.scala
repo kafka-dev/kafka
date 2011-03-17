@@ -23,7 +23,7 @@ import org.apache.log4j.Logger
 /**
  * Represents a stateful transfer of data to or from the network
  */
-trait Transmission {
+private[network] trait Transmission {
   
   protected val logger: Logger = Logger.getLogger(getClass())
   
@@ -44,7 +44,7 @@ trait Transmission {
 /**
  * A transmission that is being received from a channel
  */
-trait Receive extends Transmission {
+private[kafka] trait Receive extends Transmission {
   
   def buffer: ByteBuffer
   
@@ -65,7 +65,7 @@ trait Receive extends Transmission {
 /**
  * A transmission that is being sent out to the channel
  */
-trait Send extends Transmission {
+private[kafka] trait Send extends Transmission {
     
   def writeTo(channel: WritableByteChannel): Int
   

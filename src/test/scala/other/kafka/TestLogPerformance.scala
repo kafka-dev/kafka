@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package kafka
+package kafka.log
 
 import kafka.log._
 import kafka.message._
 import kafka.utils._
+import kafka.TestUtils
 
 object TestLogPerformance {
 

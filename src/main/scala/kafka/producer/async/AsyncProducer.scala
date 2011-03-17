@@ -29,7 +29,7 @@ object AsyncProducer {
   val shutdown = new Object
 }
 
-class AsyncProducer[T](config: AsyncProducerConfig,
+private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
                        producer: SyncProducer,
                        serializer: Encoder[T],
                        eventHandler: IEventHandler[T] = null,

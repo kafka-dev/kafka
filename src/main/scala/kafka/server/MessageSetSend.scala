@@ -28,7 +28,7 @@ import kafka.common.ErrorMapping
  * wholly in kernel space
  */
 @nonthreadsafe
-class MessageSetSend(val messages: MessageSet, val errorCode: Int) extends Send {
+private[server] class MessageSetSend(val messages: MessageSet, val errorCode: Int) extends Send {
   
   private var sent: Long = 0
   private var size: Long = messages.sizeInBytes

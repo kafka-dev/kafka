@@ -1,4 +1,4 @@
-package kafka.integration
+package kafka.log
 
 import junit.framework.TestCase
 import junit.framework.Assert._
@@ -8,7 +8,6 @@ import java.nio.ByteBuffer
 import kafka.utils.Utils
 import kafka.api.FetchRequest
 import kafka.common.InvalidMessageSizeException
-import kafka.log.Log
 import kafka.zk.ZooKeeperTestHarness
 import kafka.{TestZKUtils, TestUtils}
 import kafka.message.{Message, ByteBufferMessageSet}
@@ -16,6 +15,8 @@ import kafka.consumer.{FetcherRunnable, ZookeeperConsumerConnector, ConsumerConf
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.integration.ProducerConsumerTestHarness
+import kafka.integration.KafkaServerTestHarness
 
 class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with KafkaServerTestHarness with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect  
@@ -27,7 +28,6 @@ class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with
   val configs = List(config)
   val topic = "test"
   val partition = 0
-  val fetcherRunnableLogger = Logger.getLogger(classOf[FetcherRunnable])
 
   @Test
   def testMessageSizeTooLarge() {
@@ -45,9 +45,6 @@ class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with
     channel.write(byteBuffer)
     channel.force(true)
     channel.close
-
-    // temporarily set request handler logger to a higher level
-    fetcherRunnableLogger.setLevel(Level.FATAL)
 
     // test SimpleConsumer
     val messageSet = consumer.fetch(new FetchRequest(topic, partition, 0, 10000))
@@ -75,10 +72,6 @@ class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with
       case e: InvalidMessageSizeException => "This is good"
     }
 
-
     zkConsumerConnector1.shutdown
-
-    // restore set request handler logger to a higher level
-    fetcherRunnableLogger.setLevel(Level.ERROR)
   }
 }

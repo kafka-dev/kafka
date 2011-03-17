@@ -25,14 +25,14 @@ import util.parsing.json.JSON
 /**
  * A Kafka broker
  */
-object Broker {
+private[kafka] object Broker {
   def createBroker(id: Int, brokerInfoString: String): Broker = {
     val brokerInfo = brokerInfoString.split(":")
     new Broker(id, brokerInfo(0), brokerInfo(1), brokerInfo(2).toInt)
   }
 }
 
-class Broker(val id: Int, val creatorId: String, val host: String, val port: Int) {
+private[kafka] class Broker(val id: Int, val creatorId: String, val host: String, val port: Int) {
   
   override def toString(): String = new String("id:" + id + ",creatorId:" + creatorId + ",host:" + host + ",port:" + port)
 

@@ -18,7 +18,7 @@ package kafka.network
 
 import java.nio._
 
-abstract class Request(val id: Short) {
+private[kafka] abstract class Request(val id: Short) {
 
   def sizeInBytes: Int
   

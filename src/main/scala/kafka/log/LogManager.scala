@@ -29,7 +29,7 @@ import kafka.common.WrongPartitionException
  * The guy who creates and hands out logs
  */
 @threadsafe
-class LogManager(val config: KafkaConfig,
+private[kafka] class LogManager(val config: KafkaConfig,
                  private val scheduler: KafkaScheduler,
                  private val time: Time,
                  val logCleanupIntervalMs: Long,

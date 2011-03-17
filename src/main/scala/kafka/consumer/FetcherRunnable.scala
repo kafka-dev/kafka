@@ -25,7 +25,7 @@ import kafka.api.{MultiFetchResponse, OffsetRequest, FetchRequest}
 import kafka.utils.{StringSerializer, ZkUtils, ZKGroupTopicDirs, Utils}
 import org.I0Itec.zkclient.ZkClient
 
-class FetcherRunnable(val name: String,
+private[consumer] class FetcherRunnable(val name: String,
                       val zkClient : ZkClient,
                       val config: ConsumerConfig,
                       val broker: Broker,

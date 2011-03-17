@@ -25,7 +25,7 @@ import org.I0Itec.zkclient.ZkClient
 /**
  * The fetcher is a background thread that fetches data from a set of servers
  */
-class Fetcher(val config: ConsumerConfig, val zkClient : ZkClient) {
+private[consumer] class Fetcher(val config: ConsumerConfig, val zkClient : ZkClient) {
   private val logger = Logger.getLogger(getClass())
   private val EMPTY_FETCHER_THREADS = new Array[FetcherRunnable](0)
   @volatile

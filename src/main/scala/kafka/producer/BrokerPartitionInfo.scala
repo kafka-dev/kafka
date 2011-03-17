@@ -19,7 +19,7 @@ import collection.mutable.Map
 import collection.SortedSet
 import kafka.cluster.{Broker, Partition}
 
-trait BrokerPartitionInfo {
+private[producer] trait BrokerPartitionInfo {
   /**
    * Return a sequence of (brokerId, numPartitions) 
    * @param topic the topic for which this information is to be returned

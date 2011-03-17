@@ -32,7 +32,7 @@ import org.apache.log4j.Logger
  *   1 Acceptor thread that handles new connections
  *   N Processor threads that each have their own selectors and handle all requests from their connections synchronously
  */
-class SocketServer(val port: Int, 
+private[kafka] class SocketServer(val port: Int,
                    val numProcessorThreads: Int, 
                    monitoringPeriodSecs: Int,
                    private val handlerFactory: Handler.HandlerMapping) {
@@ -69,7 +69,7 @@ class SocketServer(val port: Int,
 /**
  * A base class with some helper variables and methods
  */
-abstract class AbstractServerThread extends Runnable {
+private[kafka] abstract class AbstractServerThread extends Runnable {
   
   protected val selector = Selector.open();
   protected val logger = Logger.getLogger(getClass())
@@ -114,7 +114,7 @@ abstract class AbstractServerThread extends Runnable {
 /**
  * Thread that accepts and configures new connections. There is only need for one of these
  */
-class Acceptor(val port: Int, private val processors: Array[Processor]) extends AbstractServerThread {
+private[kafka] class Acceptor(val port: Int, private val processors: Array[Processor]) extends AbstractServerThread {
   
   /**
    * Accept loop that checks for new connection attempts
@@ -176,7 +176,7 @@ class Acceptor(val port: Int, private val processors: Array[Processor]) extends 
  * Thread that processes all requests from a single connection. There are N of these running in parallel
  * each of which has its own selectors
  */
-class Processor(val handlerMapping: Handler.HandlerMapping, 
+private[kafka] class Processor(val handlerMapping: Handler.HandlerMapping,
                 val time: Time, 
                 val stats: SocketServerStats) extends AbstractServerThread {
   

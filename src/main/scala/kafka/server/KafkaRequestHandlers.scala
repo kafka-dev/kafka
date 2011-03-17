@@ -32,7 +32,7 @@ import java.io.IOException
 /**
  * Logic to handle the various Kafka requests
  */
-class KafkaRequestHandlers(val logManager: LogManager) {
+private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   
   private val logger = Logger.getLogger(classOf[KafkaRequestHandlers])
   

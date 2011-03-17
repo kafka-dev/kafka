@@ -19,4 +19,4 @@ package kafka.consumer
 import java.util.concurrent.atomic._
 import kafka.message._
 
-class FetchedDataChunk(val messages: MessageSet, val topicInfo: PartitionTopicInfo)
+private[consumer] class FetchedDataChunk(val messages: MessageSet, val topicInfo: PartitionTopicInfo)

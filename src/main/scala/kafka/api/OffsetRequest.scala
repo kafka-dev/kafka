@@ -74,7 +74,7 @@ class OffsetRequest(val topic: String,
 }
 
 @nonthreadsafe
-class OffsetArraySend(offsets: Array[Long]) extends Send {
+private[kafka] class OffsetArraySend(offsets: Array[Long]) extends Send {
   private var size: Long = offsets.foldLeft(4)((sum, _) => sum + 8)
   private val header = ByteBuffer.allocate(6)
   header.putInt(size.asInstanceOf[Int] + 2)

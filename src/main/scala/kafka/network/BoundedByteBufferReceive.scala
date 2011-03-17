@@ -25,7 +25,7 @@ import kafka.utils._
  * 
  */
 @nonthreadsafe
-class BoundedByteBufferReceive(val maxSize: Int) extends Receive {
+private[kafka] class BoundedByteBufferReceive(val maxSize: Int) extends Receive {
   
   private val sizeBuffer: ByteBuffer = ByteBuffer.allocate(4)
   private var contentBuffer: ByteBuffer = null
