@@ -25,7 +25,7 @@ import kafka.network._
 import kafka.message._
 import kafka.server._
 import kafka.api._
-import kafka.common.{WrongPartitionException, ErrorMapping}
+import kafka.common.ErrorMapping
 import kafka.utils.{Utils, SystemTime}
 import java.io.IOException
 

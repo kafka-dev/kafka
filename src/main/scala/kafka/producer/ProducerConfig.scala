@@ -18,9 +18,9 @@ package kafka.producer
 
 import async.AsyncProducerConfig
 import java.util.Properties
-import kafka.utils.Utils
+import kafka.utils.{ZKConfig, Utils}
 
-class ProducerConfig(props: Properties) {
+class ProducerConfig(props: Properties) extends ZKConfig(props) {
 
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class", "kafka.producer.DefaultPartitioner")
@@ -38,19 +38,16 @@ class ProducerConfig(props: Properties) {
    *  brokerid1:host1:port1:numPartitions1, brokerid2:host2:port2:numPartitions2*/
   val brokerPartitionInfo = Utils.getString(props, "broker.partition.info", null)
 
+  /** When using static broker configuration option for the Producer, use this config *
+   *  to override the default number of partitions for a topic on all brokers. If     *
+   *  specified for a topic, it will override the default number of partitions value  *
+   *  defined in broker.partition.info
+   *  Format-topic1:numPartitions1, topic2:numPartitions2                             */
+  val topicPartitions = Utils.getString(props, "topic.num.partitions", null)
+
   /** To enable zookeeper based auto partition discovery, specify the ZK    *
    * connection string. This will override the brokerPartitionInfo, in case *
    * both are specified by the user                                         */
-  val zkConnect = Utils.getString(props, "zk.connect", null)
-
-  /** zookeeper session timeout */
-  val zkSessionTimeoutMs = Utils.getInt(props, "zk.sessiontimeout.ms", 6000)
-
-  /** the max time that the client waits to establish a connection to zookeeper */
-  val zkConnectionTimeoutMs = Utils.getInt(props, "zk.connectiontimeout.ms", zkSessionTimeoutMs)
-
-  /** how far a ZK follower can be behind a ZK leader */
-  val zkSyncTimeMs = Utils.getInt(props, "zk.synctime.ms", 2000)
 
   /** Async Producer config options */
   /* maximum time, in milliseconds, for buffering data on the producer queue */

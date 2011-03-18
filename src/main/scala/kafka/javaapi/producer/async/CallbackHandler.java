@@ -48,12 +48,12 @@ public interface CallbackHandler<T> {
     public void afterEnqueue(QueueItem<T> data, boolean added);
 
     /**
-     * Callback to process the batched data right after it has been dequeued by the
+     * Callback to process the data item right after it has been dequeued by the
      * background sender thread of the asynchronous producer
-     * @param data the batched data dequeued from the async producer queue
-     * @return the processed batched data that gets sent to the event handler
-    */
-    public java.util.List<QueueItem<T>> afterDequeuingExistingData(java.util.List<QueueItem<T>> data);
+     * @param data the data item dequeued from the async producer queue
+     * @return the processed list of data items that gets added to the data handled by the event handler
+     */
+    public java.util.List<QueueItem<T>> afterDequeuingExistingData(QueueItem<T> data);
 
     /**
      * Callback to process the batched data right before it is being processed by the

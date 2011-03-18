@@ -30,9 +30,9 @@ import org.easymock.EasyMock
 import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
-import kafka.common.UnavailableProducerException
+import kafka.common.{UnavailableProducerException, InvalidPartitionException}
 import org.scalatest.junit.JUnitSuite
-import kafka.producer.{SyncProducerConfig, Partitioner, ProducerConfig, DefaultPartitioner, InvalidPartitionException}
+import kafka.producer.{SyncProducerConfig, Partitioner, ProducerConfig, DefaultPartitioner}
 import kafka.producer.ProducerPool
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.producer.async.{AsyncProducer, AsyncProducerConfig}

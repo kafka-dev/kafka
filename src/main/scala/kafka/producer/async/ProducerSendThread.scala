@@ -71,13 +71,15 @@ private[async] class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]
       if(current != null && current.getData == shutdownCommand)
         return events
 
-      if(current != null && current.getData != null)
-        events += current
+      if(current != null && current.getData != null) {
+        if(cbkHandler != null)
+          events = events ++ cbkHandler.afterDequeuingExistingData(current)
+        else
+          events += current
+      }
 
       now = SystemTime.milliseconds
 
-      if(cbkHandler != null)
-        events = new ListBuffer[QueueItem[T]] ++ cbkHandler.afterDequeuingExistingData(events)
 
       // time to send messages
       val expired: Boolean = (now - lastSend) > queueTime

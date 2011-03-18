@@ -26,13 +26,14 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
   private val logger = Logger.getLogger(classOf[ConfigBrokerPartitionInfo])
   private val brokerPartitions: SortedSet[Partition] = getConfigTopicPartitionInfo
   private val allBrokers = getConfigBrokerInfo
-
+  private val topicPartitions: Map[String, SortedSet[Partition]] = getTopicPartitions
   /**
    * Return a sequence of (brokerId, numPartitions)
    * @param topic this value is null 
    * @return a sequence of (brokerId, numPartitions)
    */
-  def getBrokerPartitionInfo(topic: String = null): SortedSet[Partition] = brokerPartitions
+  def getBrokerPartitionInfo(topic: String): SortedSet[Partition] =
+    topicPartitions.getOrElse(topic, brokerPartitions)
 
   /**
    * Generate the host and port information for the broker identified
@@ -51,7 +52,30 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
   def getAllBrokerInfo: Map[Int, Broker] = allBrokers
 
   def close {}
-  
+
+  private def getTopicPartitions: Map[String, SortedSet[Partition]] = {
+    val numPartitionsPerTopic = new HashMap[String, SortedSet[Partition]]()
+
+    if(config.topicPartitions != null) {
+      val numEntries = config.topicPartitions.split(",")
+      for(entry <- numEntries) {
+        val topicNumPartitions = entry.split(":")
+        if(topicNumPartitions.length != 2)
+          throw new InvalidConfigException("Each entry in topic.num.partitions should be of the format => " +
+                                           "topic:numPartitions")
+        var partitions = SortedSet.empty[Partition]
+        brokerPartitions.foreach { bp =>
+          for(i <- 0 until topicNumPartitions(1).toInt) {
+            val bidPid = new Partition(bp.brokerId, i)
+            partitions += bidPid
+          }
+        }
+        numPartitionsPerTopic += topicNumPartitions(0) -> partitions
+      }
+    }
+    numPartitionsPerTopic
+  }
+
   /**
    * Generate a sequence of (brokerId, numPartitions) for all brokers
    * specified in the producer configuration

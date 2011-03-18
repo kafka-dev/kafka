@@ -63,12 +63,14 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
     StringSerializer)
   // maintain a map from topic -> list of (broker, num_partitions) from zookeeper
   private var topicBrokerPartitions = getZKTopicPartitionInfo
-  // register listener for change of topics to keep topicsBrokerPartitions updated
-  private val topicsListener = new TopicsListener(topicBrokerPartitions)
-  zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath, topicsListener)
 
   private val topicBrokersListener = new TopicBrokersListener(topicBrokerPartitions)
-  // register listener for change of brokers for each topic to keep topicsBrokerPartitions updated  
+
+  // register listener for change of topics to keep topicsBrokerPartitions updated
+  private val topicsListener = new TopicsListener(topicBrokerPartitions, topicBrokersListener)
+  zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath, topicsListener)
+
+  // register listener for change of brokers for each topic to keep topicsBrokerPartitions updated
   topicBrokerPartitions.keySet.foreach(topic => zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
                                                 topicBrokersListener))
   private var allBrokers = getZKBrokerInfo
@@ -162,7 +164,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
   /**
    * Listens to new topic registrations in zookeeper and keeps the related data structures updated
    */
-  class TopicsListener(val originalTopicBrokerPartitionsMap: collection.mutable.Map[String, SortedSet[Partition]])
+  class TopicsListener(val originalTopicBrokerPartitionsMap: collection.mutable.Map[String, SortedSet[Partition]],
+                       val topicBrokersListener: TopicBrokersListener)
           extends IZkChildListener {
     private var oldTopicBrokerPartitionsMap = originalTopicBrokerPartitionsMap
 
@@ -194,6 +197,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
         val brokerParts = getBrokerPartitions(zkClient, topic, brokerList.map(b => b.toInt).toList)
         logger.debug("[TopicsListener] List of broker partitions for new topic " + topic + " are " + brokerParts.toString)
         topicBrokerPartitions += (topic -> brokerParts)
+        zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
+                                       topicBrokersListener)
       }
     }
 
@@ -203,7 +208,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
   }
 
   /**
-   * Listens to new topic registrations in zookeeper and keeps the related data structures updated
+   * Listens to new broker registrations under a particular topic, in zookeeper and
+   * keeps the related data structures updated
    */
   class TopicBrokersListener(val originalTopicBrokerPartitionsMap: collection.mutable.Map[String, SortedSet[Partition]])
           extends IZkChildListener {
@@ -316,6 +322,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
       topicsListener.resetState
 
       // register listener for change of brokers for each topic to keep topicsBrokerPartitions updated
+      // NOTE: this is probably not required here. Since when we read from getZKTopicPartitionInfo() above,
+      // it automatically recreates the watchers there itself
       topicBrokerPartitions.keySet.foreach(topic => zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
                                                 topicBrokersListener))
       // there is no need to re-register other listeners as they are listening on the child changes of

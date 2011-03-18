@@ -23,7 +23,7 @@ import scala.actors.Actor
 import scala.actors.Actor._
 import java.util.concurrent.CountDownLatch
 import kafka.server.{KafkaConfig, KafkaZooKeeper}
-import kafka.common.WrongPartitionException
+import kafka.common.InvalidPartitionException
 
 /**
  * The guy who creates and hands out logs
@@ -159,7 +159,7 @@ private[kafka] class LogManager(val config: KafkaConfig,
     if (partition < 0 || partition >= topicPartitionsMap.getOrElse(topic, numPartitions)) {
       logger.warn("Wrong partition " + partition + " valid partitions (0," +
               (topicPartitionsMap.getOrElse(topic, numPartitions) - 1) + ")")
-      throw new WrongPartitionException("wrong partition " + partition)
+      throw new InvalidPartitionException("wrong partition " + partition)
     }
     var hasNewTopic = false
     var parts = logs.get(topic)

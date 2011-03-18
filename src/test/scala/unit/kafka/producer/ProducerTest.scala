@@ -31,7 +31,7 @@ import org.easymock.EasyMock
 import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
-import kafka.common.UnavailableProducerException
+import kafka.common.{UnavailableProducerException, InvalidPartitionException}
 import org.scalatest.junit.JUnitSuite
 
 class ProducerTest extends JUnitSuite {
@@ -305,6 +305,46 @@ class ProducerTest extends JUnitSuite {
     val producer = new Producer[String, String](config, partitioner, producerPool, false)
 
     producer.send(new ProducerData[String, String](topic, "test1", Array("test1")))
+    producer.close
+
+    EasyMock.verify(asyncProducer1)
+    EasyMock.verify(asyncProducer2)
+  }
+
+  @Test
+  def testTopicBasedPartitionsInConfigBrokerPartitionInfo() {
+    val props = new Properties()
+    props.put("partitioner.class", "kafka.producer.StaticPartitioner")
+    props.put("serializer.class", "kafka.producer.StringSerializer")
+    props.put("producer.type", "async")
+    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1 + ":" + 4 + "," +
+                                       brokerId2 + ":" + "localhost" + ":" + port2 + ":" + 4)
+    props.put("topic.num.partitions", topic + ":8")
+    val config = new ProducerConfig(props)
+    val partitioner = new StaticPartitioner
+    val serializer = new StringSerializer
+
+    // 2 async producers
+    val asyncProducers = new ConcurrentHashMap[Int, AsyncProducer[String]]()
+    val asyncProducer1 = EasyMock.createMock(classOf[AsyncProducer[String]])
+    val asyncProducer2 = EasyMock.createMock(classOf[AsyncProducer[String]])
+    // it should send to partition 0 (first partition) on second broker i.e broker2
+    asyncProducer1.send(topic, "test1", 0)
+    EasyMock.expectLastCall
+    asyncProducer1.close
+    EasyMock.expectLastCall
+    asyncProducer2.close
+    EasyMock.expectLastCall
+    EasyMock.replay(asyncProducer1)
+    EasyMock.replay(asyncProducer2)
+
+    asyncProducers.put(brokerId1, asyncProducer1)
+    asyncProducers.put(brokerId2, asyncProducer2)
+
+    val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+
+    producer.send(new ProducerData[String, String](topic, "testtesttesttest", Array("test1")))
     producer.close
 
     EasyMock.verify(asyncProducer1)

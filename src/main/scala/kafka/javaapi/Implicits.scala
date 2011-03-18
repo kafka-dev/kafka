@@ -70,9 +70,9 @@ private[javaapi] object Implicits {
       override def afterEnqueue(data: QueueItem[T] = null.asInstanceOf[QueueItem[T]], added: Boolean) {
         cbkHandler.afterEnqueue(data, added)
       }
-      override def afterDequeuingExistingData(data: Seq[QueueItem[T]] = null): scala.collection.mutable.Seq[QueueItem[T]] = {
+      override def afterDequeuingExistingData(data: QueueItem[T] = null): scala.collection.mutable.Seq[QueueItem[T]] = {
         import collection.JavaConversions._
-        cbkHandler.afterDequeuingExistingData(asList(data))
+        cbkHandler.afterDequeuingExistingData(data)
       }
       override def beforeSendingData(data: Seq[QueueItem[T]] = null): scala.collection.mutable.Seq[QueueItem[T]] = {
         import collection.JavaConversions._
@@ -92,10 +92,10 @@ private[javaapi] object Implicits {
       override def afterEnqueue(data: QueueItem[T] = null.asInstanceOf[QueueItem[T]], added: Boolean) {
         cbkHandler.afterEnqueue(data, added)
       }
-      override def afterDequeuingExistingData(data: java.util.List[QueueItem[T]] = null)
+      override def afterDequeuingExistingData(data: QueueItem[T] = null)
       : java.util.List[QueueItem[T]] = {
         import collection.JavaConversions._
-        asList(cbkHandler.afterDequeuingExistingData(asBuffer(data)))
+        asList(cbkHandler.afterDequeuingExistingData(data))
       }
       override def beforeSendingData(data: java.util.List[QueueItem[T]] = null)
       : java.util.List[QueueItem[T]] = {

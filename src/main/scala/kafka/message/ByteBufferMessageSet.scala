@@ -53,7 +53,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
   }
 
   /** Write the messages in this set to the given channel */
-  def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long = 
+  def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long =
     channel.write(buffer.duplicate)
   
   override def iterator: Iterator[Message] = {

@@ -23,6 +23,8 @@ import kafka.utils._
 import kafka.common.InvalidConfigException
 import java.util.Properties
 import kafka.cluster.{Partition, Broker}
+import java.util.concurrent.atomic.AtomicBoolean
+import kafka.common.InvalidPartitionException
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
@@ -31,6 +33,7 @@ class Producer[K,V](config: ProducerConfig,
                                                           /* use the other constructor*/
 {
   private val logger = Logger.getLogger(classOf[Producer[K, V]])
+  private val hasShutdown = new AtomicBoolean(false)
   if(config.zkConnect == null && config.brokerPartitionInfo == null)
     throw new InvalidConfigException("At least one of zk.connect or broker.partition.info must be specified")
   private val random = new java.util.Random
@@ -122,7 +125,10 @@ class Producer[K,V](config: ProducerConfig,
   }
 
   def close() = {
-    producerPool.close
-    brokerPartitionInfo.close
+    val canShutdown = hasShutdown.compareAndSet(false, true)
+    if(canShutdown) {
+      producerPool.close
+      brokerPartitionInfo.close
+    }
   }
 }

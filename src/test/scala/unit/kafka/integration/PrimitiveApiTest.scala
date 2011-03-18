@@ -22,7 +22,7 @@ import junit.framework.Assert._
 import kafka.TestUtils
 import kafka.api.{ProducerRequest, FetchRequest}
 import kafka.message.{Message, ByteBufferMessageSet}
-import kafka.common.{WrongPartitionException, OffsetOutOfRangeException}
+import kafka.common.{OffsetOutOfRangeException, InvalidPartitionException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
@@ -136,7 +136,7 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
         fail("expect exception")
       }
       catch {
-        case e: WrongPartitionException => "this is good"
+        case e: InvalidPartitionException => "this is good"
       }
     }
 

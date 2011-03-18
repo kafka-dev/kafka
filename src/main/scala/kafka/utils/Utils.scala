@@ -514,8 +514,8 @@ object Utils {
    * This method gets comma seperated values which contains key,value pairs and returns a map of
    * key value pairs. the format of allCSVal is key1:val1, key2:val2 ....
    */
-  private def getCSVMap(allCSVals: String, exceptionMsg:String, successMsg:String) :Map[String, Int] = {
-    val map = new mutable.HashMap[String, Int]
+  private def getCSVMap[K, V](allCSVals: String, exceptionMsg:String, successMsg:String) :Map[K, V] = {
+    val map = new mutable.HashMap[K, V]
     if("".equals(allCSVals))
       return map
     val csVals = allCSVals.split(",")
@@ -524,7 +524,7 @@ object Utils {
      try{
       val tempSplit = csVals(i).split(":")
       logger.info(successMsg + tempSplit(0) + " : " + Integer.parseInt(tempSplit(1).trim))
-      map += tempSplit(0) -> Integer.parseInt(tempSplit(1).trim)
+      map += tempSplit(0).asInstanceOf[K] -> Integer.parseInt(tempSplit(1).trim).asInstanceOf[V]
       } catch {
           case _ =>  logger.error(exceptionMsg + ": " + csVals(i))
         }

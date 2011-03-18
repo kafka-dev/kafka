@@ -54,9 +54,9 @@ class Producer[K,V](config: ProducerConfig,
                                override def afterEnqueue(data: QueueItem[V] = null.asInstanceOf[QueueItem[V]], added: Boolean) {
                                  cbkHandler.afterEnqueue(data, added)
                                }
-                               override def afterDequeuingExistingData(data: Seq[QueueItem[V]] = null): scala.collection.mutable.Seq[QueueItem[V]] = {
+                               override def afterDequeuingExistingData(data: QueueItem[V] = null): scala.collection.mutable.Seq[QueueItem[V]] = {
                                  import collection.JavaConversions._
-                                 cbkHandler.afterDequeuingExistingData(asList(data))
+                                 cbkHandler.afterDequeuingExistingData(data)
                                }
                                override def beforeSendingData(data: Seq[QueueItem[V]] = null): scala.collection.mutable.Seq[QueueItem[V]] = {
                                  import collection.JavaConversions._

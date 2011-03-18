@@ -38,7 +38,7 @@ object ErrorMapping {
     Map[Class[Throwable], Int](
       classOf[OffsetOutOfRangeException].asInstanceOf[Class[Throwable]] -> OFFSET_OUT_OF_RANGE_CODE,
       classOf[InvalidMessageException].asInstanceOf[Class[Throwable]] -> INVALID_MESSAGE_CODE,
-      classOf[WrongPartitionException].asInstanceOf[Class[Throwable]] -> WRONG_PARTITION_CODE,
+      classOf[InvalidPartitionException].asInstanceOf[Class[Throwable]] -> WRONG_PARTITION_CODE,
       classOf[InvalidMessageSizeException].asInstanceOf[Class[Throwable]] -> INVALID_RETCH_SIZE_CODE
     ).withDefaultValue(UNKNOWN_CODE)
   
@@ -51,8 +51,4 @@ object ErrorMapping {
   def maybeThrowException(code: Int) =
     if(code != 0)
       throw codeToException(code).newInstance()
-}
-
-class WrongPartitionException(message: String) extends RuntimeException(message) {
-  def this() = this(null)  
 }

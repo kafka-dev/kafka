@@ -253,7 +253,7 @@ class ZKGroupTopicDirs(group: String, topic: String) extends ZKGroupDirs(group) 
 
 class ZKConfig(props: Properties) {
   /** ZK host string */
-  val zkConnect = Utils.getString(props, "zk.connect", "127.0.0.1:2182")
+  val zkConnect = Utils.getString(props, "zk.connect", null)
 
   /** zookeeper session timeout */
   val zkSessionTimeoutMs = Utils.getInt(props, "zk.sessiontimeout.ms", 6000)
