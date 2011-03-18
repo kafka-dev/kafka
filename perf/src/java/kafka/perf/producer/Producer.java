@@ -28,6 +28,7 @@ public class Producer extends Thread
                   int kafkaProducerBufferSize, int connectionTimeOut, int reconnectInterval,
                   int messageSize, String name, int batchSize, int numParts)
   {
+    super(name);
     Properties props = new Properties();
     props.put("host", kafkaServerURL);
     props.put("port", String.valueOf(kafkaServerPort));
@@ -35,12 +36,12 @@ public class Producer extends Thread
     props.put("connect.timeout.ms", String.valueOf(connectionTimeOut));
     props.put("reconnect.interval", String.valueOf(reconnectInterval));
     producer = new SyncProducer(new SyncProducerConfig(props));
-    this.topic = topic;
+    this.topic = topic; 
+
     this.messageSize = messageSize;
     procudername = name;
     this.batchSize = batchSize;
     this.numParts = numParts;
-
   }
 
   public void run() {

@@ -29,6 +29,7 @@ public class SimplePerfConsumer extends Thread
                             int kafkaProducerBufferSize, int connectionTimeOut, int reconnectInterval,
                             int fetchSize, String name, int numParts)
   {
+    super(name);
     simpleConsumer = new SimpleConsumer(kafkaServerURL,
                                         kafkaServerPort,
                                         connectionTimeOut,
