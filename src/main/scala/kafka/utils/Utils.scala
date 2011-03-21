@@ -555,6 +555,14 @@ object Utils {
         constructors.head.newInstance().asInstanceOf[T]
     }
   }
+
+  def propertyExists(prop: String): Boolean = {
+    if(prop == null)
+      false
+    else if(prop.compareTo("") == 0)
+      false
+    else true
+  }
 }
 
 class SnapshotStats(private val monitorDurationNs: Long = 30L * 1000L * 1000L * 1000L) {

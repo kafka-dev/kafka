@@ -124,6 +124,7 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
    */
   private def getZKTopicPartitionInfo(): collection.mutable.Map[String, SortedSet[Partition]] = {
     val brokerPartitionsPerTopic = new HashMap[String, SortedSet[Partition]]()
+    ZkUtils.makeSurePersistentPathExists(zkClient, ZkUtils.brokerTopicsPath)
     val topics = ZkUtils.getChildren(zkClient, ZkUtils.brokerTopicsPath)
     topics.foreach { topic =>
     // find the number of broker partitions registered for this topic
