@@ -14,10 +14,23 @@
 
     <!-- 2. Add the JavaScript to initialize the chart on document ready -->
     <script type="text/javascript">
+      function getParameterByName( name )
+      {
+      name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+      var regexS = "[\\?&]"+name+"=([^&#]*)";
+      var regex = new RegExp( regexS );
+      var results = regex.exec( window.location.href );
+      if( results == null )
+      return "";
+      else
+      return decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+      var dataDir = getParameterByName("dataDir") ? getParameterByName("dataDir") : "data";
+      console.log(dataDir);
       $(document).ready(function()
        {
-        kafkagraph('container1', 'MB of data produced/consumed', './data/MBdata.csv', 'MB of data');
-        kafkagraph('container2', 'Number of messages  produced/consumed', './data/NumMessage.csv', 'Number of messages');
+        kafkagraph('container1', 'MB of data produced/consumed', './' + dataDir + '/MBdata.csv', 'MB of data');
+        kafkagraph('container2', 'Number of messages  produced/consumed', './' + dataDir + '/NumMessage.csv', 'Number of messages');
       });
     </script>
 
