@@ -1,11 +1,13 @@
 <project name="kafka perf" default="compile">
   <property name="lib.dir" location="../lib" />
+  <property name="sbt.lib.dir" location="../lib_managed/scala_2.8.0/compile" />
   <property name="src.dir" location="./src/java" />
   <property name="dist.dir" location="../dist" />
   <property name="build.src.dir" location="../dist/perf-classes" />
   
   <path id="classpath.base">
     <fileset dir="${lib.dir}"/>
+    <fileset dir="${sbt.lib.dir}"/>
     <fileset dir="../target/scala_2.8.0"/>
   </path>
 
@@ -23,4 +25,11 @@
            debug="true"
            classpathref="classpath.base"/>
   </target>
+
+    <target name="jar" depends="compile">
+      <jar destfile="${dist.dir}/kafka-perf.jar"
+           basedir="${dist.dir}/perf-classes"
+           includes="**/*.class">
+      </jar>
+    </target>
 </project>

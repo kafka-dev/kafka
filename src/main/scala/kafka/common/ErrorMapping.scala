@@ -52,3 +52,11 @@ object ErrorMapping {
     if(code != 0)
       throw codeToException(code).newInstance()
 }
+
+class InvalidTopicException(message: String) extends RuntimeException(message) {
+  def this() = this(null)  
+}
+
+class MessageSizeTooLargeException(message: String) extends RuntimeException(message) {
+  def this() = this(null)
+}

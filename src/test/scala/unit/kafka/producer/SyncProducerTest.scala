@@ -24,6 +24,7 @@ import kafka.server.{KafkaServer, KafkaConfig}
 import org.apache.log4j.{Logger, Level}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.common.MessageSizeTooLargeException
 import java.util.Properties
 import kafka.api.ProducerRequest
 
@@ -153,5 +154,25 @@ class SyncProducerTest extends JUnitSuite {
     val secondEnd = SystemTime.milliseconds
     Assert.assertTrue((secondEnd-secondEnd) < 300)
     simpleProducerLogger.setLevel(Level.ERROR)
+  }
+
+  @Test
+  def testMessageSizeTooLarge() {
+    val props = new Properties()
+    props.put("host", "localhost")
+    props.put("port", "9091")
+    props.put("buffer.size", "102400")
+    props.put("connect.timeout.ms", "300")
+    props.put("reconnect.interval", "500")
+    props.put("max.message.size", "100")
+    val producer = new SyncProducer(new SyncProducerConfig(props))
+    val bytes = new Array[Byte](101)
+    var failed = false
+    try {
+      producer.send("test", 0, new ByteBufferMessageSet(new Message(bytes)))
+    }catch {
+      case e: MessageSizeTooLargeException => failed = true
+    }
+    Assert.assertTrue(failed)
   }
 }

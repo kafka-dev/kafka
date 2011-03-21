@@ -34,10 +34,10 @@ import kafka.utils._
  */
 @nonthreadsafe
 class FileMessageSet private[message](private[message] val channel: FileChannel, 
-                              private[message] val offset: Long, 
-                              private[message] val limit: Long,
-                              val mutable: Boolean,
-                              val needRecover: AtomicBoolean) extends MessageSet {
+                                      private[message] val offset: Long,
+                                      private[message] val limit: Long,
+                                      val mutable: Boolean,
+                                      val needRecover: AtomicBoolean) extends MessageSet {
   
   private val setSize = new AtomicLong()
   private val setHighWaterMark = new AtomicLong()
@@ -46,11 +46,19 @@ class FileMessageSet private[message](private[message] val channel: FileChannel,
   if(mutable) {
     if(limit < Long.MaxValue || offset > 0)
       throw new IllegalArgumentException("Attempt to open a mutable message set with a view or offset, which is not allowed.")
-    // set the file position to the end of the file for appending messages
-   val startMs = System.currentTimeMillis
-   val truncated = recover()
-   logger.info("Recovery succeeded in " + (System.currentTimeMillis - startMs) / 1000 + 
-                  " seconds. " + truncated + " bytes truncated.")
+
+    if (needRecover.get) {
+      // set the file position to the end of the file for appending messages
+      val startMs = System.currentTimeMillis
+      val truncated = recover()
+      logger.info("Recovery succeeded in " + (System.currentTimeMillis - startMs) / 1000 +
+                " seconds. " + truncated + " bytes truncated.")
+    }
+    else {
+      setSize.set(channel.size())
+      setHighWaterMark.set(sizeInBytes)
+      channel.position(channel.size)
+    }
   } else {
     setSize.set(scala.math.min(channel.size(), limit) - offset)
     setHighWaterMark.set(sizeInBytes)
@@ -129,21 +137,6 @@ class FileMessageSet private[message](private[message] val channel: FileChannel,
     }
   }
   
-  /**
-   * The last valid message that stored in Kafka, this method should only be called over recover
-   */
-  def lastMessage(): Message = {
-    if(!needRecover.get()) {
-      var message: Message = null
-      val iter = iterator
-      while (iter.hasNext) 
-        message = iter.next()
-      message
-      }
-    else
-      throw new IllegalStateException("recover needs to be performed on the fileset")
-  }
-
   /**
    * The number of bytes taken up by this file set
    */

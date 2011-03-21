@@ -31,4 +31,6 @@ class SyncProducerConfig(props: Properties) {
   val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)
 
   val reconnectInterval = Utils.getInt(props, "reconnect.interval", 30000)
+
+  val maxMessageSize = Utils.getInt(props, "max.message.size", 1000000)
 }

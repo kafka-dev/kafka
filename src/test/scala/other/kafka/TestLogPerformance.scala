@@ -30,7 +30,7 @@ object TestLogPerformance {
     val messageSize = args(1).toInt
     val batchSize = args(2).toInt
     val dir = TestUtils.tempDir()
-    val log = new Log(dir, 50*1024*1024, 5000000)
+    val log = new Log(dir, 50*1024*1024, 5000000, false)
     val bytes = new Array[Byte](messageSize)
     new java.util.Random().nextBytes(bytes)
     val message = new Message(bytes)

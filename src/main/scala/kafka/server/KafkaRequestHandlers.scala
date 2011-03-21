@@ -60,7 +60,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
     }
     catch {
       case e =>
-        logger.error("erorr processing ProduceRequst on " + request.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+        logger.error("error processing ProduceRequst on " + request.topic + ":" + partition + " " + e + Utils.stackTrace(e))
         e match {
           case _: IOException =>
             logger.error("force shutdown due to " + e)

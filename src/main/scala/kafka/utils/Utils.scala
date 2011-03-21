@@ -532,16 +532,28 @@ object Utils {
     map
   }
 
+  def getTopicRentionHours(retentionHours: String) : Map[String, Int] = {
+    val exceptionMsg = "Malformed token for topic.log.retention.hours in server.properties: "
+    val successMsg =  "The retention hour for "
+    getCSVMap(retentionHours, exceptionMsg, successMsg)
+  }
+
   def getTopicFlushIntervals(allIntervals: String) : Map[String, Int] = {
     val exceptionMsg = "Malformed token for topic.flush.Intervals.ms in server.properties: "
     val successMsg =  "The flush interval for "
     getCSVMap(allIntervals, exceptionMsg, successMsg)
-   }
+  }
 
   def getTopicPartitions(allPartitions: String) : Map[String, Int] = {
     val exceptionMsg = "Malformed token for topic.partition.counts in server.properties: "
     val successMsg =  "The number of partitions for topic  "
     getCSVMap(allPartitions, exceptionMsg, successMsg)
+  }
+
+  def getConsumerTopicMap(consumerTopicString: String) : Map[String, Int] = {
+    val exceptionMsg = "Malformed token for embeddedconsumer.topics in consumer.properties: "
+    val successMsg =  "The number of consumer thread for topic  "
+    getCSVMap(consumerTopicString, exceptionMsg, successMsg)
   }
 
   def getObject[T<:AnyRef](className: String): T = {

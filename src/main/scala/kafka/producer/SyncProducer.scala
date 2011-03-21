@@ -24,6 +24,7 @@ import kafka.utils._
 import kafka.api._
 import scala.math._
 import org.apache.log4j.{Level, Logger}
+import kafka.common.MessageSizeTooLargeException
 
 object SyncProducer {
   val RequestKey: Short = 0
@@ -67,7 +68,7 @@ class SyncProducer(val config: SyncProducerConfig) {
         sentOnConnection = 0
       }
       val endTime = SystemTime.nanoseconds
-      KafkaProducerStats.recordProduceRequest(endTime - startTime)
+      SyncProducerStats.recordProduceRequest(endTime - startTime)
     }
   }
 
@@ -75,6 +76,7 @@ class SyncProducer(val config: SyncProducerConfig) {
    * Send a message
    */
   def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+    verifyMessageSize(messages)
     val setSize = messages.sizeInBytes.asInstanceOf[Int]
     if(logger.isTraceEnabled)
       logger.trace("Got message set with " + setSize + " bytes to send")
@@ -84,6 +86,8 @@ class SyncProducer(val config: SyncProducerConfig) {
   def send(topic: String, messages: ByteBufferMessageSet): Unit = send(topic, ProducerRequest.RandomPartition, messages)
 
   def multiSend(produces: Array[ProducerRequest]) {
+    for (request <- produces)
+      verifyMessageSize(request.messages)
     val setSize = produces.foldLeft(0L)(_ + _.messages.sizeInBytes)
     if(logger.isTraceEnabled)
       logger.trace("Got multi message sets with " + setSize + " bytes to send")
@@ -95,6 +99,12 @@ class SyncProducer(val config: SyncProducerConfig) {
       disconnect()
       shutdown = true
     }
+  }
+
+  private def verifyMessageSize(messages: ByteBufferMessageSet) {
+    for (message <- messages)
+      if (message.payloadSize > config.maxMessageSize)
+        throw new MessageSizeTooLargeException
   }
 
   /**
@@ -151,7 +161,7 @@ class SyncProducer(val config: SyncProducerConfig) {
   }
 }
 
-trait KafkaProducerStatsMBean {
+trait SyncProducerStatsMBean {
   def getProduceRequestsPerSecond: Double
   def getAvgProduceRequestMs: Double
   def getMaxProduceRequestMs: Double
@@ -159,7 +169,7 @@ trait KafkaProducerStatsMBean {
 }
 
 @threadsafe
-class KafkaProducerStats extends KafkaProducerStatsMBean {
+class SyncProducerStats extends SyncProducerStatsMBean {
   private val produceRequestStats = new SnapshotStats
 
   def recordProduceRequest(requestNs: Long) = produceRequestStats.recordRequestMetric(requestNs)
@@ -173,10 +183,10 @@ class KafkaProducerStats extends KafkaProducerStatsMBean {
   def getNumProduceRequests: Long = produceRequestStats.getNumRequests
 }
 
-object KafkaProducerStats {
+object SyncProducerStats {
   private val logger = Logger.getLogger(getClass())
   private val kafkaProducerstatsMBeanName = "kafka:type=kafka.KafkaProducerStats"
-  private val stats = new KafkaProducerStats
+  private val stats = new SyncProducerStats
   Utils.swallow(logger.warn, Utils.registerMBean(stats, kafkaProducerstatsMBeanName))
 
   def recordProduceRequest(requestMs: Long) = stats.recordProduceRequest(requestMs)

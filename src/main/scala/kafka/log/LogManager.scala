@@ -20,20 +20,21 @@ import java.io._
 import org.apache.log4j.Logger
 import kafka.utils._
 import scala.actors.Actor
-import scala.actors.Actor._
+import scala.collection._
 import java.util.concurrent.CountDownLatch
 import kafka.server.{KafkaConfig, KafkaZooKeeper}
-import kafka.common.InvalidPartitionException
+import kafka.common.{InvalidTopicException, InvalidPartitionException}
 
 /**
  * The guy who creates and hands out logs
  */
 @threadsafe
 private[kafka] class LogManager(val config: KafkaConfig,
-                 private val scheduler: KafkaScheduler,
-                 private val time: Time,
-                 val logCleanupIntervalMs: Long,
-                 val logCleanupMinAgeMs: Long) {
+                                private val scheduler: KafkaScheduler,
+                                private val time: Time,
+                                val logCleanupIntervalMs: Long,
+                                val logCleanupDefaultAgeMs: Long,
+                                needRecovery: Boolean) {
   
   val logDir: File = new File(config.logDir)
   private val numPartitions = config.numPartitions
@@ -48,6 +49,7 @@ private[kafka] class LogManager(val config: KafkaConfig,
   private val startupLatch: CountDownLatch = if (config.enableZookeeper) new CountDownLatch(1) else null
   private val logFlusherScheduler = new KafkaScheduler(1, "kafka-logflusher-", false)
   private val logFlushIntervalMap = config.flushIntervalMap
+  private val logRetentionMSMap = getLogRetentionMSMap(config.logRetentionHoursMap)
 
   /* Initialize a log for each subdirectory of the main log directory */
   private val logs = new Pool[String, Pool[Int, Log]]()
@@ -64,7 +66,7 @@ private[kafka] class LogManager(val config: KafkaConfig,
         logger.warn("Skipping unexplainable file '" + dir.getAbsolutePath() + "'--should it be there?")
       } else {
         logger.info("Loading log '" + dir.getName() + "'")
-        val log = new Log(dir, maxSize, flushInterval)
+        val log = new Log(dir, maxSize, flushInterval, needRecovery)
         val topicPartion = Utils.getTopicPartition(dir.getName)
         logs.putIfNotExists(topicPartion._1, new Pool[Int, Log]())
         val parts = logs.get(topicPartion._1)
@@ -111,6 +113,13 @@ private[kafka] class LogManager(val config: KafkaConfig,
 
   case object StopActor
 
+  private def getLogRetentionMSMap(logRetentionHourMap: Map[String, Int]) : Map[String, Long] = {
+    var ret = new mutable.HashMap[String, Long]
+    for ( (topic, hour) <- logRetentionHourMap )
+      ret.put(topic, hour * 60 * 60 * 1000L)
+    ret
+  }
+
   /**
    *  Register this broker in ZK for the first time.
    */
@@ -142,7 +151,7 @@ private[kafka] class LogManager(val config: KafkaConfig,
     logCreationLock synchronized {
       val d = new File(logDir, topic + "-" + partition)
       d.mkdirs()
-      new Log(d, maxSize, flushInterval)
+      new Log(d, maxSize, flushInterval, false)
     }
   }
   
@@ -156,6 +165,8 @@ private[kafka] class LogManager(val config: KafkaConfig,
    */
   def getOrCreateLog(topic: String, partition: Int): Log = {
     awaitStartup
+    if (topic.length <= 0)
+      throw new InvalidTopicException("topic name can't be empty")
     if (partition < 0 || partition >= topicPartitionsMap.getOrElse(topic, numPartitions)) {
       logger.warn("Wrong partition " + partition + " valid partitions (0," +
               (topicPartitionsMap.getOrElse(topic, numPartitions) - 1) + ")")
@@ -199,7 +210,11 @@ private[kafka] class LogManager(val config: KafkaConfig,
     while(iter.hasNext) {
       val log = iter.next
       logger.debug("Garbage collecting '" + log.name + "'")
-      val toBeDeleted = log.markDeletedWhile(startMs - _.file.lastModified > this.logCleanupMinAgeMs)
+      var logCleanupThresholdMS = this.logCleanupDefaultAgeMs
+      val topic = Utils.getTopicPartition(log.dir.getName)._1
+      if (logRetentionMSMap.contains(topic))
+        logCleanupThresholdMS = logRetentionMSMap(topic)
+      val toBeDeleted = log.markDeletedWhile(startMs - _.file.lastModified > logCleanupThresholdMS)
       for(segment <- toBeDeleted) {
         logger.info("Deleting log segment " + segment.file.getName() + " from " + log.name)
         Utils.swallow(logger.warn, segment.messageSet.close())

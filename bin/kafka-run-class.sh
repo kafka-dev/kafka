@@ -20,14 +20,25 @@ do
   fi
 done
 
-if [ -z "$KAFKA_OPTS" ]; then
-  KAFKA_OPTS="-Xmx512M -server -Dcom.sun.management.jmxremote -Dlog4j.configuration=file:$base_dir/src/log4j.properties "
+for file in $base_dir/lib_managed/scala_2.8.0/compile/*.jar;
+do
+  if [ ${file##*/} != "sbt-launch.jar" ]; then
+    CLASSPATH=$CLASSPATH:$file
+  fi
+done
+if [ -z "$KAFKA_JMX_OPTS" ]; then
+  KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false "
 fi
-
+if [ -z "$KAFKA_OPTS" ]; then
+  KAFKA_OPTS="-Xmx512M -server  -Dlog4j.configuration=file:$base_dir/src/log4j.properties"
+fi
+if [  $JMX_PORT ]; then
+  KAFKA_JMX_OPTS="$KAFKA_JMX_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT "
+fi
 if [ -z "$JAVA_HOME" ]; then
   JAVA="java"
 else
   JAVA="$JAVA_HOME/bin/java"
 fi
 
-$JAVA $KAFKA_OPTS -cp $CLASSPATH $@
+$JAVA $KAFKA_OPTS $KAFKA_JMX_OPTS -cp $CLASSPATH $@

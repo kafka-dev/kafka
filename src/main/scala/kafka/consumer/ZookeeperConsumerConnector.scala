@@ -80,8 +80,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
 
   private val logger = Logger.getLogger(getClass())
-  private var isShutdown = false
-  private val shutdownLock = new Object
+  private val isShuttingDown = new AtomicBoolean(false)
   private val rebalanceLock = new Object
   private var fetcher: Option[Fetcher] = None
   private var zkClient: ZkClient = null
@@ -113,20 +112,27 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   }
 
   def shutdown() {
-    shutdownLock synchronized {
-      if (isShutdown)
-        return
-      scheduler.shutdown
-      sendShudownToAllQueues
-      if (zkClient != null) {
-        zkClient.close()
-        zkClient = null
+    val canShutdown = isShuttingDown.compareAndSet(false, true);
+    if (canShutdown) {
+      logger.info("ZKConsumerConnector shutting down")
+      try {
+        scheduler.shutdown
+        sendShudownToAllQueues
+        if (zkClient != null) {
+          zkClient.close()
+          zkClient = null
+        }
+        fetcher match {
+          case Some(f) => f.shutdown
+          case None =>
+        }
       }
-      fetcher match {
-        case Some(f) => f.shutdown
-        case None =>
+      catch {
+        case e =>
+          logger.fatal(e)
+          logger.fatal(Utils.stackTrace(e))
       }
-      isShutdown = true
+      logger.info("ZKConsumerConnector shut down completed")
     }
   }
 
