@@ -36,9 +36,9 @@ import kafka.etl.KafkaETLKey;
 import kafka.etl.KafkaETLRequest;
 import kafka.etl.KafkaETLUtils;
 import kafka.etl.Props;
-import kafka.message.ByteBufferMessageSet;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.producer.SyncProducer;
+import kafka.javaapi.producer.SyncProducer;
 import kafka.producer.SyncProducerConfig;
 
 /**

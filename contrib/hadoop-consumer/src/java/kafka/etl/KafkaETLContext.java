@@ -7,11 +7,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.zip.CRC32;
 import kafka.api.FetchRequest;
-import kafka.api.MultiFetchResponse;
+import kafka.javaapi.MultiFetchResponse;
 import kafka.api.OffsetRequest;
 import kafka.common.ErrorMapping;
-import kafka.consumer.SimpleConsumer;
-import kafka.message.ByteBufferMessageSet;
+import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
 import kafka.message.MessageSet;
 import org.apache.hadoop.io.BytesWritable;
@@ -231,7 +231,7 @@ public class KafkaETLContext {
      */
     protected boolean hasError(ByteBufferMessageSet messages)
             throws IOException {
-        int errorCode = messages.errorCOde();
+        int errorCode = messages.errorCode();
         if (errorCode == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE()) {
             /* offset cannot cross the maximum offset (guaranteed by Kafka protocol).
                Kafka server may delete old files from time to time */

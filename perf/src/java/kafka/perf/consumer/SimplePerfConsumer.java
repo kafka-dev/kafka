@@ -7,9 +7,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import scala.collection.Iterator;
 
 import kafka.api.FetchRequest;
-import kafka.api.MultiFetchResponse;
-import kafka.consumer.SimpleConsumer;
-import kafka.message.ByteBufferMessageSet;
+import kafka.javaapi.MultiFetchResponse;
+import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
 
 public class SimplePerfConsumer extends Thread

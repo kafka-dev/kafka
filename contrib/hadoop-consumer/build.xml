@@ -6,12 +6,17 @@
   <property name="name" value="kafka-etl" />
   <property name="display.name" value="Kafka ETL Hadoop Job" />
   <property name="author" value="Lin Guo" />
+  <property name="contrib.classes.dir" value="contrib/hadoop-consumer/classes" />
+  <property name="contrib.dist.dir" value="contrib/hadoop-consumer/dist" />
   <property environment="env" />
 
   <path id="main-classpath">
     <fileset dir="${lib.dir}">
       <include name="*.jar" />
       <exclude name="sbt-launch.jar" />
+    </fileset>
+    <fileset dir="lib_managed/scala_2.8.0/compile">
+      <include name="*.jar" />
     </fileset>
     <fileset dir="${target.dir}">
       <include name="*.jar" />
@@ -34,6 +39,7 @@
 
   <target name="clean" description="Delete generated files.">
     <delete dir="${contrib.classes.dir}" />
+    <delete dir="${contrib.dist.dir}" />
   </target>
 
   <target name="build" description="Compile contrib packages">
@@ -45,7 +51,8 @@
   </target>
 
   <target name="jar" depends="build" description="Build contrib jar file">
-    <jar destfile="${dist.dir}/${name}-contrib-${curr.release}.jar">
+    <replace-dir dir="${contrib.dist.dir}" />
+    <jar destfile="${contrib.dist.dir}/${name}-contrib-${project.version}.jar">
       <fileset dir="${contrib.classes.dir}">
         <include name="**/*.*" />
       </fileset>

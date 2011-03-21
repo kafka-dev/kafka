@@ -1,16 +1,18 @@
 package kafka.perf.producer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import kafka.message.ByteBufferMessageSet;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.producer.SimpleProducer;
+import kafka.javaapi.producer.SyncProducer;
+import kafka.producer.SyncProducerConfig;
 
 public class Producer extends Thread
 {
-  private final SimpleProducer producer;
+  private final SyncProducer producer;
   private final String topic;
   private final int messageSize;
   private AtomicLong bytesSent =  new AtomicLong(0L);
@@ -26,12 +28,14 @@ public class Producer extends Thread
                   int kafkaProducerBufferSize, int connectionTimeOut, int reconnectInterval,
                   int messageSize, String name, int batchSize, int numParts)
   {
-    producer = new SimpleProducer(kafkaServerURL,
-                                 kafkaServerPort,
-                                 kafkaProducerBufferSize,
-                                 connectionTimeOut,
-                                 reconnectInterval);
-    this.topic = topic; 
+    Properties props = new Properties();
+    props.put("host", kafkaServerURL);
+    props.put("port", String.valueOf(kafkaServerPort));
+    props.put("buffer.size", String.valueOf(kafkaProducerBufferSize));
+    props.put("connect.timeout.ms", String.valueOf(connectionTimeOut));
+    props.put("reconnect.interval", String.valueOf(reconnectInterval));
+    producer = new SyncProducer(new SyncProducerConfig(props));
+    this.topic = topic;
     this.messageSize = messageSize;
     procudername = name;
     this.batchSize = batchSize;
