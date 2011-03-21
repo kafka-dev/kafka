@@ -19,6 +19,7 @@ public class PerfTimer extends Thread
                    long timeToRun,
                    String fileName)
   {
+    super("PerfTimer");
     this.timeToRun = timeToRun;
     this.brokerStats = brokerStats;
     this.perfSim = perfSim;
