@@ -38,6 +38,7 @@ class ServerShutdownTest extends JUnitSuite {
     val config = new KafkaConfig(props) {
       override val enableZookeeper = false
     }
+
     val host = "localhost"
     val topic = "test"
     val sent1 = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
@@ -61,6 +62,7 @@ class ServerShutdownTest extends JUnitSuite {
       producer.send(topic, sent1)
       sent1.buffer.rewind
 
+      Thread.sleep(200)
       // do a clean shutdown
       server.shutdown()
       val cleanShutDownFile = new File(new File(config.logDir), server.CLEAN_SHUTDOWN_FILE)
