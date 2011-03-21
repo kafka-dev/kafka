@@ -554,7 +554,12 @@ class SnapshotStats(private val monitorDurationNs: Long = 30L * 1000L * 1000L * 
 
   def getAvgMetric: Double = {
     val stats = complete.get
-    stats.totalRequestMetric / stats.numRequests
+    if (stats.numRequests == 0) {
+      0
+    }
+    else {
+      stats.totalRequestMetric / stats.numRequests
+    }
   }
 
   def getMaxMetric: Double = complete.get.maxRequestMetric
