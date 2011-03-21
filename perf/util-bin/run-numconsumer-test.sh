@@ -1,15 +1,21 @@
 #!/bin/bash
 
-ssh $1 "cd $KAFKA_HOME; ./kafka-server.sh server.properties 2>&1 >kafka.out" &
-./run-simulator.sh -kafkaServer=$1 -numTopic=10  -reportFile=$2 -time=2 -numConsumer=0 -numProducer=40 -numParts=1 -xaxis=numConsumer
-sleep 2*1000
+. `dirname $0`/remote-kafka-env.sh
 
-for i in 10 20 30 40 50;
+REMOTE_KAFKA_HOST=$1 # todo: use this instead of localhost for -kafkaServer=localhost (@ problem)
+REMOTE_SIM_HOST=$2
+TEST_TIME=$3
+REPORT_FILE=$4
+
+kafka_startup
+# You need to twidle this time value depending on test time below
+ssh $REMOTE_SIM_HOST "$SIMULATOR_SCRIPT -kafkaServer=localhost -numTopic=10  -reportFile=$REPORT_FILE -time=7 -numConsumer=0 -numProducer=10 -xaxis=numConsumer"
+sleep 20
+
+for i in 1 `seq -s " " 10 10 50` ;
 do
-    ./run-simulator.sh -kafkaServer=$1 -numTopic=10  -reportFile=$2 -time=1 -numConsumer=$i -numProducer=0 -xaxis=numConsumer
+    ssh $REMOTE_SIM_HOST "$SIMULATOR_SCRIPT -kafkaServer=localhost -numTopic=10  -reportFile=$REPORT_FILE -time=$TEST_TIME -numConsumer=$i -numProducer=0 -xaxis=numConsumer"
     sleep 10
 done
-ssh $1 "cd $KAFKA_HOME; ./stop-server.sh" &
-sleep 20
-ssh $1 "rm -rf /tmp/kafka-logs" &
-sleep 40
+
+kafka_cleanup
