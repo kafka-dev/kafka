@@ -1,6 +1,6 @@
 
 REMOTE_KAFKA_HOME="~/kafka-perf"
-REMOTE_KAFKA_LOG_DIR="~/tmp/kafka-logs"
+REMOTE_KAFKA_LOG_DIR="$REMOTE_KAFKA_HOME/tmp/kafka-logs"
 #SIMULATOR_HOST
 SIMULATOR_SCRIPT="$REMOTE_KAFKA_HOME/perf/run-simulator.sh"
 

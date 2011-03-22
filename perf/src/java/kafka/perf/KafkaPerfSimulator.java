@@ -247,6 +247,12 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
     if(NUM_TOPIC.equals(xaxisLabel))
       return "Number of Topics";
+
+    if(MSG_SIZE.equals(xaxisLabel))
+      return "Message Size";
+
+    if(FETCH_SIZE.equals(xaxisLabel))
+      return "Fetch Size";
     
     return "";
   }
@@ -261,6 +267,12 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
     if(NUM_TOPIC.equals(xaxisLabel))
       return ""+numTopic;
+
+    if(MSG_SIZE.equals(xaxisLabel))
+      return ""+messageSize;
+
+    if(FETCH_SIZE.equals(xaxisLabel))
+      return ""+fetchSize;
     
     return "";
   }
