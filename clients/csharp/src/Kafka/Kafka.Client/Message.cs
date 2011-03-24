@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using Kafka.Client.Util;
 
 namespace Kafka.Client
@@ -115,6 +116,15 @@ namespace Kafka.Client
         public bool IsValid()
         {
             return Checksum.SequenceEqual(CalculateChecksum());
+        }
+
+        /// <summary>
+        /// Try to show the payload as decoded to UTF-8.
+        /// </summary>
+        /// <returns>The decoded payload as string.</returns>
+        public override string ToString()
+        {
+            return Encoding.UTF8.GetString(Payload);
         }
 
         /// <summary>

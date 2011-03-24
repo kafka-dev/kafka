@@ -69,6 +69,21 @@ namespace Kafka.Client
         }
 
         /// <summary>
+        /// Sends a request to Kafka.
+        /// </summary>
+        /// <param name="request">The request to send to Kafka.</param>
+        public void Send(MultiProducerRequest request)
+        {
+            if (request.IsValid())
+            {
+                using (KafkaConnection connection = new KafkaConnection(Server, Port))
+                {
+                    connection.Write(request);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sends a list of messages to Kafka.
         /// </summary>
         /// <param name="topic">The topic to publish to.</param>

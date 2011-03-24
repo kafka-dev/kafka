@@ -50,6 +50,27 @@ namespace Kafka.Client
         /// <returns>The byte array of the request.</returns>
         public override byte[] GetBytes()
         {
+            List<byte> encodedMessageSet = new List<byte>();
+            encodedMessageSet.AddRange(GetInternalBytes());
+
+            byte[] requestBytes = BitWorks.GetBytesReversed(Convert.ToInt16((int)RequestType.Produce));
+            encodedMessageSet.InsertRange(0, requestBytes);
+            encodedMessageSet.InsertRange(0, BitWorks.GetBytesReversed(encodedMessageSet.Count));
+
+            return encodedMessageSet.ToArray();
+        }
+
+        /// <summary>
+        /// Gets the bytes representing the request which is used when generating a multi-request.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="GetBytes"/> method is used for sending a single <see cref="RequestType.Produce"/>.
+        /// It prefixes this byte array with the request type and the number of messages. This method
+        /// is used to supply the <see cref="MultiProducerRequest"/> with the contents for its message.
+        /// </remarks>
+        /// <returns>The bytes that represent this <see cref="ProducerRequest"/>.</returns>
+        internal byte[] GetInternalBytes()
+        {
             List<byte> messagePack = new List<byte>();
             foreach (Message message in Messages)
             {
@@ -58,7 +79,6 @@ namespace Kafka.Client
                 messagePack.AddRange(messageBytes);
             }
 
-            byte[] requestBytes = BitWorks.GetBytesReversed(Convert.ToInt16((int)RequestType.Produce));
             byte[] topicLengthBytes = BitWorks.GetBytesReversed(Convert.ToInt16(Topic.Length));
             byte[] topicBytes = Encoding.UTF8.GetBytes(Topic);
             byte[] partitionBytes = BitWorks.GetBytesReversed(Partition);
@@ -66,13 +86,11 @@ namespace Kafka.Client
             byte[] messagePackBytes = messagePack.ToArray();
 
             List<byte> encodedMessageSet = new List<byte>();
-            encodedMessageSet.AddRange(requestBytes);
             encodedMessageSet.AddRange(topicLengthBytes);
             encodedMessageSet.AddRange(topicBytes);
             encodedMessageSet.AddRange(partitionBytes);
             encodedMessageSet.AddRange(messagePackLengthBytes);
             encodedMessageSet.AddRange(messagePackBytes);
-            encodedMessageSet.InsertRange(0, BitWorks.GetBytesReversed(encodedMessageSet.Count));
 
             return encodedMessageSet.ToArray();
         }

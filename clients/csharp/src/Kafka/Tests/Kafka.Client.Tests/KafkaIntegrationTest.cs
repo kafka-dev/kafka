@@ -66,6 +66,25 @@ namespace Kafka.Client.Tests
         }
 
         /// <summary>
+        /// Send a multi-produce request to Kafka.
+        /// </summary>
+        [Test]
+        public void ProducerSendMultiRequest()
+        {
+            List<ProducerRequest> requests = new List<ProducerRequest>
+            { 
+                new ProducerRequest("test", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("1: " + DateTime.UtcNow)) }),
+                new ProducerRequest("test", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("2: " + DateTime.UtcNow)) }),
+                new ProducerRequest("testa", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("3: " + DateTime.UtcNow)) }),
+                new ProducerRequest("testa", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("4: " + DateTime.UtcNow)) })
+            };
+
+            MultiProducerRequest request = new MultiProducerRequest(requests);
+            Producer producer = new Producer(KafkaServer, KafkaPort);
+            producer.Send(request);
+        }
+
+        /// <summary>
         /// Generates messages for Kafka then gets them back.
         /// </summary>
         [Test]
@@ -74,7 +93,12 @@ namespace Kafka.Client.Tests
             ProducerSendsMessage();
 
             Consumer consumer = new Consumer(KafkaServer, KafkaPort);
-            consumer.Consume("test", 0, 0);
+            List<Message> messages = consumer.Consume("test", 0, 0);
+
+            foreach (Message msg in messages)
+            {
+                Console.WriteLine(msg);
+            }
         }
 
         /// <summary>

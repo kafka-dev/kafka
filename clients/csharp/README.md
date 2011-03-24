@@ -28,6 +28,20 @@ The Producer can send one or more messages to Kafka in both a synchronous and as
     Producer producer = new Producer("localhost", 9092);
     producer.SendAsync("test", 0, messages, (requestContext) => { // doing work });
 
+### Multi-Producer Usage
+
+    List<ProducerRequest> requests = new List<ProducerRequest>
+    { 
+        new ProducerRequest("test a", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("1: " + DateTime.UtcNow)) }),
+        new ProducerRequest("test a", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("2: " + DateTime.UtcNow)) }),
+        new ProducerRequest("test b", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("3: " + DateTime.UtcNow)) }),
+        new ProducerRequest("test c", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("4: " + DateTime.UtcNow)) })
+    };
+
+    MultiProducerRequest request = new MultiProducerRequest(requests);
+    Producer producer = new Producer(KafkaServer, KafkaPort);
+    producer.Send(request);
+
 ## Consumer
 
 Currently, the consumer is not terribly advanced.  It has two functions of interest: `GetOffsetsBefore` and `Consume`.  `GetOffsetsBefore` will retrieve a list of offsets before a given time and `Consume` will attempt to get a list of messages from Kafka given a topic, partition and offset.

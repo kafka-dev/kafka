@@ -43,6 +43,7 @@
     <Compile Include="AbstractRequest.cs" />
     <Compile Include="Consumer.cs" />
     <Compile Include="ConsumerRequest.cs" />
+    <Compile Include="MultiProducerRequest.cs" />
     <Compile Include="OffsetRequest.cs" />
     <Compile Include="ProducerRequest.cs" />
     <Compile Include="RequestContext.cs" />
