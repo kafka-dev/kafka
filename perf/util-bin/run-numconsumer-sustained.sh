@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 . `dirname $0`/remote-kafka-env.sh
 
