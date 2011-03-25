@@ -9,7 +9,7 @@ namespace Kafka.Client
     /// <summary>
     /// Constructs a request to send to Kafka.
     /// </summary>
-    public class ConsumerRequest : AbstractRequest
+    public class FetchRequest : AbstractRequest
     {
         /// <summary>
         /// Maximum size.
@@ -19,7 +19,7 @@ namespace Kafka.Client
         /// <summary>
         /// Initializes a new instance of the ConsumerRequest class.
         /// </summary>
-        public ConsumerRequest()
+        public FetchRequest()
         {
         }
 
@@ -29,7 +29,7 @@ namespace Kafka.Client
         /// <param name="topic">The topic to publish to.</param>
         /// <param name="partition">The partition to publish to.</param>
         /// <param name="offset">The offset in the topic/partition to retrieve from.</param>
-        public ConsumerRequest(string topic, int partition, long offset)
+        public FetchRequest(string topic, int partition, long offset)
             : this(topic, partition, offset, DefaultMaxSize)
         {
         }
@@ -41,7 +41,7 @@ namespace Kafka.Client
         /// <param name="partition">The partition to publish to.</param>
         /// <param name="offset">The offset in the topic/partition to retrieve from.</param>
         /// <param name="maxSize">The maximum size.</param>
-        public ConsumerRequest(string topic, int partition, long offset, int maxSize)
+        public FetchRequest(string topic, int partition, long offset, int maxSize)
         {
             Topic = topic;
             Partition = partition;
@@ -74,12 +74,33 @@ namespace Kafka.Client
         /// <returns>The byte array of the request.</returns>
         public override byte[] GetBytes()
         {
-            // REQUEST TYPE ID + TOPIC LENGTH + TOPIC + PARTITION + OFFSET + MAX SIZE
-            int requestSize = 2 + 2 + Topic.Length + 4 + 8 + 4;
+            byte[] internalBytes = GetInternalBytes();
 
             List<byte> request = new List<byte>();
-            request.AddRange(BitWorks.GetBytesReversed(requestSize));
+
+            // add the 2 for the RequestType.Fetch
+            request.AddRange(BitWorks.GetBytesReversed(internalBytes.Length + 2));
             request.AddRange(BitWorks.GetBytesReversed((short)RequestType.Fetch));
+            request.AddRange(internalBytes);
+
+            return request.ToArray<byte>();
+        }
+
+        /// <summary>
+        /// Gets the bytes representing the request which is used when generating a multi-request.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="GetBytes"/> method is used for sending a single <see cref="RequestType.Fetch"/>.
+        /// It prefixes this byte array with the request type and the number of messages. This method
+        /// is used to supply the <see cref="MultiFetchRequest"/> with the contents for its message.
+        /// </remarks>
+        /// <returns>The bytes that represent this <see cref="FetchRequest"/>.</returns>
+        internal byte[] GetInternalBytes()
+        {
+            // TOPIC LENGTH + TOPIC + PARTITION + OFFSET + MAX SIZE
+            int requestSize = 2 + Topic.Length + 4 + 8 + 4;
+
+            List<byte> request = new List<byte>();
             request.AddRange(BitWorks.GetBytesReversed((short)Topic.Length));
             request.AddRange(Encoding.ASCII.GetBytes(Topic));
             request.AddRange(BitWorks.GetBytesReversed(Partition));

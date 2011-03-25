@@ -44,7 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsumerRequestTests.cs" />
+    <Compile Include="FetchRequestTests.cs" />
+    <Compile Include="MultiFetchRequestTests.cs" />
     <Compile Include="KafkaIntegrationTest.cs" />
     <Compile Include="MessageTests.cs" />
     <Compile Include="MultiProducerRequestTests.cs" />

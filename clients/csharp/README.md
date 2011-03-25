@@ -44,7 +44,7 @@ The Producer can send one or more messages to Kafka in both a synchronous and as
 
 ## Consumer
 
-Currently, the consumer is not terribly advanced.  It has two functions of interest: `GetOffsetsBefore` and `Consume`.  `GetOffsetsBefore` will retrieve a list of offsets before a given time and `Consume` will attempt to get a list of messages from Kafka given a topic, partition and offset.
+The consumer has several functions of interest: `GetOffsetsBefore` and `Consume`.  `GetOffsetsBefore` will retrieve a list of offsets before a given time and `Consume` will attempt to get a list of messages from Kafka given a topic, partition and offset.  `Consume` allows for both a single and batched request function using the `MultiFetchRequest`.
 
 ### Consumer Usage
 
@@ -52,3 +52,15 @@ Currently, the consumer is not terribly advanced.  It has two functions of inter
     int max = 10;
     long[] offsets = consumer.GetOffsetsBefore("test", 0, OffsetRequest.LatestTime, max);
     List<Message> messages = consumer.Consume("test", 0, offsets[0]);
+
+### Consumer Multi-fetch
+
+    Consumer consumer = new Consumer(KafkaServer, KafkaPort);
+    MultiFetchRequest request = new MultiFetchRequest(new List<FetchRequest>
+    {
+        new FetchRequest("test", 0, 0),
+        new FetchRequest("test", 0, 0),
+        new FetchRequest("testa", 0, 0)
+    });
+
+    List<List<Message>> messages = consumer.Consume(request);

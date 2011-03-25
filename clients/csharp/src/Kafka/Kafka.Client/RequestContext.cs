@@ -28,7 +28,7 @@ namespace Kafka.Client
         public NetworkStream NetworkStream { get; private set; }
 
         /// <summary>
-        /// Gets the <see cref="ConsumerRequest"/> or <see cref="ProducerRequest"/> object
+        /// Gets the <see cref="FetchRequest"/> or <see cref="ProducerRequest"/> object
         /// associated with the <see cref="RequestContext"/>.
         /// </summary>
         public T Request { get; private set; }

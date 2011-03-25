@@ -7,11 +7,41 @@ using NUnit.Framework;
 namespace Kafka.Client.Tests
 {
     /// <summary>
-    /// Tests for the <see cref="ConsumerRequest"/> class.
+    /// Tests for the <see cref="FetchRequest"/> class.
     /// </summary>
     [TestFixture]
-    public class ConsumerRequestTests
+    public class FetchRequestTests
     {
+        /// <summary>
+        /// Tests a valid request.  
+        /// </summary>
+        [Test]
+        public void IsValidTrue()
+        {
+            FetchRequest request = new FetchRequest("topic", 1, 10L, 100);
+            Assert.IsTrue(request.IsValid());
+        }
+
+        /// <summary>
+        /// Tests a invalid request with no topic.
+        /// </summary>
+        [Test]
+        public void IsValidNoTopic()
+        {
+            FetchRequest request = new FetchRequest(" ", 1, 10L, 100);
+            Assert.IsFalse(request.IsValid());
+        }
+
+        /// <summary>
+        /// Tests a invalid request with no topic.
+        /// </summary>
+        [Test]
+        public void IsValidNulltopic()
+        {
+            FetchRequest request = new FetchRequest(null, 1, 10L, 100);
+            Assert.IsFalse(request.IsValid());
+        }
+
         /// <summary>
         /// Tests to ensure that the request follows the expected structure.
         /// </summary>
@@ -19,7 +49,7 @@ namespace Kafka.Client.Tests
         public void GetBytesValidStructure()
         {
             string topicName = "topic";
-            ConsumerRequest request = new ConsumerRequest(topicName, 1, 10L, 100);
+            FetchRequest request = new FetchRequest(topicName, 1, 10L, 100);
 
             // REQUEST TYPE ID + TOPIC LENGTH + TOPIC + PARTITION + OFFSET + MAX SIZE
             int requestSize = 2 + 2 + topicName.Length + 4 + 8 + 4;

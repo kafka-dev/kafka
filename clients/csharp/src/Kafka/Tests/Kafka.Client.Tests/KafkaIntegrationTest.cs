@@ -88,7 +88,7 @@ namespace Kafka.Client.Tests
         /// Generates messages for Kafka then gets them back.
         /// </summary>
         [Test]
-        public void ConsumerGetsMessage()
+        public void ConsumerFetchMessage()
         {
             ProducerSendsMessage();
 
@@ -98,6 +98,35 @@ namespace Kafka.Client.Tests
             foreach (Message msg in messages)
             {
                 Console.WriteLine(msg);
+            }
+        }
+
+        /// <summary>
+        /// Generates multiple messages for Kafka then gets them back.
+        /// </summary>
+        [Test]
+        public void ConsumerMultiFetchGetsMessage()
+        {
+            ProducerSendMultiRequest();
+
+            Consumer consumer = new Consumer(KafkaServer, KafkaPort);
+            MultiFetchRequest request = new MultiFetchRequest(new List<FetchRequest>
+            {
+                new FetchRequest("test", 0, 0),
+                new FetchRequest("test", 0, 0),
+                new FetchRequest("testa", 0, 0)
+            });
+
+            List<List<Message>> messages = consumer.Consume(request);
+
+            for (int ix = 0; ix < messages.Count; ix++)
+            {
+                List<Message> messageSet = messages[ix];
+                Console.WriteLine(string.Format("Request #{0}-->", ix));
+                foreach (Message msg in messageSet)
+                {
+                    Console.WriteLine(msg);
+                }
             }
         }
 

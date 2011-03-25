@@ -59,7 +59,7 @@ namespace Kafka.Client
         /// <returns>A list of messages from Kafka.</returns>
         public List<Message> Consume(string topic, int partition, long offset, int maxSize)
         {
-            return Consume(new ConsumerRequest(topic, partition, offset, maxSize));
+            return Consume(new FetchRequest(topic, partition, offset, maxSize));
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Kafka.Client
         /// </summary>
         /// <param name="request">The request to send to Kafka.</param>
         /// <returns>A list of messages from Kafka.</returns>
-        public List<Message> Consume(ConsumerRequest request)
+        public List<Message> Consume(FetchRequest request)
         {
             List<Message> messages = new List<Message>();
             using (KafkaConnection connection = new KafkaConnection(Server, Port))
@@ -90,6 +90,63 @@ namespace Kafka.Client
                         messageSize = BitConverter.ToInt32(BitWorks.ReverseBytes(unbufferedData.Skip(processed).Take(4).ToArray<byte>()), 0);
                         messages.Add(Message.ParseFrom(unbufferedData.Skip(processed).Take(messageSize + 4).ToArray<byte>()));
                         processed += 4 + messageSize;
+                    }
+                }
+            }
+
+            return messages;
+        }
+
+        /// <summary>
+        /// Executes a multi-fetch operation.
+        /// </summary>
+        /// <param name="request">The request to push to Kafka.</param>
+        /// <returns>
+        /// A list containing sets of messages. The message sets should match the request order.
+        /// </returns>
+        public List<List<Message>> Consume(MultiFetchRequest request)
+        {
+            int fetchRequests = request.ConsumerRequests.Count;
+
+            List<List<Message>> messages = new List<List<Message>>();
+            using (KafkaConnection connection = new KafkaConnection(Server, Port))
+            {
+                connection.Write(request.GetBytes());
+                int dataLength = BitConverter.ToInt32(BitWorks.ReverseBytes(connection.Read(4)), 0);
+
+                if (dataLength > 0)
+                {
+                    byte[] data = connection.Read(dataLength);
+
+                    int position = 0;
+
+                    // gonna skip the first two as error code???
+                    position = position + 2;
+
+                    for (int ix = 0; ix < fetchRequests; ix++)
+                    {
+                        messages.Add(new List<Message>()); 
+
+                        int messageSetSize = BitConverter.ToInt32(BitWorks.ReverseBytes(data.Skip(position).Take(4).ToArray<byte>()), 0);
+                        position = position + 4;
+
+                        // TODO: need to check in on kafka error codes...assume all's good for now
+                        position = position + 2;
+
+                        byte[] messageSetBytes = data.Skip(position).ToArray<byte>().Take(messageSetSize).ToArray<byte>();
+
+                        int processed = 0;
+                        int messageSize = 0;
+
+                        // dropped 2 bytes at the end...padding???
+                        while (processed < messageSetBytes.Length - 2)
+                        {
+                            messageSize = BitConverter.ToInt32(BitWorks.ReverseBytes(messageSetBytes.Skip(processed).Take(4).ToArray<byte>()), 0);
+                            messages[ix].Add(Message.ParseFrom(messageSetBytes.Skip(processed).Take(messageSize + 4).ToArray<byte>()));
+                            processed += 4 + messageSize;
+                        }
+
+                        position = position + processed;
                     }
                 }
             }
