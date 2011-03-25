@@ -33,13 +33,13 @@ The Producer can send one or more messages to Kafka in both a synchronous and as
     List<ProducerRequest> requests = new List<ProducerRequest>
     { 
         new ProducerRequest("test a", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("1: " + DateTime.UtcNow)) }),
-        new ProducerRequest("test a", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("2: " + DateTime.UtcNow)) }),
-        new ProducerRequest("test b", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("3: " + DateTime.UtcNow)) }),
-        new ProducerRequest("test c", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("4: " + DateTime.UtcNow)) })
+        new ProducerRequest("test b", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("2: " + DateTime.UtcNow)) }),
+        new ProducerRequest("test c", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("3: " + DateTime.UtcNow)) }),
+        new ProducerRequest("test d", 0, new List<Message> { new Message(Encoding.UTF8.GetBytes("4: " + DateTime.UtcNow)) })
     };
 
     MultiProducerRequest request = new MultiProducerRequest(requests);
-    Producer producer = new Producer(KafkaServer, KafkaPort);
+    Producer producer = new Producer("localhost", 9092);
     producer.Send(request);
 
 ## Consumer
@@ -55,12 +55,12 @@ The consumer has several functions of interest: `GetOffsetsBefore` and `Consume`
 
 ### Consumer Multi-fetch
 
-    Consumer consumer = new Consumer(KafkaServer, KafkaPort);
+    Consumer consumer = new Consumer("localhost", 9092);
     MultiFetchRequest request = new MultiFetchRequest(new List<FetchRequest>
     {
-        new FetchRequest("test", 0, 0),
-        new FetchRequest("test", 0, 0),
-        new FetchRequest("testa", 0, 0)
+        new FetchRequest("testa", 0, 0),
+        new FetchRequest("testb", 0, 0),
+        new FetchRequest("testc", 0, 0)
     });
 
     List<List<Message>> messages = consumer.Consume(request);
