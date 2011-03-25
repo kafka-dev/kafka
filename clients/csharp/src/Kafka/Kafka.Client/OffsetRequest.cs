@@ -54,6 +54,15 @@ namespace Kafka.Client
         public int MaxOffsets { get; private set; }
 
         /// <summary>
+        /// Determines if the request has valid settings.
+        /// </summary>
+        /// <returns>True if valid and false otherwise.</returns>
+        public override bool IsValid()
+        {
+            return !string.IsNullOrWhiteSpace(Topic);
+        }
+
+        /// <summary>
         /// Converts the request to an array of bytes that is expected by Kafka.
         /// </summary>
         /// <returns>An array of bytes that represents the request.</returns>

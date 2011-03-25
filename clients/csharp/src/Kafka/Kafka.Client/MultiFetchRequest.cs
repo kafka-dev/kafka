@@ -29,7 +29,7 @@ namespace Kafka.Client
         /// Determines if the request has valid settings.
         /// </summary>
         /// <returns>True if valid and false otherwise.</returns>
-        public bool IsValid()
+        public override bool IsValid()
         {
             return ConsumerRequests != null && ConsumerRequests.Count > 0
                 && ConsumerRequests.Select(itm => !itm.IsValid()).Count() > 0;

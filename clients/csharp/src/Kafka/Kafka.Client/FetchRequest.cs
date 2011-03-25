@@ -63,7 +63,7 @@ namespace Kafka.Client
         /// Determines if the request has valid settings.
         /// </summary>
         /// <returns>True if valid and false otherwise.</returns>
-        public bool IsValid()
+        public override bool IsValid()
         {
             return !string.IsNullOrWhiteSpace(Topic);
         }

@@ -13,6 +13,36 @@ namespace Kafka.Client.Tests
     public class OffsetRequestTests
     {
         /// <summary>
+        /// Tests a valid request.  
+        /// </summary>
+        [Test]
+        public void IsValidTrue()
+        {
+            FetchRequest request = new FetchRequest("topic", 1, 10L, 100);
+            Assert.IsTrue(request.IsValid());
+        }
+
+        /// <summary>
+        /// Tests a invalid request with no topic.
+        /// </summary>
+        [Test]
+        public void IsValidNoTopic()
+        {
+            FetchRequest request = new FetchRequest(" ", 1, 10L, 100);
+            Assert.IsFalse(request.IsValid());
+        }
+
+        /// <summary>
+        /// Tests a invalid request with no topic.
+        /// </summary>
+        [Test]
+        public void IsValidNulltopic()
+        {
+            FetchRequest request = new FetchRequest(null, 1, 10L, 100);
+            Assert.IsFalse(request.IsValid());
+        }
+
+        /// <summary>
         /// Validates the list of bytes meet Kafka expectations.
         /// </summary>
         [Test]

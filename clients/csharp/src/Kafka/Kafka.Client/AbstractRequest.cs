@@ -25,5 +25,11 @@ namespace Kafka.Client
         /// </summary>
         /// <returns>An array of bytes that represents the request.</returns>
         public abstract byte[] GetBytes();
+
+        /// <summary>
+        /// Determines if the request has valid settings.
+        /// </summary>
+        /// <returns>True if valid and false otherwise.</returns>
+        public abstract bool IsValid();
     }
 }
