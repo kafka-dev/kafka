@@ -2,7 +2,7 @@
 
 This is a .NET implementation of a client for Kafka using C#.  It provides for a basic implementation that covers most basic functionalities to include a simple Producer and Consumer.
 
-Exceptions are not trapped within the library and basically bubble up directly from the TcpClient and it's underlying Socket connection.  Clients using this library should look to do their own exception handling.
+The .NET client will wrap Kafka server error codes to the `KafkaException` class.  Exceptions are not trapped within the library and basically bubble up directly from the TcpClient and it's underlying Socket connection.  Clients using this library should look to do their own exception handling regarding these kinds of errors.
 
 ## Producer
 
