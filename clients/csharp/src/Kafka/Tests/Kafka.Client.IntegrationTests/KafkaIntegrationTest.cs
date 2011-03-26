@@ -11,7 +11,7 @@ namespace Kafka.Client.Tests
     /// Contains tests that go all the way to Kafka and back.
     /// </summary>
     [TestFixture]
-    //[Ignore("Requires a Kafka server running to execute")]
+    [Ignore("Requires a Kafka server running to execute")]
     public class KafkaIntegrationTest
     {
         /// <summary>

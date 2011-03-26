@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{9BA1A0BF-B207-4A11-8883-5F64B113C07D}</ProjectGuid>
+    <ProjectGuid>{AF29C330-49BD-4648-B692-882E922C435B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Kafka.Client.Tests</RootNamespace>
-    <AssemblyName>Kafka.Client.Tests</AssemblyName>
+    <RootNamespace>Kafka.Client.IntegrationTests</RootNamespace>
+    <AssemblyName>Kafka.Client.IntegrationTests</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -44,14 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MessageTests.cs" />
+    <Compile Include="KafkaIntegrationTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Request\FetchRequestTests.cs" />
-    <Compile Include="Request\MultiFetchRequestTests.cs" />
-    <Compile Include="Request\MultiProducerRequestTests.cs" />
-    <Compile Include="Request\OffsetRequestTests.cs" />
-    <Compile Include="Request\ProducerRequestTests.cs" />
-    <Compile Include="Util\BitWorksTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Kafka.Client\Kafka.Client.csproj">
