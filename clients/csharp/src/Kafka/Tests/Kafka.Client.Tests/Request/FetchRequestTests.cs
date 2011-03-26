@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using Kafka.Client.Request;
 using Kafka.Client.Util;
 using NUnit.Framework;
 
-namespace Kafka.Client.Tests
+namespace Kafka.Client.Request.Tests
 {
     /// <summary>
     /// Tests for the <see cref="FetchRequest"/> class.

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Kafka.Client.Util;
 
-namespace Kafka.Client
+namespace Kafka.Client.Request
 {
     /// <summary>
     /// Constructs a request containing multiple producer requests to send to Kafka.

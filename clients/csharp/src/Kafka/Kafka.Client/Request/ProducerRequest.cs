@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Kafka.Client.Util;
 
-namespace Kafka.Client
+namespace Kafka.Client.Request
 {
     /// <summary>
     /// Constructs a request to send to Kafka.

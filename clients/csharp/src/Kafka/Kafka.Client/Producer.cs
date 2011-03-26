@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Kafka.Client.Request;
 using Kafka.Client.Util;
 
 namespace Kafka.Client

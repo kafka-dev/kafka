@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Threading;
+using Kafka.Client.Request;
 
 namespace Kafka.Client
 {

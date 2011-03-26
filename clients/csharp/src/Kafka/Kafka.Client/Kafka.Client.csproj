@@ -42,12 +42,12 @@
   <ItemGroup>
     <Compile Include="AbstractRequest.cs" />
     <Compile Include="Consumer.cs" />
-    <Compile Include="FetchRequest.cs" />
-    <Compile Include="MultiFetchRequest.cs" />
-    <Compile Include="MultiProducerRequest.cs" />
-    <Compile Include="OffsetRequest.cs" />
-    <Compile Include="ProducerRequest.cs" />
     <Compile Include="RequestContext.cs" />
+    <Compile Include="Request\FetchRequest.cs" />
+    <Compile Include="Request\MultiFetchRequest.cs" />
+    <Compile Include="Request\MultiProducerRequest.cs" />
+    <Compile Include="Request\OffsetRequest.cs" />
+    <Compile Include="Request\ProducerRequest.cs" />
     <Compile Include="Util\Crc32.cs" />
     <Compile Include="KafkaConnection.cs" />
     <Compile Include="Message.cs" />

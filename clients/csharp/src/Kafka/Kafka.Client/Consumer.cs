@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Kafka.Client.Request;
 using Kafka.Client.Util;
 
 namespace Kafka.Client
