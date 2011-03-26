@@ -17,14 +17,14 @@ namespace Kafka.Client.Request
         private static readonly int DefaultMaxSize = 1048576;
 
         /// <summary>
-        /// Initializes a new instance of the ConsumerRequest class.
+        /// Initializes a new instance of the FetchRequest class.
         /// </summary>
         public FetchRequest()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the ConsumerRequest class.
+        /// Initializes a new instance of the FetchRequest class.
         /// </summary>
         /// <param name="topic">The topic to publish to.</param>
         /// <param name="partition">The partition to publish to.</param>
@@ -35,7 +35,7 @@ namespace Kafka.Client.Request
         }
 
         /// <summary>
-        /// Initializes a new instance of the ConsumerRequest class.
+        /// Initializes a new instance of the FetchRequest class.
         /// </summary>
         /// <param name="topic">The topic to publish to.</param>
         /// <param name="partition">The partition to publish to.</param>

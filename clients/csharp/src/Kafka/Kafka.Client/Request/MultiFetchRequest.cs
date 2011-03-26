@@ -12,7 +12,7 @@ namespace Kafka.Client.Request
     public class MultiFetchRequest : AbstractRequest
     {
         /// <summary>
-        /// Initializes a new instance of the MultiConsumerRequest class.
+        /// Initializes a new instance of the MultiFetchRequest class.
         /// </summary>
         /// <param name="requests">Requests to package up and batch.</param>
         public MultiFetchRequest(IList<FetchRequest> requests)
