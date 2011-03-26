@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="AbstractRequest.cs" />
     <Compile Include="Consumer.cs" />
+    <Compile Include="KafkaException.cs" />
     <Compile Include="RequestContext.cs" />
     <Compile Include="Request\FetchRequest.cs" />
     <Compile Include="Request\MultiFetchRequest.cs" />

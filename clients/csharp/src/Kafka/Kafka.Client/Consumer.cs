@@ -80,7 +80,13 @@ namespace Kafka.Client
                 {
                     byte[] data = connection.Read(dataLength);
 
-                    // TODO: need to check in on kafka error codes...assume all's good for now
+                    int errorCode = BitConverter.ToInt16(BitWorks.ReverseBytes(data.Take(2).ToArray<byte>()), 0);
+                    if (errorCode != KafkaException.NoError)
+                    {
+                        throw new KafkaException(errorCode);
+                    }
+
+                    // skip the error code and process the rest
                     byte[] unbufferedData = data.Skip(2).ToArray();
 
                     int processed = 0;
@@ -121,7 +127,13 @@ namespace Kafka.Client
 
                     int position = 0;
 
-                    // gonna skip the first two as error code???
+                    int errorCode = BitConverter.ToInt16(BitWorks.ReverseBytes(data.Take(2).ToArray<byte>()), 0);
+                    if (errorCode != KafkaException.NoError)
+                    {
+                        throw new KafkaException(errorCode);
+                    }
+
+                    // skip the error code and process the rest
                     position = position + 2;
 
                     for (int ix = 0; ix < fetchRequests; ix++)
@@ -131,7 +143,13 @@ namespace Kafka.Client
                         int messageSetSize = BitConverter.ToInt32(BitWorks.ReverseBytes(data.Skip(position).Take(4).ToArray<byte>()), 0);
                         position = position + 4;
 
-                        // TODO: need to check in on kafka error codes...assume all's good for now
+                        errorCode = BitConverter.ToInt16(BitWorks.ReverseBytes(data.Skip(position).Take(2).ToArray<byte>()), 0);
+                        if (errorCode != KafkaException.NoError)
+                        {
+                            throw new KafkaException(errorCode);
+                        }
+
+                        // skip the error code and process the rest
                         position = position + 2;
 
                         byte[] messageSetBytes = data.Skip(position).ToArray<byte>().Take(messageSetSize).ToArray<byte>();
@@ -187,7 +205,13 @@ namespace Kafka.Client
                 {
                     byte[] data = connection.Read(dataLength);
 
-                    // TODO: need to check in on kafka error codes...assume all's good for now
+                    int errorCode = BitConverter.ToInt16(BitWorks.ReverseBytes(data.Take(2).ToArray<byte>()), 0);
+                    if (errorCode != KafkaException.NoError)
+                    {
+                        throw new KafkaException(errorCode);
+                    }
+
+                    // skip the error code and process the rest
                     byte[] unbufferedData = data.Skip(2).ToArray();
 
                     // first four bytes are the number of offsets
