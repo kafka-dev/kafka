@@ -78,4 +78,7 @@ class KafkaProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProj
 
   val cleanDist = cleanTask("dist" ##) describedAs("Erase any packaged distributions.")
   override def cleanAction = super.cleanAction dependsOn(cleanDist)
+
+  override def javaCompileOptions = super.javaCompileOptions ++
+    List(JavaCompileOption("-source"), JavaCompileOption("1.5"))
 }

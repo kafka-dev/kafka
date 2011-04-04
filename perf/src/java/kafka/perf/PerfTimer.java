@@ -19,6 +19,7 @@ public class PerfTimer extends Thread
                    long timeToRun,
                    String fileName)
   {
+    super("PerfTimer");
     this.timeToRun = timeToRun;
     this.brokerStats = brokerStats;
     this.perfSim = perfSim;
@@ -29,9 +30,22 @@ public class PerfTimer extends Thread
     reportFile = fileName;
   }
 
+
+  protected File openReportFile(String name) throws Exception
+  {
+    File file = new File(name);
+    if (!file.exists()) {
+      if (file.getParentFile() != null) {
+        file.getParentFile().mkdirs();
+      }
+    }
+    return file;
+  }
+
+
   public void printMBDataStats() throws Exception
   {
-    File mbDataFile = new File(reportFile + "/MBdata.csv");
+    File mbDataFile = openReportFile(reportFile + "/MBdata.csv");
     boolean witeHeader = !mbDataFile.exists();
     FileWriter fstream = new FileWriter(mbDataFile, true);
     BufferedWriter writer = new BufferedWriter(fstream);
@@ -45,9 +59,10 @@ public class PerfTimer extends Thread
     fstream.close();
   }
 
+
   public void printMessageDataStats() throws Exception
   {
-    File file = new File(reportFile + "/NumMessage.csv");
+    File file = openReportFile(reportFile + "/NumMessage.csv");
     boolean witeHeader = !file.exists();
     FileWriter fstream = new FileWriter(file, true);
     BufferedWriter writer = new BufferedWriter(fstream);

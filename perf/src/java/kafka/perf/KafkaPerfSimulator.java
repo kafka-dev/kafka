@@ -28,6 +28,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
   private static final String KAFKA_SERVER = "kafkaServer";
   private static final String MSG_SIZE = "msgSize";
   private static final String FETCH_SIZE = "fetchSize";
+  private static final String BUFFER_SIZE = "bufferSize";
   private static final String XAXIS = "xaxis";
   
   /* Default values */
@@ -39,9 +40,9 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
   private static String kafkaServersURL = "";
   private final static int kafkaServerPort = 9092;
-  private final static int kafkaProducerBufferSize = 64*1024;
   private final static int connectionTimeOut = 100000;
   private final static int reconnectInterval = 10000;
+  private static int kafkaBufferSize = 64*1024;
   private static int messageSize = 200;
   private static int fetchSize = 1024 *1024; /*1MB*/
   private static int batchSize = 200;
@@ -73,7 +74,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
       else
         kafkaServerURL = hosts[random.nextInt(hosts.length)];
 
-      producers[i] = new Producer(topic,kafkaServerURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut, reconnectInterval,
+      producers[i] = new Producer(topic,kafkaServerURL, kafkaServerPort, kafkaBufferSize, connectionTimeOut, reconnectInterval,
                                   messageSize, InetAddress.getLocalHost().getHostAddress()+ producerName +i, batchSize, numParts);
     }
 
@@ -102,7 +103,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
       else
         kafkaServerURL = hosts[random.nextInt(hosts.length)];
 
-      consumers[i] = new SimplePerfConsumer(topic,kafkaServerURL, kafkaServerPort, kafkaProducerBufferSize, connectionTimeOut, reconnectInterval,
+      consumers[i] = new SimplePerfConsumer(topic,kafkaServerURL, kafkaServerPort, kafkaBufferSize, connectionTimeOut, reconnectInterval,
                                   fetchSize, InetAddress.getLocalHost().getHostAddress()+ consumerName +i, this.numParts);
     }
 
@@ -247,6 +248,16 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
     if(NUM_TOPIC.equals(xaxisLabel))
       return "Number of Topics";
+
+    if(MSG_SIZE.equals(xaxisLabel))
+      return "Message Size";
+
+    if(FETCH_SIZE.equals(xaxisLabel))
+      return "Fetch Size";
+
+    if(BUFFER_SIZE.equals(xaxisLabel))
+      return "Buffer Size";
+
     
     return "";
   }
@@ -261,7 +272,16 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
     if(NUM_TOPIC.equals(xaxisLabel))
       return ""+numTopic;
+
+    if(MSG_SIZE.equals(xaxisLabel))
+      return ""+messageSize;
+
+    if(FETCH_SIZE.equals(xaxisLabel))
+      return ""+fetchSize;
     
+    if(BUFFER_SIZE.equals(xaxisLabel))
+      return ""+kafkaBufferSize;
+
     return "";
   }
   
@@ -281,6 +301,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     parser.accepts(TEST_TIME, "time to run tests").withOptionalArg().ofType(Integer.class);
     parser.accepts(MSG_SIZE, "message size").withOptionalArg().ofType(Integer.class);
     parser.accepts(FETCH_SIZE, "fetch size").withOptionalArg().ofType(Integer.class);
+    parser.accepts(BUFFER_SIZE, "buffer size").withOptionalArg().ofType(Integer.class);
 
 
     return parser;
@@ -320,6 +341,9 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
    
     if(options.hasArgument(FETCH_SIZE))
       fetchSize = ((Integer)options.valueOf(FETCH_SIZE)).intValue();
+
+    if(options.hasArgument(BUFFER_SIZE))
+      kafkaBufferSize = ((Integer)options.valueOf(BUFFER_SIZE)).intValue();
     
     System.out.println("numTopic: " + numTopic);
   }
