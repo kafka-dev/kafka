@@ -94,14 +94,10 @@ class SimpleConsumer(val host: String,
       }
       val endTime = SystemTime.nanoseconds
       SimpleConsumerStats.recordFetchRequest(endTime - startTime)
+      SimpleConsumerStats.recordConsumptionThroughput(response._1.buffer.limit)
       new ByteBufferMessageSet(response._1.buffer, response._2)
     }
   }
-
-//  def multifetch(fetches: java.util.List[FetchRequest]): MultiFetchResponse = {
-//    val fetchesArray = fetches.toArray(new Array[FetchRequest](fetches.size))
-//    multifetch(fetchesArray:_*)
-//  }
 
   def multifetch(fetches: FetchRequest*): MultiFetchResponse = {
     lock synchronized {
@@ -125,6 +121,7 @@ class SimpleConsumer(val host: String,
       }
       val endTime = SystemTime.nanoseconds
       SimpleConsumerStats.recordFetchRequest(endTime - startTime)
+      SimpleConsumerStats.recordConsumptionThroughput(response._1.buffer.limit)
 
       // error code will be set on individual messageset inside MultiFetchResponse
       new MultiFetchResponse(response._1.buffer, fetches.length)
@@ -185,6 +182,7 @@ trait SimpleConsumerStatsMBean {
   def getAvgFetchRequestMs: Double
   def getMaxFetchRequestMs: Double
   def getNumFetchRequests: Long  
+  def getConsumerThroughput: Double
 }
 
 @threadsafe
@@ -193,6 +191,8 @@ class SimpleConsumerStats extends SimpleConsumerStatsMBean {
 
   def recordFetchRequest(requestNs: Long) = fetchRequestStats.recordRequestMetric(requestNs)
 
+  def recordConsumptionThroughput(data: Long) = fetchRequestStats.recordThroughputMetric(data)
+
   def getFetchRequestsPerSecond: Double = fetchRequestStats.getRequestsPerSecond
 
   def getAvgFetchRequestMs: Double = fetchRequestStats.getAvgMetric / (1000.0 * 1000.0)
@@ -200,6 +200,8 @@ class SimpleConsumerStats extends SimpleConsumerStatsMBean {
   def getMaxFetchRequestMs: Double = fetchRequestStats.getMaxMetric / (1000.0 * 1000.0)
 
   def getNumFetchRequests: Long = fetchRequestStats.getNumRequests
+
+  def getConsumerThroughput: Double = fetchRequestStats.getThroughput
 }
 
 object SimpleConsumerStats {
@@ -209,4 +211,6 @@ object SimpleConsumerStats {
   Utils.swallow(logger.warn, Utils.registerMBean(stats, simpleConsumerstatsMBeanName))
 
   def recordFetchRequest(requestMs: Long) = stats.recordFetchRequest(requestMs)
+  def recordConsumptionThroughput(data: Long) = stats.recordConsumptionThroughput(data)
 }
+

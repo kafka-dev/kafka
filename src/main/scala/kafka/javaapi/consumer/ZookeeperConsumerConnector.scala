@@ -92,4 +92,12 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   // for JMX
   def getConsumerGroup(): String = underlying.getConsumerGroup
 
+  def getOffsetLag(topic: String, brokerId: Int, partitionId: Int): Long =
+    underlying.getOffsetLag(topic, brokerId, partitionId)
+
+  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long =
+    underlying.getConsumedOffset(topic, brokerId, partitionId)
+
+  def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long =
+    underlying.getLatestOffset(topic, brokerId, partitionId)
 }

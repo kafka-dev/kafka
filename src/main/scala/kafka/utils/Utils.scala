@@ -599,11 +599,30 @@ class SnapshotStats(private val monitorDurationNs: Long = 30L * 1000L * 1000L * 
     }
   }
 
+  def recordThroughputMetric(data: Long) {
+    val stats = current.get
+    stats.addData(data)
+    val ageNs = time.nanoseconds - stats.start
+    // if the current stats are too old it is time to swap
+    if(ageNs >= monitorDurationNs) {
+      val swapped = current.compareAndSet(stats, new Stats())
+      if(swapped) {
+        complete.set(stats)
+        stats.end.set(time.nanoseconds)
+      }
+    }
+  }
+
   def getNumRequests(): Long = numCumulatedRequests.get
 
   def getRequestsPerSecond: Double = {
     val stats = complete.get
     stats.numRequests / stats.durationSeconds
+  }
+
+  def getThroughput: Double = {
+    val stats = complete.get
+    stats.totalData / stats.durationSeconds
   }
 
   def getAvgMetric: Double = {
@@ -624,7 +643,14 @@ class SnapshotStats(private val monitorDurationNs: Long = 30L * 1000L * 1000L * 
     var numRequests = 0
     var totalRequestMetric: Long = 0L
     var maxRequestMetric: Long = 0L
+    var totalData: Long = 0L
     private val lock = new Object()
+
+    def addData(data: Long) {
+      lock synchronized {
+        totalData += data
+      }
+    }
 
     def add(requestNs: Long) {
       lock synchronized {

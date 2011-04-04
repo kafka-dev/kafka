@@ -20,13 +20,13 @@ import junit.framework.Assert._
 import kafka.zk.ZooKeeperTestHarness
 import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.atomic.AtomicInteger
-import kafka.{TestZKUtils, TestUtils}
 import kafka.utils.ZKGroupTopicDirs
 import kafka.consumer.{ConsumerTimeoutException, ConsumerConfig, ConsumerConnector, Consumer}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.{TestUtils, TestZKUtils}
 
 class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
 
@@ -79,7 +79,7 @@ class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
     TestUtils.updateConsumerOffset(consumerConfig, dirs.consumerOffsetDir + "/" + "0-0", largeOffset)
     logger.info("Updated consumer offset to " + largeOffset)
 
-
+    Thread.sleep(500)
     val consumerConnector: ConsumerConnector = Consumer.create(consumerConfig)
     val messageStreams = consumerConnector.createMessageStreams(Map(topic -> 1))
 

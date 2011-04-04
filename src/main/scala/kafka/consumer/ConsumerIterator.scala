@@ -20,6 +20,7 @@ import kafka.utils.IteratorTemplate
 import org.apache.log4j.Logger
 import java.util.concurrent.{TimeUnit, BlockingQueue}
 import kafka.message.{MessageSet, Message}
+import kafka.cluster.Partition
 
 /**
  * An iterator that blocks until a value can be read from the supplied queue.
@@ -36,6 +37,10 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   override def next(): Message = {
     val message = super.next
     currentTopicInfo.consumed(MessageSet.entrySize(message))
+    ZookeeperConsumerStats.recordConsumedOffset(currentTopicInfo.topic,
+                                                new Partition(currentTopicInfo.partition.brokerId,
+                                                currentTopicInfo.partition.partId),
+                                                currentTopicInfo.consumedOffset.get)
     message
   }
 

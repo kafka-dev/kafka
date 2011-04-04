@@ -26,10 +26,11 @@ import org.I0Itec.zkclient.exception.ZkNodeExistsException
 import java.net.InetAddress
 import org.I0Itec.zkclient.{IZkStateListener, IZkChildListener, ZkClient}
 import org.apache.zookeeper.Watcher.Event.KeeperState
+import kafka.api.OffsetRequest
 
 /**
  * This class handles the consumers interaction with zookeeper
- * 
+ *
  * Directories:
  * 1. Consumer id registry:
  * /consumers/[group_id]/ids[consumer_id] -> topic1,...topicN
@@ -73,11 +74,14 @@ private[kafka] object ZookeeperConsumerConnector {
 trait ZookeeperConsumerConnectorMBean {
   def getPartOwnerStats: String
   def getConsumerGroup: String
+  def getOffsetLag(topic: String, brokerId: Int, partitionId: Int): Long
+  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long
+  def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long
 }
 
 private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
-                                 val enableFetcher: Boolean) // for testing only
-    extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
+                                                val enableFetcher: Boolean) // for testing only
+  extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
 
   private val logger = Logger.getLogger(getClass())
   private val isShuttingDown = new AtomicBoolean(false)
@@ -103,7 +107,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
 
   private def createFetcher() {
     if (enableFetcher)
-      fetcher = Some(new Fetcher(config, zkClient)) 
+      fetcher = Some(new Fetcher(config, zkClient))
   }
 
   private def connectZk() {
@@ -147,9 +151,9 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     var consumerUuid : String = null
     config.consumerId match {
       case Some(consumerId) // for testing only 
-        => consumerUuid = consumerId
+      => consumerUuid = consumerId
       case None // generate unique consumerId automatically
-        => consumerUuid = InetAddress.getLocalHost.getHostName + "-" + System.currentTimeMillis
+      => consumerUuid = InetAddress.getLocalHost.getHostName + "-" + System.currentTimeMillis
     }
     val consumerIdString = config.groupId + "_" + consumerUuid
     val topicCount = new TopicCount(consumerIdString, topicCountMap)
@@ -167,10 +171,10 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
         val stream = new LinkedBlockingQueue[FetchedDataChunk](config.maxQueuedChunks)
         queues.put((topic, threadId), stream)
         streamList ::= new KafkaMessageStream(stream, config.consumerTimeoutMs)
-      }           
+      }
       ret += (topic -> streamList)
       logger.debug("adding topic " + topic + " and stream to map..")
-      
+
       // register on broker partition path changes
       val partitionPath = ZkUtils.brokerTopicsPath + "/" + topic
       ZkUtils.makeSurePersistentPathExists(zkClient, partitionPath)
@@ -220,7 +224,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
         }
         catch {
           case t: Throwable =>
-            // log it and let it go
+          // log it and let it go
             logger.warn("exception during commitOffsets: " + t + Utils.stackTrace(t))
         }
         if(logger.isDebugEnabled)
@@ -250,11 +254,28 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   // for JMX
   def getConsumerGroup(): String = config.groupId
 
+  def getOffsetLag(topic: String, brokerId: Int, partitionId: Int): Long =
+    getLatestOffset(topic, brokerId, partitionId) - getConsumedOffset(topic, brokerId, partitionId)
+
+  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long =
+    ZookeeperConsumerStats.getConsumedOffset(topic, brokerId, partitionId)
+
+  def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long = {
+    val cluster = ZkUtils.getCluster(zkClient)
+    val broker = cluster.getBroker(brokerId)
+    // find latest offset using SimpleConsumer
+    val simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SOCKET_TIMEOUT,
+                                            ConsumerConfig.SOCKET_BUFFER_SIZE)
+    val latestOffset = simpleConsumer.getOffsetsBefore(topic, partitionId,
+                                                       OffsetRequest.LATEST_TIME, 1)
+    latestOffset(0)
+  }
+
   class ZKSessionExpireListenner(val dirs: ZKGroupDirs,
                                  val consumerIdString: String,
                                  val topicCount: TopicCount,
                                  val loadBalancerListener: ZKRebalancerListener)
-          extends IZkStateListener {
+    extends IZkStateListener {
     @throws(classOf[Exception])
     def handleStateChanged(state: KeeperState) {
       // do nothing, since zkclient will do reconnect for us.
@@ -287,7 +308,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   }
 
   class ZKRebalancerListener(val group: String, val consumerIdString: String)
-          extends IZkChildListener {
+    extends IZkChildListener {
     private val dirs = new ZKGroupDirs(group)
     private var oldPartitionsPerTopicMap: mutable.Map[String,List[String]] = new mutable.HashMap[String,List[String]]()
     private var oldConsumersPerTopicMap: mutable.Map[String,List[String]] = new mutable.HashMap[String,List[String]]()
@@ -306,7 +327,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
           if(logger.isDebugEnabled)
             logger.debug("Consumer " + consumerIdString + " releasing " + znode)
         }
-      }         
+      }
     }
 
     private def getConsumersPerTopic(group: String) : mutable.Map[String, List[String]] = {
@@ -404,7 +425,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
         val nConsumersWithExtraPart = curPartitions.size % curConsumers.size
 
         logger.info("Consumer " + consumerIdString + " rebalancing the following partitions: " + curPartitions +
-                " for topic " + topic + " with consumers: " + curConsumers)
+          " for topic " + topic + " with consumers: " + curConsumers)
 
         for (consumerThreadId <- consumerThreadIdSet) {
           val myConsumerPosition = curConsumers.findIndexOf(_ == consumerThreadId)
@@ -425,7 +446,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
               return false
           }
         }
-      }      
+      }
       updateFetcher(cluster)
       oldPartitionsPerTopicMap = partitionsPerTopicMap
       oldConsumersPerTopicMap = consumersPerTopicMap
@@ -439,7 +460,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
         for (partition <- partitionInfos.values)
           allPartitionInfos ::= partition
       logger.info("Consumer " + consumerIdString + " selected partitions : " +
-              allPartitionInfos.sortWith((s,t) => s.partition < t.partition).map(_.toString).mkString(","))
+        allPartitionInfos.sortWith((s,t) => s.partition < t.partition).map(_.toString).mkString(","))
 
       fetcher match {
         case Some(f) => f.initConnections(allPartitionInfos, cluster)
@@ -455,7 +476,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       }
       catch {
         case e: ZkNodeExistsException =>
-          // The node hasn't been deleted by the original owner. So wait a bit and retry.
+        // The node hasn't been deleted by the original owner. So wait a bit and retry.
           logger.info("waiting for the partition ownership to be deleted: " + partition)
           return false
         case e2 => throw e2
@@ -478,13 +499,55 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       val consumedOffset = new AtomicLong(offset)
       val fetchedOffset = new AtomicLong(offset)
       partitionTopicInfo.put(partition,
-                             new PartitionTopicInfo(topic,
-                                                    partition.brokerId,
-                                                    partition,
-                                                    queue,
-                                                    consumedOffset,
-                                                    fetchedOffset,
-                                                    new AtomicInteger(config.fetchSize)))
+        new PartitionTopicInfo(topic,
+          partition.brokerId,
+          partition,
+          queue,
+          consumedOffset,
+          fetchedOffset,
+          new AtomicInteger(config.fetchSize)))
     }
   }
 }
+
+@threadsafe
+object ZookeeperConsumerStats {
+  private val topicConsumedOffsetsMap = new ConcurrentHashMap[String, ConcurrentMap[Partition, AtomicLong]]()
+  private val lock = new Object()
+
+  def recordConsumedOffset(topic: String, brokerPartition: Partition, offset: Long) =
+    recordOffset(topic, brokerPartition, offset, topicConsumedOffsetsMap)
+
+  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long =
+    getOffsets(topic, brokerId, partitionId, topicConsumedOffsetsMap)
+
+  private def getOffsets(topic: String, brokerId: Int, partitionId: Int,
+                       topicOffsetsMap: ConcurrentMap[String, ConcurrentMap[Partition, AtomicLong]]): Long = {
+    lock synchronized {
+    val offsetMap = topicOffsetsMap.get(topic)
+    if(offsetMap != null) {
+      val offset = offsetMap.get(new Partition(brokerId, partitionId))
+      if(offset != null)
+        offset.get
+      else -2
+    }
+    else -1
+    }
+  }
+
+  private def recordOffset(topic: String, brokerPartition: Partition, offset: Long,
+                           topicOffsetMap: ConcurrentMap[String, ConcurrentMap[Partition, AtomicLong]]) = {
+    lock synchronized {
+      var offsetMap = topicOffsetMap.get(topic)
+      if(offsetMap == null) {
+        offsetMap = new ConcurrentHashMap[Partition, AtomicLong]()
+      }
+      var oldOffset = offsetMap.get(brokerPartition)
+      if(oldOffset == null) oldOffset = new AtomicLong(offset)
+      else oldOffset.set(offset)
+      offsetMap.put(brokerPartition, oldOffset)
+      topicOffsetMap.put(topic, offsetMap)
+    }
+  }
+}
+

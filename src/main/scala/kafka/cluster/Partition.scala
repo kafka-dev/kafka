@@ -39,5 +39,18 @@ class Partition(val brokerId: Int, val partId: Int) extends Ordered[Partition] {
     if (this.brokerId == that.brokerId)
       this.partId - that.partId
     else
-      this.brokerId - that.brokerId  
+      this.brokerId - that.brokerId
+
+  override def equals(other: Any): Boolean = {
+    other match {
+      case that: Partition =>
+        (that canEqual this) && brokerId == that.brokerId && partId == that.partId
+      case _ => false
+    }
+  }
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[Partition]
+
+  override def hashCode: Int = 31 * (17 + brokerId) + partId
+
 }

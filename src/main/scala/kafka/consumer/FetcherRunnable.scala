@@ -22,15 +22,15 @@ import java.nio.channels.{ClosedChannelException, ClosedByInterruptException}
 import kafka.common.{OffsetOutOfRangeException, ErrorMapping}
 import kafka.cluster.{Partition, Broker}
 import kafka.api.{MultiFetchResponse, OffsetRequest, FetchRequest}
-import kafka.utils.{StringSerializer, ZkUtils, ZKGroupTopicDirs, Utils}
 import org.I0Itec.zkclient.ZkClient
+import kafka.utils._
 
 private[consumer] class FetcherRunnable(val name: String,
-                      val zkClient : ZkClient,
-                      val config: ConsumerConfig,
-                      val broker: Broker,
-                      val partitionTopicInfos: List[PartitionTopicInfo]) 
-        extends Thread(name) {
+                                        val zkClient : ZkClient,
+                                        val config: ConsumerConfig,
+                                        val broker: Broker,
+                                        val partitionTopicInfos: List[PartitionTopicInfo])
+  extends Thread(name) {
   private val logger = Logger.getLogger(getClass())
   private val shutdownLatch = new CountDownLatch(1)
   private val simpleConsumer = new SimpleConsumer(broker.host, broker.port, config.socketTimeoutMs,
@@ -62,7 +62,6 @@ private[consumer] class FetcherRunnable(val name: String,
         val response = simpleConsumer.multifetch(fetches : _*)
 
         var read = 0
-
         for((messages, info) <- response.zip(partitionTopicInfos.iterator)) {
           try {
             var done = false
