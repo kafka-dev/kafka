@@ -1,0 +1,3 @@
+[submodule "clients/javascript/node-kafka"]
+	path = clients/javascript/node-kafka
+	url = git://github.com/marcuswestin/node-kafka.git
