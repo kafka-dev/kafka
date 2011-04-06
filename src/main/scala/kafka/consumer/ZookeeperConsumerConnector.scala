@@ -208,7 +208,14 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   def autoCommit() {
     if(logger.isTraceEnabled)
       logger.trace("auto committing")
-    commitOffsets
+    try {
+      commitOffsets
+    }
+    catch {
+      case t: Throwable =>
+      // log it and let it go
+        logger.error("exception during autoCommit: " + t)
+    }
   }
 
   def commitOffsets() {
