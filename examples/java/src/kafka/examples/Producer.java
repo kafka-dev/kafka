@@ -15,9 +15,9 @@
  */
 package kafka.examples;
 
-import kafka.message.ByteBufferMessageSet;
+import kafka.javaapi.message.ByteBufferMessageSet;
+import kafka.javaapi.producer.SyncProducer;
 import kafka.message.Message;
-import kafka.producer.SyncProducer;
 import kafka.producer.SyncProducerConfig;
 import java.util.Properties;
 import java.util.ArrayList;
