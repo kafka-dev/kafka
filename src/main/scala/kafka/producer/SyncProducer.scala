@@ -44,6 +44,8 @@ class SyncProducer(val config: SyncProducerConfig) {
   @volatile
   private var shutdown: Boolean = false
 
+  logger.debug("Instantiating Scala Sync Producer")
+
   /**
    * Common functionality for the public send methods
    */
