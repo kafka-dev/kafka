@@ -68,13 +68,11 @@ private[consumer] class FetcherRunnable(val name: String,
             if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
               logger.info("offset " + info.fetchedOffset.get + " out of range")
               // see if we can fix this error
-              if (info.fetchedOffset.get == info.consumedOffset.get) {
-                val resetOffset = resetConsumerOffsets(info.topic, info.partition)
-                if(resetOffset >= 0) {
-                  info.fetchedOffset.set(resetOffset)
-                  info.consumedOffset.set(resetOffset)
-                  done = true
-                }
+              val resetOffset = resetConsumerOffsets(info.topic, info.partition)
+              if(resetOffset >= 0) {
+                info.fetchedOffset.set(resetOffset)
+                info.consumedOffset.set(resetOffset)
+                done = true
               }
             }
             if (!done)
