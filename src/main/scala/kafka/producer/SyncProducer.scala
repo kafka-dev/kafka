@@ -25,6 +25,7 @@ import kafka.api._
 import scala.math._
 import org.apache.log4j.{Level, Logger}
 import kafka.common.MessageSizeTooLargeException
+import java.nio.ByteBuffer
 
 object SyncProducer {
   val RequestKey: Short = 0
@@ -46,11 +47,39 @@ class SyncProducer(val config: SyncProducerConfig) {
 
   logger.debug("Instantiating Scala Sync Producer")
 
+  private def verifySendBuffer(buffer : ByteBuffer) = {
+    if (logger.isTraceEnabled) {
+      logger.trace("verifying sendbuffer of size " + buffer.limit)
+      val requestTypeId = buffer.getShort()
+      if (requestTypeId == RequestKeys.MultiProduce) {
+        try {
+          val request = MultiProducerRequest.readFrom(buffer)
+          for (produce <- request.produces) {
+            try {
+              for (message <- produce.messages)
+                if (!message.isValid)
+                  logger.debug("topic " + produce.topic + " is invalid")
+            }
+            catch {
+              case e: Throwable =>
+              logger.trace("error iterating messages " + e + Utils.stackTrace(e))
+            }
+          }
+        }
+        catch {
+          case e: Throwable =>
+            logger.trace("error verifying sendbuffer " + e + Utils.stackTrace(e))
+        }
+      }
+    }
+  }
+
   /**
    * Common functionality for the public send methods
    */
   private def send(send: BoundedByteBufferSend) {
     lock synchronized {
+      verifySendBuffer(send.buffer.slice)
       val startTime = SystemTime.nanoseconds
       getOrMakeConnection()
 
