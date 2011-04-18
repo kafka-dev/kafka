@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+
+<project name="hadoop-kafka-bridge" basedir="./../../" default="all">
+  <property file="project/build.properties" />
+  
+  <property name="name" value="hadoop-kafka-bridge" />
+  <property name="display.name" value="Hadoop to Kafka bridge" />
+  <property name="author" value="Sam Shah" />
+  <property name="contrib.classes.dir" value="contrib/hadoop-producer/classes" />
+  <property name="contrib.dist.dir" value="contrib/hadoop-producer/dist" />
+  <property environment="env" />
+
+  <path id="main-classpath">
+    <fileset dir="${lib.dir}">
+      <include name="*.jar" />
+      <exclude name="sbt-launch.jar" />
+    </fileset>
+    <fileset dir="${target.dir}">
+      <include name="*.jar" />
+    </fileset>
+
+    <fileset dir="${contrib.root.dir}/hadoop-producer/lib/">
+      <include name="*.jar" />
+    </fileset>
+    <pathelement path="${classes.dir}/" />
+  </path>
+
+  <macrodef name="replace-dir">
+    <attribute name="dir" />
+    <sequential>
+      <delete dir="@{dir}" />
+      <mkdir dir="@{dir}" />
+    </sequential>
+  </macrodef>
+
+  <target name="all" depends="clean, jar" description="Build all artifacts." />
+
+  <target name="clean" description="Delete generated files.">
+    <delete dir="${contrib.classes.dir}" />
+    <delete dir="${contrib.dist.dir}" />
+  </target>
+
+  <target name="build" description="Compile contrib packages">
+    <replace-dir dir="${contrib.classes.dir}" />
+    <javac destdir="${contrib.classes.dir}" target="1.6" debug="true" deprecation="false" failonerror="true">
+      <src path="${contrib.root.dir}/hadoop-producer" />
+      <classpath refid="main-classpath" />
+    </javac>
+  </target>
+
+  <target name="jar" depends="build" description="Build contrib jar file">
+    <replace-dir dir="${contrib.dist.dir}" />
+    <jar destfile="${contrib.dist.dir}/${name}-${project.version}.jar">
+      <fileset dir="${contrib.classes.dir}">
+        <include name="**/*.*" />
+      </fileset>
+    </jar>
+  </target>
+
+</project>
