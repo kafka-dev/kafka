@@ -58,7 +58,7 @@ class SyncProducer(val config: SyncProducerConfig) {
             try {
               for (message <- produce.messages)
                 if (!message.isValid)
-                  logger.debug("topic " + produce.topic + " is invalid")
+                  logger.trace("topic " + produce.topic + " is invalid")
             }
             catch {
               case e: Throwable =>
