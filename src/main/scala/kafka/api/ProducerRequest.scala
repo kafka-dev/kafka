@@ -44,6 +44,7 @@ class ProducerRequest(val topic: String,
     buffer.putInt(partition)
     buffer.putInt(messages.buffer.limit)
     buffer.put(messages.buffer)
+    messages.buffer.rewind
   }
   
   def sizeInBytes(): Int = 2 + topic.length + 4 + 4 + messages.sizeInBytes.asInstanceOf[Int]
