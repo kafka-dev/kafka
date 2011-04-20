@@ -181,7 +181,32 @@ object TestUtils {
     assertFalse("Iterators have uneven length--first has more", s1.hasNext)
     assertFalse("Iterators have uneven length--second has more", s2.hasNext)
   }
-  
+
+  def stackedIterator[T](s: Iterator[T]*): Iterator[T] = {
+    new Iterator[T] {
+      var cur: Iterator[T] = null
+      val topIterator = s.iterator
+
+      def hasNext() : Boolean = {
+        while (true) {
+          if (cur == null) {
+            if (topIterator.hasNext)
+              cur = topIterator.next
+            else
+              return false
+          }
+          if (cur.hasNext)
+            return true
+          cur = null
+        }
+        // should never reach her
+        throw new RuntimeException("should not reach here")
+      }
+
+      def next() : T = cur.next
+    }
+  }
+
   /**
    * Create a hexidecimal string for the given bytes
    */
