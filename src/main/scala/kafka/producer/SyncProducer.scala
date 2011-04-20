@@ -90,6 +90,8 @@ class SyncProducer(val config: SyncProducerConfig) {
           // no way to tell if write succeeded. Disconnect and re-throw exception to let client handle retry
           disconnect()
           throw e
+        case e2 =>
+          throw e2
       }
       // TODO: do we still need this?
       sentOnConnection += 1
@@ -145,7 +147,7 @@ class SyncProducer(val config: SyncProducerConfig) {
   private def disconnect() {
     try {
       if(channel != null) {
-        logger.debug("Disconnecting from " + config.host + ":" + config.port)
+        logger.info("Disconnecting from " + config.host + ":" + config.port)
         Utils.swallow(logger.warn, channel.close())
         Utils.swallow(logger.warn, channel.socket.close())
         channel = null
