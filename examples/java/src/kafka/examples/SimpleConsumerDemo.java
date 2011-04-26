@@ -18,12 +18,12 @@ package kafka.examples;
 import java.util.ArrayList;
 import java.util.List;
 
+import kafka.javaapi.MultiFetchResponse;
+import kafka.javaapi.consumer.SimpleConsumer;
+import kafka.javaapi.message.ByteBufferMessageSet;
 import scala.collection.Iterator;
 
 import kafka.api.FetchRequest;
-import kafka.api.MultiFetchResponse;
-import kafka.consumer.SimpleConsumer;
-import kafka.message.ByteBufferMessageSet;
 import kafka.message.Message;
 
 
@@ -31,7 +31,7 @@ public class SimpleConsumerDemo
 {
   private static void printMessages(ByteBufferMessageSet messageSet)
   {
-    Iterator<Message> it =  messageSet.elements();
+    Iterator<Message> it =  messageSet.iterator();
     while(it.hasNext())
     {
       System.out.println(ExampleUtils.getMessage(it.next()));

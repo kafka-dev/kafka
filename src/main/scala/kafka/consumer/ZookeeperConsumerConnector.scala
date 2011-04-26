@@ -208,7 +208,14 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   def autoCommit() {
     if(logger.isTraceEnabled)
       logger.trace("auto committing")
-    commitOffsets
+    try {
+      commitOffsets
+    }
+    catch {
+      case t: Throwable =>
+      // log it and let it go
+        logger.error("exception during autoCommit: " + t)
+    }
   }
 
   def commitOffsets() {
@@ -217,7 +224,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     for ((topic, infos) <- topicRegistry) {
       val topicDirs = new ZKGroupTopicDirs(config.groupId, topic)
       for (info <- infos.values) {
-        val newOffset = info.consumedOffset
+        val newOffset = info.consumedOffset.get
         try {
           ZkUtils.updatePersistentPath(zkClient, topicDirs.consumerOffsetDir + "/" + info.partition.name,
             newOffset.toString)
@@ -242,8 +249,8 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       for(partition <- infos.values) {
         builder.append("\n    {")
         builder.append{partition.partition.name}
-        builder.append(",fetch offset:" + partition.fetchedOffset)
-        builder.append(",consumer offset:" + partition.consumedOffset)
+        builder.append(",fetch offset:" + partition.fetchedOffset.get)
+        builder.append(",consumer offset:" + partition.consumedOffset.get)
         builder.append("}")
       }
       builder.append("\n        ]")

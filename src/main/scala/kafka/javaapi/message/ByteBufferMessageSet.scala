@@ -29,7 +29,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends M
     this(ByteBuffer.allocate(MessageSet.messageSetSize(messages)))
     val iter = messages.iterator
     while(iter.hasNext) {
-      val message = iter.next.asInstanceOf[Message]
+      val message = iter.next
       buffer.putInt(message.size)
       buffer.put(message.buffer)
       message.buffer.rewind()

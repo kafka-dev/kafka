@@ -154,4 +154,32 @@ class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness  
     for((topic, resp) <- topics.zip(response.toList))
   	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
   }
+
+  @Test
+  def testMultiProduceResend() {
+    // send some messages
+    val topics = List("test1", "test2", "test3");
+    val messages = new mutable.HashMap[String, ByteBufferMessageSet]
+    val fetches = new mutable.ArrayBuffer[FetchRequest]
+    var produceList: List[ProducerRequest] = Nil
+    for(topic <- topics) {
+      val set = new ByteBufferMessageSet(new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      messages += topic -> set
+      produceList ::= new ProducerRequest(topic, 0, set)
+      fetches += new FetchRequest(topic, 0, 0, 10000)
+    }
+    producer.multiSend(produceList.toArray)
+
+    // resend the same multisend
+    producer.multiSend(produceList.toArray)
+
+    for (messageSet <- messages.values)
+      messageSet.buffer.rewind
+
+    // wait a bit for produced message to be available
+    Thread.sleep(200)
+    val response = consumer.multifetch(fetches: _*)
+    for((topic, resp) <- topics.zip(response.toList))
+  	  TestUtils.checkEquals(TestUtils.stackedIterator(messages(topic).iterator, messages(topic).iterator), resp.iterator)
+  }
 }

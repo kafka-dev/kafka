@@ -16,14 +16,18 @@
 
 package kafka.log
 
+import java.util.concurrent.atomic.AtomicLong
+
 trait LogStatsMBean {
   def getName(): String
   def getSize(): Long
   def getNumberOfSegments: Int
   def getCurrentOffset: Long
+  def getNumAppendedMessages: Long
 }
 
 class LogStats(val log: Log) extends LogStatsMBean {
+  private val numCumulatedMessages = new AtomicLong(0)
 
   def getName(): String = log.name
   
@@ -33,4 +37,7 @@ class LogStats(val log: Log) extends LogStatsMBean {
   
   def getCurrentOffset: Long = log.getHighwaterMark
   
+  def getNumAppendedMessages: Long = numCumulatedMessages.get
+
+  def recordAppendedMessages(nMessages: Int) = numCumulatedMessages.getAndAdd(nMessages)
 }

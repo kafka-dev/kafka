@@ -23,16 +23,16 @@ import java.util.Properties;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaMessageStream;
-import kafka.consumer.ZookeeperConsumerConnector;
+import kafka.javaapi.consumer.ConsumerConnector;
 
 public class Consumer extends Thread
 {
-  private final ZookeeperConsumerConnector consumer;
+  private final ConsumerConnector consumer;
   private final String topic;
   
   public Consumer(String topic)
   {
-    consumer = new ZookeeperConsumerConnector(createConsumerConfig());
+    consumer = kafka.consumer.Consumer.createJavaConsumerConnector(createConsumerConfig());
     this.topic = topic;
   }
 
