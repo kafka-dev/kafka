@@ -27,7 +27,7 @@ class KafkaConfig(props: Properties) extends ZKConfig(props) {
   /* the port to listen and accept connections on */
   val port: Int = Utils.getInt(props, "port", 6667)
 
-  /* hostname of broker. If not set, will pick up from the value returned from getLocalHost. */
+  /* hostname of broker. If not set, will pick up from the value returned from getLocalHost. If there are multiple interfaces getLocalHost may not be what you want. */
   val hostName: String = Utils.getString(props, "hostname", null)
 
   /* the broker id for this server */
