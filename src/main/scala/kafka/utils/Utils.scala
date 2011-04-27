@@ -577,7 +577,7 @@ object Utils {
   }
 }
 
-class SnapshotStats(private val monitorDurationNs: Long = 30L * 1000L * 1000L * 1000L) {
+class SnapshotStats(private val monitorDurationNs: Long = 600L * 1000L * 1000L * 1000L) {
   private val time: Time = SystemTime
 
   private val complete = new AtomicReference(new Stats())
