@@ -19,13 +19,17 @@ package kafka.producer
 import kafka.utils.Utils
 import java.util.Properties
 
-class SyncProducerConfig(props: Properties) {
+class SyncProducerConfig(val props: Properties) extends SyncProducerConfigShared {
   /** the broker to which the producer sends events */
   val host = Utils.getString(props, "host")
 
   /** the port on which the broker is running */
   val port = Utils.getInt(props, "port")
+}
 
+trait SyncProducerConfigShared {
+  val props: Properties
+  
   val bufferSize = Utils.getInt(props, "buffer.size", 100*1024)
 
   val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)

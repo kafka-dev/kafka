@@ -19,8 +19,11 @@ import kafka.producer.SyncProducerConfig
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.javaapi.Implicits._
 
-class SyncProducer(val config: SyncProducerConfig) {
-  private val underlying = new kafka.producer.SyncProducer(config)
+class SyncProducer(syncProducer: kafka.producer.SyncProducer) {
+
+  def this(config: SyncProducerConfig) = this(new kafka.producer.SyncProducer(config))
+
+  val underlying = syncProducer
 
   def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
     underlying.send(topic, partition, messages)

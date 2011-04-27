@@ -114,6 +114,10 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
   /* The name of this log */
   val name  = dir.getName()
 
+  private val logStats = new LogStats(this)
+
+  Utils.registerMBean(logStats, "kafka:type=kafka.logs." + dir.getName)  
+
   /* Load the log segments from the log files on disk */
   private def loadSegments(): SegmentList[LogSegment] = {
     // open all the segments read-only
@@ -199,6 +203,9 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
         throw new InvalidMessageException()
       numberOfMessages += 1;
     }
+
+    logStats.recordAppendedMessages(numberOfMessages)
+    
     // they are valid, insert them in the log
     lock synchronized {
       val segment = segments.view.last

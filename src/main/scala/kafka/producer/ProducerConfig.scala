@@ -16,18 +16,16 @@
 
 package kafka.producer
 
-import async.AsyncProducerConfig
+import async.AsyncProducerConfigShared
 import java.util.Properties
 import kafka.utils.{ZKConfig, Utils}
 
-class ProducerConfig(props: Properties) extends ZKConfig(props) {
+class ProducerConfig(val props: Properties) extends ZKConfig(props) 
+        with AsyncProducerConfigShared with SyncProducerConfigShared{
 
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class", "kafka.producer.DefaultPartitioner")
 
-  /** the serializer class for converting data to kafka messages */
-  val serializerClass = Utils.getString(props, "serializer.class")
-  
   /** this parameter specifies whether the messages are sent asynchronously *
    * or not. Valid values are - async for asynchronous send                 *
    *                            sync for synchronous send                   */
@@ -48,34 +46,5 @@ class ProducerConfig(props: Properties) extends ZKConfig(props) {
   /** To enable zookeeper based auto partition discovery, specify the ZK    *
    * connection string. This will override the brokerPartitionInfo, in case *
    * both are specified by the user                                         */
-
-  /** Async Producer config options */
-  /* maximum time, in milliseconds, for buffering data on the producer queue */
-  val queueTime = Utils.getInt(props, "queue.time", 5000)
-
-  /** the maximum size of the blocking queue for buffering on the producer */
-  val queueSize = Utils.getInt(props, "queue.size", 10000)
-
-  /** the number of messages batched at the producer */
-  val batchSize = Utils.getInt(props, "batch.size", 200)
-
-  /** the callback handler for one or multiple events */
-  val cbkHandler = Utils.getString(props, "callback.handler", null)
-
-  /** properties required to initialize the callback handler */
-  val cbkHandlerProps = Utils.getProps(props, "callback.handler.props", null)
-
-  /** the handler for events */
-  val eventHandler = Utils.getString(props, "event.handler", null)
-
-  /** properties required to initialize the callback handler */
-  val eventHandlerProps = Utils.getProps(props, "event.handler.props", null)
-
-  /** Sync Producer config options */
-  val bufferSize = Utils.getInt(props, "buffer.size", 100*1024)
-
-  val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)
-
-  val reconnectInterval = Utils.getInt(props, "reconnect.interval", 30000)
 
 }

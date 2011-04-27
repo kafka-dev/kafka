@@ -183,7 +183,6 @@ private[kafka] class LogManager(val config: KafkaConfig,
     var log = parts.get(partition)
     if(log == null) {
       log = createLog(topic, partition)
-      Utils.registerMBean(new LogStats(log), "kafka:type=kafka.logs." + log.dir.getName)
       val found = parts.putIfNotExists(partition, log)
       if(found != null) {
         // there was already somebody there

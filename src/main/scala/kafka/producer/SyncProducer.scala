@@ -25,6 +25,7 @@ import kafka.api._
 import scala.math._
 import org.apache.log4j.{Level, Logger}
 import kafka.common.MessageSizeTooLargeException
+import java.nio.ByteBuffer
 
 object SyncProducer {
   val RequestKey: Short = 0
@@ -44,11 +45,41 @@ class SyncProducer(val config: SyncProducerConfig) {
   @volatile
   private var shutdown: Boolean = false
 
+  logger.debug("Instantiating Scala Sync Producer")
+
+  private def verifySendBuffer(buffer : ByteBuffer) = {
+    if (logger.isTraceEnabled) {
+      logger.trace("verifying sendbuffer of size " + buffer.limit)
+      val requestTypeId = buffer.getShort()
+      if (requestTypeId == RequestKeys.MultiProduce) {
+        try {
+          val request = MultiProducerRequest.readFrom(buffer)
+          for (produce <- request.produces) {
+            try {
+              for (message <- produce.messages)
+                if (!message.isValid)
+                  logger.trace("topic " + produce.topic + " is invalid")
+            }
+            catch {
+              case e: Throwable =>
+              logger.trace("error iterating messages " + e + Utils.stackTrace(e))
+            }
+          }
+        }
+        catch {
+          case e: Throwable =>
+            logger.trace("error verifying sendbuffer " + e + Utils.stackTrace(e))
+        }
+      }
+    }
+  }
+
   /**
    * Common functionality for the public send methods
    */
   private def send(send: BoundedByteBufferSend) {
     lock synchronized {
+      verifySendBuffer(send.buffer.slice)
       val startTime = SystemTime.nanoseconds
       getOrMakeConnection()
 
@@ -59,6 +90,8 @@ class SyncProducer(val config: SyncProducerConfig) {
           // no way to tell if write succeeded. Disconnect and re-throw exception to let client handle retry
           disconnect()
           throw e
+        case e2 =>
+          throw e2
       }
       // TODO: do we still need this?
       sentOnConnection += 1
@@ -114,7 +147,7 @@ class SyncProducer(val config: SyncProducerConfig) {
   private def disconnect() {
     try {
       if(channel != null) {
-        logger.debug("Disconnecting from " + config.host + ":" + config.port)
+        logger.info("Disconnecting from " + config.host + ":" + config.port)
         Utils.swallow(logger.warn, channel.close())
         Utils.swallow(logger.warn, channel.socket.close())
         channel = null
