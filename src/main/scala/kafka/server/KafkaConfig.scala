@@ -46,7 +46,7 @@ class KafkaConfig(props: Properties) extends ZKConfig(props) {
   val numThreads = Utils.getIntInRange(props, "num.threads", Runtime.getRuntime().availableProcessors, (1, Int.MaxValue))
   
   /* the interval in which to measure performance statistics */
-  val monitoringPeriodSecs = Utils.getIntInRange(props, "monitoring.period.secs", 30, (1, Int.MaxValue))
+  val monitoringPeriodSecs = Utils.getIntInRange(props, "monitoring.period.secs", 600, (1, Int.MaxValue))
   
   /* the default number of log partitions per topic */
   val numPartitions = Utils.getIntInRange(props, "num.partitions", 1, (1, Int.MaxValue))
