@@ -69,11 +69,11 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCOde: Int) extends M
           return allDone()
         }
         val size = iter.getInt()
-        if(iter.remaining < size) {
+        if(size < 0 || iter.remaining < size) {
           validByteCount = currValidBytes
-          if (currValidBytes == 0)
+          if (currValidBytes == 0 || size < 0)
             throw new InvalidMessageSizeException("invalid message size:" + size + " only received bytes:" + iter.remaining
-              + " possible causes (1) a single message larger than the fetch size; (2) log corruption")
+              + " at " + currValidBytes + " possible causes (1) a single message larger than the fetch size; (2) log corruption")
           return allDone()
         }
         currValidBytes += 4 + size
