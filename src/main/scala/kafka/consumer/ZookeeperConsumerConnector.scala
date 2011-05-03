@@ -501,7 +501,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       val offsetString = ZkUtils.readDataMaybeNull(zkClient, znode)
       // If first time starting a consumer, use default offset.
       // TODO: handle this better (if client doesn't know initial offsets)
-      val offset : Long = if (offsetString == null) 0 else offsetString.toLong
+      val offset : Long = if (offsetString == null) Long.MaxValue else offsetString.toLong
       val queue = queues.get((topic, consumerThreadId))
       val consumedOffset = new AtomicLong(offset)
       val fetchedOffset = new AtomicLong(offset)
