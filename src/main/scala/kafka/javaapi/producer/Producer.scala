@@ -20,7 +20,6 @@ import kafka.utils.Utils
 import kafka.producer.async.QueueItem
 import java.util.Properties
 import kafka.producer.{ProducerPool, ProducerConfig, Partitioner}
-import kafka.javaapi.Implicits._
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
@@ -36,12 +35,14 @@ class Producer[K,V](config: ProducerConfig,
            eventHandler: kafka.javaapi.producer.async.IEventHandler[V],
            cbkHandler: kafka.javaapi.producer.async.CallbackHandler[V],
            partitioner: Partitioner[K]) = {
+
     this(config, partitioner,
          new ProducerPool[V](config, Utils.getObject(config.serializerClass),
                              new kafka.producer.async.IEventHandler[V] {
                                override def init(props: Properties) { eventHandler.init(props) }
                                override def handle(events: Seq[QueueItem[V]], producer: kafka.producer.SyncProducer) {
                                  import collection.JavaConversions._
+                                 import kafka.javaapi.Implicits._
                                  eventHandler.handle(asList(events), producer)
                                }
                                override def close { eventHandler.close }

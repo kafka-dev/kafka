@@ -25,6 +25,7 @@ import java.util.Properties
 import kafka.cluster.{Partition, Broker}
 import java.util.concurrent.atomic.AtomicBoolean
 import kafka.common.InvalidPartitionException
+import kafka.api.ProducerRequest
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
@@ -77,17 +78,31 @@ class Producer[K,V](config: ProducerConfig,
    */
   def send(producerData: ProducerData[K,V]*) {
     val producerPoolRequests = producerData.map { pd =>
-      // find the number of broker partitions registered for this topic
+    // find the number of broker partitions registered for this topic
       val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(pd.getTopic).toSeq
       val totalNumPartitions = numBrokerPartitions.length
-      // get the partition id
-      val partitionId = getPartition(pd.getKey, totalNumPartitions)
-      val brokerIdPartition = numBrokerPartitions(partitionId)
-      val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
-      logger.debug("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
-              " on partition " + brokerIdPartition.partId)
+      var brokerIdPartition: Partition = null
+      var partition: Int = 0
+      if(zkEnabled) {
+        // get the partition id
+        val partitionId = getPartition(pd.getKey, totalNumPartitions)
+        brokerIdPartition = numBrokerPartitions(partitionId)
+        val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
+        logger.debug("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
+                " on partition " + brokerIdPartition.partId)
+        partition = brokerIdPartition.partId
+      }else {
+        // randomly select a broker
+        val randomBrokerId = random.nextInt(totalNumPartitions)
+        brokerIdPartition = numBrokerPartitions(randomBrokerId)
+        val brokerInfo = brokerPartitionInfo.getBrokerInfo(brokerIdPartition.brokerId).get
+
+        logger.debug("Sending message to broker " + brokerInfo.host + ":" + brokerInfo.port +
+                " on a randomly chosen partition")
+        partition = ProducerRequest.RandomPartition
+      }
       producerPool.getProducerPoolData(pd.getTopic,
-                                       new Partition(brokerIdPartition.brokerId, brokerIdPartition.partId),
+                                       new Partition(brokerIdPartition.brokerId, partition),
                                        pd.getData)
     }
     producerPool.send(producerPoolRequests: _*)

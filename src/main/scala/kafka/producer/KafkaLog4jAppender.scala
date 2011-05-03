@@ -18,20 +18,20 @@ package kafka.producer
 
 import async.MissingConfigException
 import org.apache.log4j.spi.LoggingEvent
-import kafka.message.ByteBufferMessageSet
 import org.apache.log4j.{Logger, AppenderSkeleton}
 import kafka.utils.Utils
 import kafka.serializer.Encoder
 import java.util.{Properties, Date}
+import kafka.message.{Message, ByteBufferMessageSet}
 
-class KafkaAppender extends AppenderSkeleton {
+class KafkaLog4jAppender extends AppenderSkeleton {
   var port:Int = 0
   var host:String = null
   var topic:String = null
   var encoderClass:String = null
   
   private var producer:SyncProducer = null
-  private val logger = Logger.getLogger(classOf[KafkaAppender])
+  private val logger = Logger.getLogger(classOf[KafkaLog4jAppender])
   private var encoder: Encoder[AnyRef] = null
   
   def getPort:Int = port
@@ -54,10 +54,11 @@ class KafkaAppender extends AppenderSkeleton {
       throw new MissingConfigException("Broker Port must be specified by the Kafka log4j appender") 
     if(topic == null)
       throw new MissingConfigException("topic must be specified by the Kafka log4j appender")
-    if(encoderClass == null)
-      throw new MissingConfigException("Encoder must be specified by the Kafka log4j appender")
-    // instantiate the encoder, if present
-    encoder = Utils.getObject(encoderClass)
+    if(encoderClass == null) {
+      logger.info("Using default encoder - kafka.producer.DefaultStringEncoder")
+      encoder = Utils.getObject("kafka.producer.DefaultStringEncoder")
+    }else // instantiate the encoder, if present
+      encoder = Utils.getObject(encoderClass)
     val props = new Properties()
     props.put("host", host)
     props.put("port", port.toString)
@@ -83,4 +84,8 @@ class KafkaAppender extends AppenderSkeleton {
   }
 
   override def requiresLayout: Boolean = false
+}
+
+class DefaultStringEncoder extends Encoder[LoggingEvent] {
+  override def toMessage(event: LoggingEvent):Message = new Message(event.getMessage.asInstanceOf[String].getBytes)
 }
