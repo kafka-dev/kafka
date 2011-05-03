@@ -31,6 +31,8 @@ object MultiProducerRequest {
 
 class MultiProducerRequest(val produces: Array[ProducerRequest]) extends Request(RequestKeys.MultiProduce) {
   def writeTo(buffer: ByteBuffer) {
+    if(produces.length > Short.MaxValue)
+      throw new IllegalArgumentException("Number of requests in MultiProducer exceeds " + Short.MaxValue + ".")    
     buffer.putShort(produces.length.toShort)
     for(produce <- produces)
       produce.writeTo(buffer)
