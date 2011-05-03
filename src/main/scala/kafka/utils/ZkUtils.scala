@@ -113,7 +113,13 @@ object ZkUtils {
     catch {
       case e: ZkNoNodeException => {
         createParentPath(client, path)
-        client.createPersistent(path, data)
+        try {
+          client.createPersistent(path, data)
+        }
+        catch {
+          case e: ZkNodeExistsException => client.writeData(path, data)
+          case e2 => throw e2
+        }
       }
       case e2 => throw e2
     }
