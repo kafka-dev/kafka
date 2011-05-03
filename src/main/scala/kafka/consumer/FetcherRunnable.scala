@@ -49,12 +49,12 @@ private[consumer] class FetcherRunnable(val name: String,
   override def run() {
     for (info <- partitionTopicInfos)
       logger.info(name + " start fetching topic: " + info.topic + " part: " + info.partition.partId + " offset: "
-        + info.fetchedOffset.get + " from " + broker.host + ":" + broker.port)
+        + info.getFetchOffset + " from " + broker.host + ":" + broker.port)
 
     try {
       while (!stopped) {
         val fetches = partitionTopicInfos.map(info =>
-               new FetchRequest(info.topic, info.partition.partId, info.fetchedOffset.get, config.fetchSize))
+               new FetchRequest(info.topic, info.partition.partId, info.getFetchOffset, config.fetchSize))
 
         if (logger.isTraceEnabled)
           logger.trace("fetch request: " + fetches.toString)
@@ -66,12 +66,12 @@ private[consumer] class FetcherRunnable(val name: String,
           try {
             var done = false
             if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
-              logger.info("offset " + info.fetchedOffset.get + " out of range")
+              logger.info("offset " + info.getFetchOffset + " out of range")
               // see if we can fix this error
               val resetOffset = resetConsumerOffsets(info.topic, info.partition)
               if(resetOffset >= 0) {
-                info.fetchedOffset.set(resetOffset)
-                info.consumedOffset.set(resetOffset)
+                info.resetFetchOffset(resetOffset)
+                info.resetConsumeOffset(resetOffset)
                 done = true
               }
             }

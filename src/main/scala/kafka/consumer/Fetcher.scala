@@ -42,7 +42,7 @@ private[consumer] class Fetcher(val config: ConsumerConfig, val zkClient : ZkCli
     fetcherThreads = EMPTY_FETCHER_THREADS
   }
 
-  def clearAllQueues(topicInfos: Iterable[PartitionTopicInfo]) = topicInfos.foreach(_.chunkQueue.clear)
+  def clearAllQueues(topicInfos: Iterable[PartitionTopicInfo]) = topicInfos.foreach(_.clearChunkQueue)
 
   /**
    *  Open connections.

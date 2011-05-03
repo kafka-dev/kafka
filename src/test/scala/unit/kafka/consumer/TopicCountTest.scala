@@ -19,6 +19,7 @@ package kafka.consumer
 import junit.framework.Assert._
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
+import kafka.cluster.Partition
 
 
 class TopicCountTest extends JUnitSuite {
@@ -37,5 +38,11 @@ class TopicCountTest extends JUnitSuite {
 
     val topicCount2 = TopicCount.constructTopicCount(consumer, expectedTopicCount.toJsonString)
     assertTrue(expectedTopicCount == topicCount2)
+  }
+
+  @Test
+  def testPartition() {
+    assertTrue(new Partition(10, 0) == new Partition(10, 0))
+    assertTrue(new Partition(10, 1) != new Partition(10, 0))
   }
 }

@@ -224,7 +224,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     for ((topic, infos) <- topicRegistry) {
       val topicDirs = new ZKGroupTopicDirs(config.groupId, topic)
       for (info <- infos.values) {
-        val newOffset = info.consumedOffset.get
+        val newOffset = info.getConsumeOffset
         try {
           ZkUtils.updatePersistentPath(zkClient, topicDirs.consumerOffsetDir + "/" + info.partition.name,
             newOffset.toString)
@@ -235,7 +235,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
             logger.warn("exception during commitOffsets: " + t + Utils.stackTrace(t))
         }
         if(logger.isDebugEnabled)
-          logger.debug("Committed offset " + newOffset + " for topic " + info.topic)
+          logger.debug("Committed offset " + newOffset + " for topic " + info)
       }
     }
   }
@@ -249,8 +249,8 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       for(partition <- infos.values) {
         builder.append("\n    {")
         builder.append{partition.partition.name}
-        builder.append(",fetch offset:" + partition.fetchedOffset.get)
-        builder.append(",consumer offset:" + partition.consumedOffset.get)
+        builder.append(",fetch offset:" + partition.getFetchOffset)
+        builder.append(",consumer offset:" + partition.getConsumeOffset)
         builder.append("}")
       }
       builder.append("\n        ]")
@@ -495,24 +495,26 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     private def addPartitionTopicInfo(topicDirs: ZKGroupTopicDirs, partitionString: String,
                                       topic: String, consumerThreadId: String) {
       val partition = Partition.parse(partitionString)
-      val partitionTopicInfo = topicRegistry.get(topic)
+      val partTopicInfoMap = topicRegistry.get(topic)
 
       val znode = topicDirs.consumerOffsetDir + "/" + partition.name
       val offsetString = ZkUtils.readDataMaybeNull(zkClient, znode)
       // If first time starting a consumer, use default offset.
       // TODO: handle this better (if client doesn't know initial offsets)
-      val offset : Long = if (offsetString == null) 0 else offsetString.toLong
+      val offset : Long = if (offsetString == null) Long.MaxValue else offsetString.toLong
       val queue = queues.get((topic, consumerThreadId))
       val consumedOffset = new AtomicLong(offset)
       val fetchedOffset = new AtomicLong(offset)
-      partitionTopicInfo.put(partition,
-        new PartitionTopicInfo(topic,
-          partition.brokerId,
-          partition,
-          queue,
-          consumedOffset,
-          fetchedOffset,
-          new AtomicInteger(config.fetchSize)))
+      val partTopicInfo = new PartitionTopicInfo(topic,
+                                                 partition.brokerId,
+                                                 partition,
+                                                 queue,
+                                                 consumedOffset,
+                                                 fetchedOffset,
+                                                 new AtomicInteger(config.fetchSize))
+      partTopicInfoMap.put(partition, partTopicInfo)
+      if (logger.isDebugEnabled)
+        logger.debug(partTopicInfo + " selected new offset " + offset)
     }
   }
 }
