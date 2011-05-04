@@ -20,7 +20,7 @@ import scala.collection._
 import org.apache.log4j.Logger
 import kafka.cluster._
 import org.I0Itec.zkclient.ZkClient
-
+import java.util.concurrent.BlockingQueue
 
 /**
  * The fetcher is a background thread that fetches data from a set of servers
@@ -30,8 +30,7 @@ private[consumer] class Fetcher(val config: ConsumerConfig, val zkClient : ZkCli
   private val EMPTY_FETCHER_THREADS = new Array[FetcherRunnable](0)
   @volatile
   private var fetcherThreads : Array[FetcherRunnable] = EMPTY_FETCHER_THREADS
-  private var currentTopicInfos: Iterable[PartitionTopicInfo] = null
-  
+
   /**
    *  shutdown all fetch threads
    */
@@ -42,21 +41,18 @@ private[consumer] class Fetcher(val config: ConsumerConfig, val zkClient : ZkCli
     fetcherThreads = EMPTY_FETCHER_THREADS
   }
 
-  def clearAllQueues(topicInfos: Iterable[PartitionTopicInfo]) = topicInfos.foreach(_.clearChunkQueue)
-
   /**
    *  Open connections.
    */
-  def initConnections(topicInfos: Iterable[PartitionTopicInfo], cluster: Cluster) {
+  def initConnections(topicInfos: Iterable[PartitionTopicInfo], cluster: Cluster,
+                      queuesTobeCleared: Iterable[BlockingQueue[FetchedDataChunk]]) {
     shutdown
 
     if (topicInfos == null)
       return
 
-    if (currentTopicInfos != null)
-      clearAllQueues(currentTopicInfos)
-    currentTopicInfos = topicInfos
-    
+    queuesTobeCleared.foreach(_.clear)
+
     // re-arrange by broker id
     val m = new mutable.HashMap[Int, List[PartitionTopicInfo]]
     for(info <- topicInfos) {

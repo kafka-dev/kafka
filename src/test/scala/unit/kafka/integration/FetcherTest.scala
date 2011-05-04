@@ -60,7 +60,7 @@ class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
   override def init() {
     super.init
     fetcher = new Fetcher(new ConsumerConfig(TestUtils.createConsumerProperties("", "", "")), null)
-    fetcher.initConnections(topicInfos, cluster)
+    fetcher.initConnections(topicInfos, cluster, Set(queue))
   }
 
   @After

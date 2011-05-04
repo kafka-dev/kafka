@@ -47,8 +47,6 @@ private[consumer] class PartitionTopicInfo(val topic: String,
       logger.debug("reset consume offset of " + this + " to " + newConsumeOffset)
   }
 
-  def clearChunkQueue() = chunkQueue.clear
-
   def resetFetchOffset(newFetchOffset: Long) = {
     fetchedOffset.set(newFetchOffset)
     if (logger.isDebugEnabled)

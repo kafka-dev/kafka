@@ -419,7 +419,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       logger.info("Releasing partition ownership")
       releasePartitionOwnership
 
-
+      val queuesToBeCleared = new mutable.HashSet[BlockingQueue[FetchedDataChunk]]
       for ((topic, consumerThreadIdSet) <- relevantTopicThreadIdsMap) {
         topicRegistry.remove(topic)
         topicRegistry.put(topic, new Pool[Partition, PartitionTopicInfo])
@@ -446,21 +446,24 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
            */
           if (nParts <= 0)
             logger.warn("No broker partions consumed by consumer thread " + consumerThreadId + " for topic " + topic)
-          for (i <- startPart until startPart + nParts) {
-            val partition = curPartitions(i)
-            logger.info(consumerThreadId + " attempting to claim partition " + partition)
-            if (!processPartition(topicDirs, partition, topic, consumerThreadId))
-              return false
+          else {
+            for (i <- startPart until startPart + nParts) {
+              val partition = curPartitions(i)
+              logger.info(consumerThreadId + " attempting to claim partition " + partition)
+              if (!processPartition(topicDirs, partition, topic, consumerThreadId))
+                return false
+            }
+            queuesToBeCleared += queues.get((topic, consumerThreadId))
           }
         }
       }
-      updateFetcher(cluster)
+      updateFetcher(cluster, queuesToBeCleared)
       oldPartitionsPerTopicMap = partitionsPerTopicMap
       oldConsumersPerTopicMap = consumersPerTopicMap
       true
     }
 
-    private def updateFetcher(cluster: Cluster) {
+    private def updateFetcher(cluster: Cluster, queuesTobeCleared: Iterable[BlockingQueue[FetchedDataChunk]]) {
       // update partitions for fetcher
       var allPartitionInfos : List[PartitionTopicInfo] = Nil
       for (partitionInfos <- topicRegistry.values)
@@ -470,7 +473,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
         allPartitionInfos.sortWith((s,t) => s.partition < t.partition).map(_.toString).mkString(","))
 
       fetcher match {
-        case Some(f) => f.initConnections(allPartitionInfos, cluster)
+        case Some(f) => f.initConnections(allPartitionInfos, cluster, queuesTobeCleared)
         case None =>
       }
     }
