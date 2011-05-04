@@ -382,7 +382,17 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       rebalanceLock synchronized {
         for (i <- 0 until ZookeeperConsumerConnector.MAX_N_RETRIES) {
           logger.info("begin rebalancing consumer " + consumerIdString + " try #" + i)
-          val done = rebalance
+          var done = false
+          try {
+            done = rebalance
+          }
+          catch {
+            case e =>
+              // occasionally, we may hit a ZK exception because the ZK state is changing while we are iterating.
+              // For example, a ZK node can disappear between the time we get all children and the time we try to get
+              // the value of a child. Just let this go since another rebalance will be triggered.
+              logger.info("exception during rebalance " + e)
+          }
           logger.info("end rebalancing consumer " + consumerIdString + " try #" + i)
           if (done)
             return
