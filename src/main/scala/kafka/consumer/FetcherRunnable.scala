@@ -24,6 +24,7 @@ import kafka.cluster.{Partition, Broker}
 import kafka.api.{MultiFetchResponse, OffsetRequest, FetchRequest}
 import org.I0Itec.zkclient.ZkClient
 import kafka.utils._
+import java.io.IOException
 
 private[consumer] class FetcherRunnable(val name: String,
                                         val zkClient : ZkClient,
@@ -79,13 +80,17 @@ private[consumer] class FetcherRunnable(val name: String,
               read += info.enqueue(messages)
           }
           catch {
-            case e =>
+            case e1: IOException =>
+              // something is wrong with the socket, re-throw the exception to stop the fetcher
+              throw e1
+            case e2 =>
               if (!stopped) {
-                logger.error("error in FetcherRunnable for " + info + ": " + e + Utils.stackTrace(e))
-                info.enqueueError(e)
+                // this is likely a repeatable error, log it and trigger an exception in the consumer
+                logger.error("error in FetcherRunnable for " + info + ": " + e2 + Utils.stackTrace(e2))
+                info.enqueueError(e2)
               }
               // re-throw the exception to stop the fetcher
-              throw e
+              throw e2
           }
         }
         if (logger.isTraceEnabled)
