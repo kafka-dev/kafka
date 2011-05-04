@@ -80,7 +80,6 @@ private[async] class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]
 
       now = SystemTime.milliseconds
 
-
       // time to send messages
       val expired: Boolean = (now - lastSend) > queueTime
       val full: Boolean = events.size >= batchSize

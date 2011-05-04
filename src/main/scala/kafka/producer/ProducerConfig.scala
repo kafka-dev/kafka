@@ -19,9 +19,17 @@ package kafka.producer
 import async.AsyncProducerConfigShared
 import java.util.Properties
 import kafka.utils.{ZKConfig, Utils}
+import kafka.common.InvalidConfigException
 
 class ProducerConfig(val props: Properties) extends ZKConfig(props) 
         with AsyncProducerConfigShared with SyncProducerConfigShared{
+
+  /** For bypassing zookeeper based auto partition discovery, use this config   *
+   *  to pass in static broker and per-broker partition information. Format-    *
+   *  brokerid1:host1:port1:numPartitions1, brokerid2:host2:port2:numPartitions2*/
+  val brokerPartitionInfo = Utils.getString(props, "broker.partition.info", null)
+  if(brokerPartitionInfo != null && Utils.getString(props, "partitioner.class", null) != null)
+    throw new InvalidConfigException("partitioner.class cannot be used when broker.partition.info is set")
 
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class", "kafka.producer.DefaultPartitioner")
@@ -31,10 +39,6 @@ class ProducerConfig(val props: Properties) extends ZKConfig(props)
    *                            sync for synchronous send                   */
   val producerType = Utils.getString(props, "producer.type", "sync")
 
-  /** For bypassing zookeeper based auto partition discovery, use this config   *
-   *  to pass in static broker and per-broker partition information. Format-    *
-   *  brokerid1:host1:port1:numPartitions1, brokerid2:host2:port2:numPartitions2*/
-  val brokerPartitionInfo = Utils.getString(props, "broker.partition.info", null)
 
   /** When using static broker configuration option for the Producer, use this config *
    *  to override the default number of partitions for a topic on all brokers. If     *

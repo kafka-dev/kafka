@@ -20,7 +20,6 @@ import kafka.utils.threadsafe
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.javaapi.MultiFetchResponse
 import kafka.api.FetchRequest
-import kafka.javaapi.Implicits._
 
 /**
  * A consumer of kafka messages
@@ -32,10 +31,14 @@ class SimpleConsumer(val host: String,
                      val bufferSize: Int) {
   val underlying = new kafka.consumer.SimpleConsumer(host, port, soTimeout, bufferSize)
 
-  def fetch(request: FetchRequest): ByteBufferMessageSet = underlying.fetch(request)
+  def fetch(request: FetchRequest): ByteBufferMessageSet = {
+    import kafka.javaapi.Implicits._
+    underlying.fetch(request)
+  }
 
   def multifetch(fetches: java.util.List[FetchRequest]): MultiFetchResponse = {
     import scala.collection.JavaConversions._
+    import kafka.javaapi.Implicits._
     underlying.multifetch(asBuffer(fetches): _*)
   }
 

@@ -15,7 +15,7 @@
  */
 package kafka.javaapi.consumer
 
-import kafka.consumer.{KafkaMessageStream, ConsumerConfig, ZookeeperConsumerConnectorMBean}
+import kafka.consumer.{KafkaMessageStream, ConsumerConfig}
 
 /**
  * This class handles the consumers interaction with zookeeper
@@ -51,7 +51,18 @@ import kafka.consumer.{KafkaMessageStream, ConsumerConfig, ZookeeperConsumerConn
  * /consumers/[group_id]/offsets/[topic]/[broker_id-partition_id] --> offset_counter_value
  * Each consumer tracks the offset of the latest message consumed for each partition.
  *
+*/
+
+/**
+ *  JMX interface for monitoring consumer
  */
+trait ZookeeperConsumerConnectorMBean {
+  def getPartOwnerStats: String
+  def getConsumerGroup: String
+  def getOffsetLag(topic: String, brokerId: Int, partitionId: Int): Long
+  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long
+  def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long
+}
 
 private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
                                  val enableFetcher: Boolean) // for testing only

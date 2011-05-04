@@ -17,7 +17,6 @@ package kafka.javaapi.producer
 
 import kafka.producer.SyncProducerConfig
 import kafka.javaapi.message.ByteBufferMessageSet
-import kafka.javaapi.Implicits._
 
 class SyncProducer(syncProducer: kafka.producer.SyncProducer) {
 
@@ -26,6 +25,7 @@ class SyncProducer(syncProducer: kafka.producer.SyncProducer) {
   val underlying = syncProducer
 
   def send(topic: String, partition: Int, messages: ByteBufferMessageSet) {
+    import kafka.javaapi.Implicits._
     underlying.send(topic, partition, messages)
   }
 
@@ -34,6 +34,7 @@ class SyncProducer(syncProducer: kafka.producer.SyncProducer) {
                                                                        messages)
 
   def multiSend(produces: Array[kafka.javaapi.ProducerRequest]) {
+    import kafka.javaapi.Implicits._
     val produceRequests = new Array[kafka.api.ProducerRequest](produces.length)
     for(i <- 0 until produces.length)
       produceRequests(i) = new kafka.api.ProducerRequest(produces(i).topic, produces(i).partition, produces(i).messages)
