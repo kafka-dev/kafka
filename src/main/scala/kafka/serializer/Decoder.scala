@@ -21,3 +21,17 @@ import kafka.message.Message
 trait Decoder[T] {
   def toEvent(message: Message):T
 }
+
+class DefaultDecoder extends Decoder[Message] {
+  def toEvent(message: Message):Message = message
+}
+
+class StringDecoder extends Decoder[String] {
+  def toEvent(message: Message):String = {
+    val messagePayload = message.payload.slice
+    val dataLength = messagePayload.array.length - messagePayload.arrayOffset
+    val messageDataArray = new Array[Byte](dataLength)
+    messagePayload.get(messageDataArray, 0, dataLength)
+    new String(messageDataArray)
+  }
+}

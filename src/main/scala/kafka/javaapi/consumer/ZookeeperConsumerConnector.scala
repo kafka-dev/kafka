@@ -15,7 +15,7 @@
  */
 package kafka.javaapi.consumer
 
-import kafka.consumer.{KafkaMessageStream, ConsumerConfig, ZookeeperConsumerConnectorMBean}
+import kafka.consumer.{KafkaMessageStream, ConsumerConfig}
 
 /**
  * This class handles the consumers interaction with zookeeper
@@ -55,7 +55,7 @@ import kafka.consumer.{KafkaMessageStream, ConsumerConfig, ZookeeperConsumerConn
 
 private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
                                  val enableFetcher: Boolean) // for testing only
-    extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
+    extends ConsumerConnector {
 
   val underlying = new kafka.consumer.ZookeeperConsumerConnector(config, enableFetcher)
 

@@ -23,12 +23,13 @@ import org.apache.log4j.{Level, Logger}
 import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
-import java.util.Properties
 import java.lang.management.ManagementFactory
 import javax.management.{MBeanServer, ObjectName}
+import java.util.{Random, Properties}
 
 object AsyncProducer {
   val shutdown = new Object
+  val random = new Random
   val ProducerMBeanName = "kafka.producer.Producer:type=AsyncProducerStats"
 }
 
@@ -47,7 +48,8 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
     eventHandler.init(eventHandlerProps)
   if(cbkHandler != null)
     cbkHandler.init(cbkHandlerProps)
-  private val sendThread = new ProducerSendThread(queue, serializer, producer,
+  private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.random.nextInt, queue,
+    serializer, producer,
     if(eventHandler != null) eventHandler else new EventHandler[T](producer, serializer, cbkHandler),
     cbkHandler, config.queueTime, config.batchSize, AsyncProducer.shutdown)
   sendThread.setDaemon(false)

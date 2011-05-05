@@ -58,22 +58,40 @@ class Producer[K,V](config: ProducerConfig,
     allBrokers.foreach(b => producerPool.addProducer(new Broker(b._1, b._2.host, b._2.host, b._2.port)))
   }
 
+/**
+ * This constructor can be used when all config parameters will be specified through the
+ * ProducerConfig object
+ * @param config Producer Configuration object
+ */
   def this(config: ProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
     new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
 
+  /**
+   * This constructor can be used to provide pre-instantiated objects for all config parameters
+   * that would otherwise be instantiated via reflection. i.e. encoder, partitioner, event handler and
+   * callback handler
+   * @param config Producer Configuration object
+   * @param encoder Encoder used to convert an object of type V to a kafka.message.Message
+   * @param eventHandler the class that implements kafka.producer.async.IEventHandler[T] used to
+   * dispatch a batch of produce requests, using an instance of kafka.producer.SyncProducer
+   * @param cbkHandler the class that implements kafka.producer.async.CallbackHandler[T] used to inject
+   * callbacks at various stages of the kafka.producer.AsyncProducer pipeline.
+   * @param partitioner class that implements the kafka.producer.Partitioner[K], used to supply a custom
+   * partitioning strategy on the message key (of type K) that is specified through the ProducerData[K, T]
+   * object in the  send API
+   */
   def this(config: ProducerConfig,
+           encoder: Encoder[V],
            eventHandler: IEventHandler[V],
            cbkHandler: CallbackHandler[V],
            partitioner: Partitioner[K]) =
     this(config, partitioner,
-         new ProducerPool[V](config, Utils.getObject(config.serializerClass), eventHandler, cbkHandler))
+         new ProducerPool[V](config, encoder, eventHandler, cbkHandler))
 
   /**
    * Sends the data, partitioned by key to the topic using either the
-   * synchronous or the asynchronous producer 
-   * @param topic the topic under which the message is to be published
-   * @param key the key used by the partitioner to pick a broker partition
-   * @param data the data to be published as Kafka messages under topic
+   * synchronous or the asynchronous producer
+   * @param producerData the producer data object that encapsulates the topic, key and message data
    */
   def send(producerData: ProducerData[K,V]*) {
     val producerPoolRequests = producerData.map { pd =>
@@ -124,6 +142,10 @@ class Producer[K,V](config: ProducerConfig,
     else logger.debug("Skipping the callback..")
   }
 
+  /**
+   * Close API to close the producer pool connections to all Kafka brokers. Also closes
+   * the zookeeper client connection if one exists
+   */
   def close() = {
     val canShutdown = hasShutdown.compareAndSet(false, true)
     if(canShutdown) {

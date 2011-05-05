@@ -69,7 +69,7 @@ class Message(val buffer: ByteBuffer) {
     var payload = buffer.duplicate
     payload.position(HeaderSize)
     payload = payload.slice()
-    payload.limit(payloadSize) 
+    payload.limit(payloadSize)
     payload.rewind()
     payload
   }

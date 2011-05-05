@@ -25,6 +25,10 @@ import kafka.utils.{Utils, SystemTime, KafkaScheduler}
 import kafka.network.{SocketServerStats, SocketServer}
 import java.io.File
 
+/**
+ * Represents the lifecycle of a single Kafka broker. Handles all functionality required
+ * to start up and shutdown a single Kafka node.
+ */
 class KafkaServer(val config: KafkaConfig) {
   val CLEAN_SHUTDOWN_FILE = ".kafka_cleanshutdown"
   private val isShuttingDown = new AtomicBoolean(false)
@@ -39,6 +43,10 @@ class KafkaServer(val config: KafkaConfig) {
   
   private var logManager: LogManager = null
 
+  /**
+   * Start up API for bringing up a single instance of the Kafka server.
+   * Instantiates the LogManager, the SocketServer and the request handlers - KafkaRequestHandlers
+   */
   def startup() {
     try {
       logger.info("Starting Kafka server...")
@@ -77,6 +85,10 @@ class KafkaServer(val config: KafkaConfig) {
     }
   }
   
+  /**
+   * Shutdown API for shutting down a single instance of the Kafka server.
+   * Shuts down the LogManager, the SocketServer and the log cleaner scheduler thread
+   */
   def shutdown() {
     val canShutdown = isShuttingDown.compareAndSet(false, true);
     if (canShutdown) {
@@ -100,6 +112,9 @@ class KafkaServer(val config: KafkaConfig) {
     }
   }
   
+  /**
+   * After calling shutdown(), use this API to wait until the shutdown is complete
+   */
   def awaitShutdown(): Unit = shutdownLatch.await()
 
   def getLogManager(): LogManager = logManager

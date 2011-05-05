@@ -23,14 +23,15 @@ import collection.mutable.ListBuffer
 import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
 
-private[async] class ProducerSendThread[T](val queue: BlockingQueue[QueueItem[T]],
-                            val serializer: Encoder[T],
-                            val underlyingProducer: SyncProducer,
-                            val handler: IEventHandler[T],
-                            val cbkHandler: CallbackHandler[T],
-                            val queueTime: Long,
-                            val batchSize: Int,
-                            val shutdownCommand: Any) extends Thread {
+private[async] class ProducerSendThread[T](val threadName: String,
+                                           val queue: BlockingQueue[QueueItem[T]],
+                                           val serializer: Encoder[T],
+                                           val underlyingProducer: SyncProducer,
+                                           val handler: IEventHandler[T],
+                                           val cbkHandler: CallbackHandler[T],
+                                           val queueTime: Long,
+                                           val batchSize: Int,
+                                           val shutdownCommand: Any) extends Thread(threadName) {
 
   private val logger = Logger.getLogger(classOf[ProducerSendThread[T]])
   private var running: Boolean = true
