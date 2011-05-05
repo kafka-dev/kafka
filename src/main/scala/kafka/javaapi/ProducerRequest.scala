@@ -18,11 +18,11 @@ package kafka.javaapi
 import kafka.network.Request
 import kafka.api.RequestKeys
 import java.nio.ByteBuffer
-import Implicits._
 
 class ProducerRequest(val topic: String,
                       val partition: Int,
                       val messages: kafka.javaapi.message.ByteBufferMessageSet) extends Request(RequestKeys.Produce) {
+  import Implicits._
   private val underlying = new kafka.api.ProducerRequest(topic, partition, messages)
 
   def writeTo(buffer: ByteBuffer) { underlying.writeTo(buffer) }

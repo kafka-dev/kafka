@@ -20,7 +20,6 @@ import kafka.utils.Utils
 import kafka.producer.async.QueueItem
 import java.util.Properties
 import kafka.producer.{ProducerPool, ProducerConfig, Partitioner}
-import kafka.javaapi.Implicits._
 import kafka.serializer.Encoder
 
 class Producer[K,V](config: ProducerConfig,
@@ -54,6 +53,7 @@ class Producer[K,V](config: ProducerConfig,
    * partitioning strategy on the message key (of type K) that is specified through the ProducerData[K, T]
    * object in the  send API
    */
+  import kafka.javaapi.Implicits._
   def this(config: ProducerConfig,
            encoder: Encoder[V],
            eventHandler: kafka.javaapi.producer.async.IEventHandler[V],
@@ -65,6 +65,7 @@ class Producer[K,V](config: ProducerConfig,
                                override def init(props: Properties) { eventHandler.init(props) }
                                override def handle(events: Seq[QueueItem[V]], producer: kafka.producer.SyncProducer) {
                                  import collection.JavaConversions._
+                                 import kafka.javaapi.Implicits._
                                  eventHandler.handle(asList(events), producer)
                                }
                                override def close { eventHandler.close }

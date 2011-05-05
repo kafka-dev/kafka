@@ -22,20 +22,45 @@ import java.util.concurrent.atomic._
 import kafka.message._
 import kafka.cluster._
 import kafka.common.ErrorMapping
+import org.apache.log4j.Logger
 
 private[consumer] class PartitionTopicInfo(val topic: String,
                                            val brokerId: Int,
                                            val partition: Partition,
-                                           val chunkQueue: BlockingQueue[FetchedDataChunk],
-                                           val consumedOffset: AtomicLong,
-                                           val fetchedOffset: AtomicLong,
-                                           val fetchSize: AtomicInteger) {
+                                           private val chunkQueue: BlockingQueue[FetchedDataChunk],
+                                           private val consumedOffset: AtomicLong,
+                                           private val fetchedOffset: AtomicLong,
+                                           private val fetchSize: AtomicInteger) {
+  private val logger = Logger.getLogger(getClass())
+  if (logger.isDebugEnabled) {
+    logger.debug("initial consumer offset of " + this + " is " + consumedOffset.get)
+    logger.debug("initial fetch offset of " + this + " is " + fetchedOffset.get)
+  }
+
+  def getConsumeOffset() = consumedOffset.get
+
+  def getFetchOffset() = fetchedOffset.get
+
+  def resetConsumeOffset(newConsumeOffset: Long) = {
+    consumedOffset.set(newConsumeOffset)
+    if (logger.isDebugEnabled)
+      logger.debug("reset consume offset of " + this + " to " + newConsumeOffset)
+  }
+
+  def resetFetchOffset(newFetchOffset: Long) = {
+    fetchedOffset.set(newFetchOffset)
+    if (logger.isDebugEnabled)
+      logger.debug("reset fetch offset of " + this + " to " + newFetchOffset)    
+  }
 
   /**
    * Record the given number of bytes as having been consumed
    */
-  def consumed(messageSize: Int): Unit =
-    consumedOffset.addAndGet(messageSize)
+  def consumed(messageSize: Int): Unit = {
+    val newOffset = consumedOffset.addAndGet(messageSize)
+    if (logger.isDebugEnabled)
+      logger.debug("updated consume offset of " + this + " to " + newOffset)
+  }
 
   /**
    * Enqueue a message set for processing
@@ -44,7 +69,9 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   def enqueue(messages: ByteBufferMessageSet): Int = {
     val size = messages.validBytes
     if(size > 0) {
-      fetchedOffset.addAndGet(size)
+      val newOffset = fetchedOffset.addAndGet(size)
+      if (logger.isDebugEnabled)
+        logger.debug("updated fetch offset of " + this + " to " + newOffset)
       chunkQueue.put(new FetchedDataChunk(messages, this))
     }
     size

@@ -40,7 +40,7 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
     ZookeeperConsumerStats.recordConsumedOffset(currentTopicInfo.topic,
                                                 new Partition(currentTopicInfo.partition.brokerId,
                                                 currentTopicInfo.partition.partId),
-                                                currentTopicInfo.consumedOffset.get)
+                                                currentTopicInfo.getConsumeOffset)
     message
   }
 

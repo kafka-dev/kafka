@@ -64,7 +64,7 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
   def testKafkaLog4jConfigs() {
     var props = new Properties()
     props.put("log4j.rootLogger", "INFO")
-    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
+    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaLog4jAppender")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
     props.put("log4j.appender.KAFKA.encoder", "kafka.log4j.AppenderStringEncoder")
@@ -80,7 +80,7 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
 
     props = new Properties()
     props.put("log4j.rootLogger", "INFO")
-    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
+    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaLog4jAppender")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
     props.put("log4j.appender.KAFKA.Encoder", "kafka.log4j.AppenderStringEncoder")
     props.put("log4j.appender.KAFKA.Port", "9092")
@@ -96,7 +96,7 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
 
     props = new Properties()
     props.put("log4j.rootLogger", "INFO")
-    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
+    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaLog4jAppender")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Port", "9092")
     props.put("log4j.appender.KAFKA.Encoder", "kafka.log4j.AppenderStringEncoder")
@@ -112,7 +112,7 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
 
     props = new Properties()
     props.put("log4j.rootLogger", "INFO")
-    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
+    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaLog4jAppender")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
     props.put("log4j.appender.KAFKA.Port", "9092")
@@ -121,9 +121,8 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
     // serializer missing
     try {
       PropertyConfigurator.configure(props)
-      fail("Missing properties exception was expected !")
     }catch {
-      case e: MissingConfigException =>
+      case e: MissingConfigException => fail("should default to kafka.producer.DefaultStringEncoder")
     }
   }
 
@@ -135,7 +134,7 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
     for(i <- 1 to 5)
       logger.info("test")
 
-    Thread.sleep(200)
+    Thread.sleep(500)
 
     var offset = 0L
     val messages = simpleConsumer.fetch(new FetchRequest("test-topic", 0, offset, 1024*1024))
@@ -153,11 +152,10 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
   private def getLog4jConfig: Properties = {
     var props = new Properties()
     props.put("log4j.rootLogger", "INFO")
-    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaAppender")
+    props.put("log4j.appender.KAFKA", "kafka.producer.KafkaLog4jAppender")
     props.put("log4j.appender.KAFKA.Port", "9092")
     props.put("log4j.appender.KAFKA.Host", "localhost")
     props.put("log4j.appender.KAFKA.Topic", "test-topic")
-    props.put("log4j.appender.KAFKA.Encoder", "kafka.log4j.AppenderStringEncoder")
     props.put("log4j.logger.kafka.log4j", "INFO, KAFKA")
     props
   }

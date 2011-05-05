@@ -24,6 +24,7 @@ import kafka.cluster.{Partition, Broker}
 import kafka.api.{MultiFetchResponse, OffsetRequest, FetchRequest}
 import org.I0Itec.zkclient.ZkClient
 import kafka.utils._
+import java.io.IOException
 
 private[consumer] class FetcherRunnable(val name: String,
                                         val zkClient : ZkClient,
@@ -49,12 +50,12 @@ private[consumer] class FetcherRunnable(val name: String,
   override def run() {
     for (info <- partitionTopicInfos)
       logger.info(name + " start fetching topic: " + info.topic + " part: " + info.partition.partId + " offset: "
-        + info.fetchedOffset.get + " from " + broker.host + ":" + broker.port)
+        + info.getFetchOffset + " from " + broker.host + ":" + broker.port)
 
     try {
       while (!stopped) {
         val fetches = partitionTopicInfos.map(info =>
-               new FetchRequest(info.topic, info.partition.partId, info.fetchedOffset.get, config.fetchSize))
+               new FetchRequest(info.topic, info.partition.partId, info.getFetchOffset, config.fetchSize))
 
         if (logger.isTraceEnabled)
           logger.trace("fetch request: " + fetches.toString)
@@ -66,12 +67,12 @@ private[consumer] class FetcherRunnable(val name: String,
           try {
             var done = false
             if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
-              logger.info("offset " + info.fetchedOffset.get + " out of range")
+              logger.info("offset " + info.getFetchOffset + " out of range")
               // see if we can fix this error
               val resetOffset = resetConsumerOffsets(info.topic, info.partition)
               if(resetOffset >= 0) {
-                info.fetchedOffset.set(resetOffset)
-                info.consumedOffset.set(resetOffset)
+                info.resetFetchOffset(resetOffset)
+                info.resetConsumeOffset(resetOffset)
                 done = true
               }
             }
@@ -79,13 +80,17 @@ private[consumer] class FetcherRunnable(val name: String,
               read += info.enqueue(messages)
           }
           catch {
-            case e =>
+            case e1: IOException =>
+              // something is wrong with the socket, re-throw the exception to stop the fetcher
+              throw e1
+            case e2 =>
               if (!stopped) {
-                logger.error("error in FetcherRunnable for " + info + ": " + e + Utils.stackTrace(e))
-                info.enqueueError(e)
+                // this is likely a repeatable error, log it and trigger an exception in the consumer
+                logger.error("error in FetcherRunnable for " + info + ": " + e2 + Utils.stackTrace(e2))
+                info.enqueueError(e2)
               }
               // re-throw the exception to stop the fetcher
-              throw e
+              throw e2
           }
         }
         if (logger.isTraceEnabled)

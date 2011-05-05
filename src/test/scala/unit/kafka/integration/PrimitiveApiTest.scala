@@ -49,7 +49,7 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     val topic = "test-topic"
     val props = new Properties()
     props.put("serializer.class", "kafka.serializer.StringEncoder")
-    props.put("broker.partition.info", "0:localhost:9999:1")
+    props.put("broker.partition.info", "0:localhost:9999")
     val config = new ProducerConfig(props)
 
     val stringProducer1 = new Producer[String, String](config)

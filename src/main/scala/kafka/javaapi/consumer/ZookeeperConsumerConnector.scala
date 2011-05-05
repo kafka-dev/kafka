@@ -51,7 +51,7 @@ import kafka.consumer.{KafkaMessageStream, ConsumerConfig}
  * /consumers/[group_id]/offsets/[topic]/[broker_id-partition_id] --> offset_counter_value
  * Each consumer tracks the offset of the latest message consumed for each partition.
  *
- */
+*/
 
 private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
                                  val enableFetcher: Boolean) // for testing only

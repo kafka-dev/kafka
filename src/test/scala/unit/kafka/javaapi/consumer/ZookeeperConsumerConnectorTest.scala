@@ -27,9 +27,10 @@ import kafka.utils.Utils
 import kafka.{TestZKUtils, TestUtils}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
-import kafka.consumer.{ConsumerConfig, KafkaMessageStream, ConsumerTimeoutException}
 import scala.collection.JavaConversions._
 import kafka.javaapi.message.ByteBufferMessageSet
+import kafka.consumer.{Consumer, ConsumerConfig, KafkaMessageStream, ConsumerTimeoutException}
+import javax.management.NotCompliantMBeanException
 
 class ZookeeperConsumerConnectorTest extends JUnitSuite with KafkaServerTestHarness with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
@@ -152,6 +153,16 @@ class ZookeeperConsumerConnectorTest extends JUnitSuite with KafkaServerTestHarn
       }
     }
     messages.sortWith((s,t) => s.checksum < t.checksum)
+  }
+
+  @Test
+  def testJMX() {
+    val consumerConfig = new ConsumerConfig(TestUtils.createConsumerProperties(zkConnect, group, consumer0))
+    try {
+      val consumer = Consumer.createJavaConsumerConnector(consumerConfig)
+    }catch {
+      case e: NotCompliantMBeanException => fail("Should not fail with NotCompliantMBeanException")
+    }
   }
 
   private def getMessageList(messages: Message*): java.util.List[Message] = {

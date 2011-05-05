@@ -75,17 +75,11 @@ private[kafka] class LogManager(val config: KafkaConfig,
     }
   }
   
-  // initialize jmx monitoring for the logs
-  for(log <- getLogIterator)
-    Utils.registerMBean(new LogStats(log), "kafka:type=kafka.logs." + log.dir.getName)
-  
   /* Schedule the cleanup task to delete old logs */
   if(scheduler != null) {
     logger.info("starting log cleaner every " + logCleanupIntervalMs + " ms")    
     scheduler.scheduleWithRate(cleanupLogs, 60 * 1000, logCleanupIntervalMs)
   }
-
-
 
   if(config.enableZookeeper) {
     kafkaZookeeper = new KafkaZooKeeper(config, this)

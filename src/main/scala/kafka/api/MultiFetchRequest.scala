@@ -33,6 +33,8 @@ object MultiFetchRequest {
 
 class MultiFetchRequest(val fetches: Array[FetchRequest]) extends Request(RequestKeys.MultiFetch) {
   def writeTo(buffer: ByteBuffer) {
+    if(fetches.length > Short.MaxValue)
+      throw new IllegalArgumentException("Number of requests in MultiFetchRequest exceeds " + Short.MaxValue + ".")
     buffer.putShort(fetches.length.toShort)
     for(fetch <- fetches)
       fetch.writeTo(buffer)

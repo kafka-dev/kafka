@@ -44,7 +44,17 @@ object SimpleConsumerShell {
                            .describedAs("partition")
                            .ofType(classOf[java.lang.Integer])
                            .defaultsTo(0)
-    
+    val offsetOpt = parser.accepts("offset", "The offset to start consuming from.")
+                           .withRequiredArg
+                           .describedAs("offset")
+                           .ofType(classOf[java.lang.Long])
+                           .defaultsTo(0L)
+    val fetchsizeOpt = parser.accepts("fetchsize", "The fetch size of each request.")
+                           .withRequiredArg
+                           .describedAs("fetchsize")
+                           .ofType(classOf[java.lang.Integer])
+                           .defaultsTo(1000000)
+
     val options = parser.parse(args : _*)
     
     for(arg <- List(urlOpt, topicOpt)) {
@@ -58,14 +68,16 @@ object SimpleConsumerShell {
     val url = new URI(options.valueOf(urlOpt))
     val topic = options.valueOf(topicOpt)
     val partition = options.valueOf(partitionOpt).intValue
-    
+    val startingOffset = options.valueOf(offsetOpt).longValue
+    val fetchsize = options.valueOf(fetchsizeOpt).intValue
+
     println("Starting consumer...")
     val consumer = new SimpleConsumer(url.getHost, url.getPort, 10000, 64*1024)
     val thread = Utils.newThread("kafka-consumer", new Runnable() {
       def run() {
-        var offset = 0L
+        var offset = startingOffset
         while(true) {
-	      val fetchRequest = new FetchRequest(topic, partition, offset, 1000000)
+	      val fetchRequest = new FetchRequest(topic, partition, offset, fetchsize)
 	      val messageSets = consumer.multifetch(fetchRequest)
 	      for (messages <- messageSets) {
 	        println("multi fetched " + messages.sizeInBytes + " bytes from offset " + offset)

@@ -26,14 +26,13 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
   private val logger = Logger.getLogger(classOf[ConfigBrokerPartitionInfo])
   private val brokerPartitions: SortedSet[Partition] = getConfigTopicPartitionInfo
   private val allBrokers = getConfigBrokerInfo
-  private val topicPartitions: Map[String, SortedSet[Partition]] = getTopicPartitions
+
   /**
    * Return a sequence of (brokerId, numPartitions)
    * @param topic this value is null 
    * @return a sequence of (brokerId, numPartitions)
    */
-  def getBrokerPartitionInfo(topic: String): SortedSet[Partition] =
-    topicPartitions.getOrElse(topic, brokerPartitions)
+  def getBrokerPartitionInfo(topic: String): SortedSet[Partition] = brokerPartitions
 
   /**
    * Generate the host and port information for the broker identified
@@ -53,29 +52,6 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
 
   def close {}
 
-  private def getTopicPartitions: Map[String, SortedSet[Partition]] = {
-    val numPartitionsPerTopic = new HashMap[String, SortedSet[Partition]]()
-
-    if(config.topicPartitions != null) {
-      val numEntries = config.topicPartitions.split(",")
-      for(entry <- numEntries) {
-        val topicNumPartitions = entry.split(":")
-        if(topicNumPartitions.length != 2)
-          throw new InvalidConfigException("Each entry in topic.num.partitions should be of the format => " +
-                                           "topic:numPartitions")
-        var partitions = SortedSet.empty[Partition]
-        brokerPartitions.foreach { bp =>
-          for(i <- 0 until topicNumPartitions(1).toInt) {
-            val bidPid = new Partition(bp.brokerId, i)
-            partitions += bidPid
-          }
-        }
-        numPartitionsPerTopic += topicNumPartitions(0) -> partitions
-      }
-    }
-    numPartitionsPerTopic
-  }
-
   /**
    * Generate a sequence of (brokerId, numPartitions) for all brokers
    * specified in the producer configuration
@@ -83,13 +59,13 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
    */
   private def getConfigTopicPartitionInfo(): SortedSet[Partition] = {
     val brokerInfoList = config.brokerPartitionInfo.split(",")
-    if(brokerInfoList.size == 0) throw new InvalidConfigException("broker.partition.info has invalid value")
-    // check if each individual broker info is valid => (brokerId: brokerHost: brokerPort: numPartitions)
+    if(brokerInfoList.size == 0) throw new InvalidConfigException("broker.partition.info is empty")
+    // check if each individual broker info is valid => (brokerId: brokerHost: brokerPort)
     brokerInfoList.foreach { bInfo =>
       val brokerInfo = bInfo.split(":")
-      if(brokerInfo.size != 4) throw new InvalidConfigException("broker.partition.info has invalid value")
+      if(brokerInfo.size < 3) throw new InvalidConfigException("broker.partition.info has invalid value")
     }
-    val brokerPartitions = brokerInfoList.map(bInfo => (bInfo.split(":").head.toInt, bInfo.split(":").last.toInt))
+    val brokerPartitions = brokerInfoList.map(bInfo => (bInfo.split(":").head.toInt, 1))
     var brokerParts = SortedSet.empty[Partition]
     brokerPartitions.foreach { bp =>
       for(i <- 0 until bp._2) {
@@ -109,7 +85,7 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
     val brokerInfo = new HashMap[Int, Broker]()
     val brokerInfoList = config.brokerPartitionInfo.split(",")
     brokerInfoList.foreach{ bInfo =>
-      val brokerIdHostPort = bInfo.split(":").dropRight(1)
+      val brokerIdHostPort = bInfo.split(":")
       brokerInfo += (brokerIdHostPort(0).toInt -> new Broker(brokerIdHostPort(0).toInt, brokerIdHostPort(1),
         brokerIdHostPort(1), brokerIdHostPort(2).toInt))
     }

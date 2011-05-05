@@ -30,7 +30,7 @@ import org.easymock.EasyMock
 import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
-import kafka.common.{UnavailableProducerException, InvalidPartitionException}
+import kafka.common.{UnavailableProducerException, InvalidPartitionException, InvalidConfigException}
 import org.scalatest.junit.JUnitSuite
 import kafka.producer.{SyncProducerConfig, Partitioner, ProducerConfig, DefaultPartitioner}
 import kafka.producer.ProducerPool
@@ -109,6 +109,8 @@ class ProducerTest extends JUnitSuite {
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("zk.connect", TestZKUtils.zookeeperConnect)
+
+
     val config = new ProducerConfig(props)
     val partitioner = new StaticPartitioner
     val serializer = new StringSerializer
@@ -291,13 +293,30 @@ class ProducerTest extends JUnitSuite {
   }
 
   @Test
-  def testConfigBrokerPartitionInfo() {
+  def testConfigBrokerPartitionInfoWithPartitioner {
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
     props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1 + ":" + 4 + "," +
                                        brokerId2 + ":" + "localhost" + ":" + port2 + ":" + 4)
+
+    var config: ProducerConfig = null
+    try {
+      config = new ProducerConfig(props)
+      fail("should fail with InvalidConfigException due to presence of partitioner.class and broker.partition.info")
+    }catch {
+      case e: InvalidConfigException => // expected
+    }
+  }
+
+  @Test
+  def testConfigBrokerPartitionInfo() {
+    val props = new Properties()
+    props.put("serializer.class", "kafka.producer.StringSerializer")
+    props.put("producer.type", "async")
+    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1)
+
     val config = new ProducerConfig(props)
     val partitioner = new StaticPartitioner
     val serializer = new StringSerializer
@@ -305,19 +324,14 @@ class ProducerTest extends JUnitSuite {
     // 2 async producers
     val asyncProducers = new ConcurrentHashMap[Int, AsyncProducer[String]]()
     val asyncProducer1 = EasyMock.createMock(classOf[AsyncProducer[String]])
-    val asyncProducer2 = EasyMock.createMock(classOf[AsyncProducer[String]])
     // it should send to partition 0 (first partition) on second broker i.e broker2
-    asyncProducer2.send(topic, "test1", 1)
+    asyncProducer1.send(topic, "test1", -1)
     EasyMock.expectLastCall
     asyncProducer1.close
     EasyMock.expectLastCall
-    asyncProducer2.close
-    EasyMock.expectLastCall
     EasyMock.replay(asyncProducer1)
-    EasyMock.replay(asyncProducer2)
 
     asyncProducers.put(brokerId1, asyncProducer1)
-    asyncProducers.put(brokerId2, asyncProducer2)
 
     val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, kafka.producer.SyncProducer](),
       asyncProducers)
@@ -329,7 +343,6 @@ class ProducerTest extends JUnitSuite {
     producer.close
 
     EasyMock.verify(asyncProducer1)
-    EasyMock.verify(asyncProducer2)
   }
 
   @Test
@@ -458,8 +471,7 @@ class ProducerTest extends JUnitSuite {
     val props = new Properties()
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
-    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1 + ":" + 4 + "," +
-                                       brokerId2 + ":" + "localhost" + ":" + port2 + ":" + 4)
+    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1)
     val config = new ProducerConfig(props)
     val partitioner = new DefaultPartitioner[String]
     val serializer = new StringSerializer
@@ -469,17 +481,13 @@ class ProducerTest extends JUnitSuite {
     val asyncProducer1 = EasyMock.createMock(classOf[AsyncProducer[String]])
     val asyncProducer2 = EasyMock.createMock(classOf[AsyncProducer[String]])
     // it should send to partition 0 (first partition) on second broker i.e broker2
-    asyncProducer1.send(topic, "test1", 2)
+    asyncProducer1.send(topic, "test1", -1)
     EasyMock.expectLastCall
     asyncProducer1.close
     EasyMock.expectLastCall
-    asyncProducer2.close
-    EasyMock.expectLastCall
     EasyMock.replay(asyncProducer1)
-    EasyMock.replay(asyncProducer2)
 
     asyncProducers.put(brokerId1, asyncProducer1)
-    asyncProducers.put(brokerId2, asyncProducer2)
 
     val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, kafka.producer.SyncProducer](),
       asyncProducers)
@@ -491,7 +499,6 @@ class ProducerTest extends JUnitSuite {
     producer.close
 
     EasyMock.verify(asyncProducer1)
-    EasyMock.verify(asyncProducer2)
   }
 }
 
