@@ -1,0 +1,19 @@
+start the servers ...
+start producing messages ...
+wait for consumer to finish consuming ...
+Total Num Messages: 100000 bytes: 19914764 in 2.46 secs
+Messages/sec: 40650.4065
+MB/sec: 7.7204
+[2011-05-05 18:58:59,001] INFO Disconnecting from localhost:9092 (kafka.producer.SyncProducer)
+Total Num Messages: 100000 bytes: 19908416 in 2.769 secs
+Total Num Messages: 100000 bytes: 20025776 in 2.811 secs
+Messages/sec: 35574.5286
+MB/sec: 6.7940
+[2011-05-05 18:58:59,352] INFO Disconnecting from localhost:9091 (kafka.producer.SyncProducer)
+Messages/sec: 36114.1206
+MB/sec: 6.8567
+[2011-05-05 18:58:59,361] INFO Disconnecting from localhost:9090 (kafka.producer.SyncProducer)
+test passed
+stopping the servers
+bin/../../../bin/zookeeper-server-start.sh: line 9: 20132 Terminated              $(dirname $0)/kafka-run-class.sh org.apache.zookeeper.server.quorum.QuorumPeerMain $@
+bin/../../../bin/zookeeper-server-start.sh: line 9: 20128 Terminated              $(dirname $0)/kafka-run-class.sh org.apache.zookeeper.server.quorum.QuorumPeerMain $@

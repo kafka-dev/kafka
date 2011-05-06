@@ -63,6 +63,11 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
         return allDone
       } else {
         currentTopicInfo = found.topicInfo
+        if (currentTopicInfo.getConsumeOffset != found.fetchOffset) {
+          logger.error("consumed offset: " + currentTopicInfo.getConsumeOffset + " doesn't match fetch offset: " +
+            found.fetchOffset + " for " + currentTopicInfo + "; consumer may lose data")
+          currentTopicInfo.resetConsumeOffset(found.fetchOffset)
+        }
         current = found.messages.iterator
       }
     }

@@ -66,13 +66,13 @@ private[consumer] class PartitionTopicInfo(val topic: String,
    * Enqueue a message set for processing
    * @return the number of valid bytes
    */
-  def enqueue(messages: ByteBufferMessageSet): Int = {
+  def enqueue(messages: ByteBufferMessageSet, fetchOffset: Long): Int = {
     val size = messages.validBytes
     if(size > 0) {
       val newOffset = fetchedOffset.addAndGet(size)
       if (logger.isDebugEnabled)
         logger.debug("updated fetch offset of " + this + " to " + newOffset)
-      chunkQueue.put(new FetchedDataChunk(messages, this))
+      chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))
     }
     size
   }
@@ -80,9 +80,9 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   /**
    *  add an empty message with the exception to the queue so that client can see the error
    */
-  def enqueueError(e: Throwable) = {
+  def enqueueError(e: Throwable, fetchOffset: Long) = {
     val messages = new ByteBufferMessageSet(ErrorMapping.EMPTY_BYTEBUFFER, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Throwable]]))
-    chunkQueue.put(new FetchedDataChunk(messages, this))
+    chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))
   }
 
   override def toString(): String = topic + ":" + partition.toString
