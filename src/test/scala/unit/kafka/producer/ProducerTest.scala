@@ -149,6 +149,32 @@ class ProducerTest extends JUnitSuite {
   }
 
   @Test
+  def testDefaultEncoder() {
+    val props = new Properties()
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
+    val config = new ProducerConfig(props)
+
+    val stringProducer1 = new Producer[String, String](config)
+    try {
+      stringProducer1.send(new ProducerData[String, String](topic, "test", Array("test")))
+      fail("Should fail with ClassCastException due to incompatible Encoder")
+    } catch {
+      case e: ClassCastException =>
+    }
+
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    val stringProducer2 = new Producer[String, String](new ProducerConfig(props))
+    stringProducer2.send(new ProducerData[String, String](topic, "test", Array("test")))
+
+    val messageProducer1 = new Producer[String, Message](config)
+    try {
+      messageProducer1.send(new ProducerData[String, Message](topic, "test", Array(new Message("test".getBytes))))
+    } catch {
+      case e: ClassCastException => fail("Should not fail with ClassCastException due to default Encoder")
+    }
+  }
+
+  @Test
   def testSyncProducerPool() {
     // 2 sync producers
     val syncProducers = new ConcurrentHashMap[Int, SyncProducer]()

@@ -21,3 +21,11 @@ import kafka.message.Message
 trait Encoder[T] {
   def toMessage(event: T):Message
 }
+
+class DefaultEncoder extends Encoder[Message] {
+  override def toMessage(event: Message):Message = event
+}
+
+class StringEncoder extends Encoder[String] {
+  override def toMessage(event: String):Message = new Message(event.getBytes)
+}

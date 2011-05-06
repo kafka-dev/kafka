@@ -53,20 +53,9 @@ import kafka.consumer.{KafkaMessageStream, ConsumerConfig}
  *
 */
 
-/**
- *  JMX interface for monitoring consumer
- */
-trait ZookeeperConsumerConnectorMBean {
-  def getPartOwnerStats: String
-  def getConsumerGroup: String
-  def getOffsetLag(topic: String, brokerId: Int, partitionId: Int): Long
-  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long
-  def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long
-}
-
 private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
                                  val enableFetcher: Boolean) // for testing only
-    extends ConsumerConnector with ZookeeperConsumerConnectorMBean {
+    extends ConsumerConnector {
 
   val underlying = new kafka.consumer.ZookeeperConsumerConnector(config, enableFetcher)
 
