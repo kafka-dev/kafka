@@ -16,9 +16,9 @@
 
 package kafka.javaapi
 
-import message.ByteBufferMessageSet
 import kafka.utils.IteratorTemplate
 import java.nio.ByteBuffer
+import message.ByteBufferMessageSet
 
 class MultiFetchResponse(buffer: ByteBuffer, numSets: Int) extends IteratorTemplate[ByteBufferMessageSet] {
   val underlyingBuffer = ByteBuffer.wrap(buffer.array)

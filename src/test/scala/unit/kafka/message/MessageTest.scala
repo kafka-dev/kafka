@@ -22,9 +22,9 @@ import java.nio.channels._
 import java.io._
 import junit.framework.TestCase
 import junit.framework.Assert._
-import kafka.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Before, Test}
+import kafka.utils.TestUtils
 
 class MessageTest extends JUnitSuite {
   

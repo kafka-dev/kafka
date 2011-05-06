@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package kafka
+package kafka.utils
 
-import consumer.ConsumerConfig
 import java.io._
 import java.net._
 import java.nio._
@@ -24,12 +23,11 @@ import java.nio.channels._
 import java.util.Random
 import java.util.Properties
 import junit.framework.Assert._
-import kafka.network._
 import kafka.server._
 import kafka.producer._
 import kafka.message._
 import org.I0Itec.zkclient.ZkClient
-import utils.{ZkUtils, StringSerializer}
+import kafka.consumer.ConsumerConfig
 
 /**
  * Utility functions to help with testing
@@ -176,6 +174,17 @@ object TestUtils {
    * different messages on their Nth element
    */
   def checkEquals[T](s1: Iterator[T], s2: Iterator[T]) {
+    while(s1.hasNext && s2.hasNext)
+      assertEquals(s1.next, s2.next)
+    assertFalse("Iterators have uneven length--first has more", s1.hasNext)
+    assertFalse("Iterators have uneven length--second has more", s2.hasNext)
+  }
+
+  /**
+   * Throw an exception if the two iterators are of differing lengths or contain
+   * different messages on their Nth element
+   */
+  def checkEquals[T](s1: java.util.Iterator[T], s2: java.util.Iterator[T]) {
     while(s1.hasNext && s2.hasNext)
       assertEquals(s1.next, s2.next)
     assertFalse("Iterators have uneven length--first has more", s1.hasNext)

@@ -18,7 +18,7 @@ package kafka.log
 
 import junit.framework.TestCase
 import java.io.File
-import kafka.TestUtils
+import kafka.utils.TestUtils
 import kafka.utils.Utils
 import kafka.message.{ByteBufferMessageSet, Message}
 import kafka.server.{KafkaConfig, KafkaServer}

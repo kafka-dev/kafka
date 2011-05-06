@@ -22,10 +22,9 @@ import kafka.producer._
 import kafka.consumer._
 import kafka.message._
 import kafka.server._
-import kafka.utils._
-import kafka.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before}
+import kafka.utils.{Utils, TestUtils}
 
 /**
  * A test harness that brings up some number of broker nodes

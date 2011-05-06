@@ -21,18 +21,17 @@ import java.util.Properties
 import org.apache.log4j.{Logger, Level}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import kafka.zk.EmbeddedZookeeper
-import kafka.{TestZKUtils, TestUtils}
 import kafka.message.{ByteBufferMessageSet, Message}
 import org.junit.{After, Before, Test}
 import junit.framework.Assert
 import kafka.serializer.Encoder
 import collection.mutable.HashMap
 import org.easymock.EasyMock
-import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
 import org.scalatest.junit.JUnitSuite
 import kafka.common.{InvalidConfigException, UnavailableProducerException, InvalidPartitionException}
+import kafka.utils.{TestUtils, TestZKUtils, Utils}
 
 class ProducerTest extends JUnitSuite {
   private val topic = "test-topic"

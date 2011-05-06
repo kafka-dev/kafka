@@ -28,7 +28,7 @@ import org.scalatest.junit.JUnitSuite
 import java.util.Properties
 import kafka.producer.{ProducerData, Producer, ProducerConfig}
 import kafka.serializer.StringDecoder
-import kafka.{TestZKUtils, TestUtils}
+import kafka.utils.{TestZKUtils, TestUtils}
 import org.junit.{Assert, After, Before, Test}
 
 /**

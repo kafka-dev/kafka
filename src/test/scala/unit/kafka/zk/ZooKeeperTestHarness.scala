@@ -16,15 +16,7 @@
 
 package kafka.zk
 
-import java.io.File
-import java.util._
-import org.apache.zookeeper._
-import org.apache.zookeeper.data._
-import org.apache.zookeeper.server.ZooKeeperServer
-import org.apache.zookeeper.server.NIOServerCnxn
-import org.apache.zookeeper.ZooDefs
-import kafka.TestUtils
-import kafka.utils._
+import kafka.utils.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before}
 

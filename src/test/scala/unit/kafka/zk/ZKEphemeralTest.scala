@@ -20,7 +20,7 @@ import junit.framework.TestCase
 import kafka.consumer.ConsumerConfig
 import org.I0Itec.zkclient.ZkClient
 import kafka.utils.{ZkUtils, StringSerializer}
-import kafka.{TestZKUtils, TestUtils}
+import kafka.utils.{TestZKUtils, TestUtils}
 import org.junit.{Test, Assert}
 import org.scalatest.junit.JUnitSuite
 

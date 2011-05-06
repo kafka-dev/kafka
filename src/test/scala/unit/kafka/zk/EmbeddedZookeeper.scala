@@ -18,7 +18,7 @@ package kafka.zk
 
 import org.apache.zookeeper.server.ZooKeeperServer
 import org.apache.zookeeper.server.NIOServerCnxn
-import kafka.TestUtils
+import kafka.utils.TestUtils
 import org.I0Itec.zkclient.ZkClient
 import java.net.InetSocketAddress
 import kafka.utils.{Utils, StringSerializer}

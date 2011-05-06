@@ -22,7 +22,7 @@ import java.util.Properties
 import java.io.File
 import kafka.consumer.SimpleConsumer
 import kafka.server.{KafkaConfig, KafkaServer}
-import kafka.TestUtils
+import kafka.utils.TestUtils
 import kafka.utils.Utils
 import junit.framework.Assert._
 import kafka.api.FetchRequest

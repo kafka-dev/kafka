@@ -26,12 +26,11 @@ import kafka.consumer._
 import kafka.cluster._
 import kafka.message._
 import kafka.server._
-import kafka.utils._
-import kafka.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Before, After, Test}
 import kafka.integration.ProducerConsumerTestHarness
 import kafka.integration.KafkaServerTestHarness
+import kafka.utils.TestUtils
 
 class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
 
