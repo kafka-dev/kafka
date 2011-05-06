@@ -103,8 +103,15 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
       // wait a bit for produced message to be available
       Thread.sleep(200)
       val response = consumer.multifetch(getFetchRequestList(fetches: _*))
-      for((topic, resp) <- topics.zip(response.toList))
-    	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      val iter = response.iterator
+      for(topic <- topics) {
+        if (iter.hasNext) {
+          val resp = iter.next
+      	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+        }
+        else
+          fail("fewer responses than expected")
+      }
     }
 
     // temporarily set request handler logger to a higher level
@@ -118,8 +125,9 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
 
       try {
         val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
-        for(resp <- responses)
-    	    resp.iterator
+        val iter = responses.iterator
+        while (iter.hasNext)
+    	    iter.next.iterator
         fail("expect exception")
       }
       catch {
@@ -135,8 +143,9 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
 
       try {
         val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
-        for(resp <- responses)
-    	    resp.iterator
+        val iter = responses.iterator
+        while (iter.hasNext)
+    	    iter.next.iterator
         fail("expect exception")
       }
       catch {
@@ -167,8 +176,15 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
       // wait a bit for produced message to be available
       Thread.sleep(200)
       val response = consumer.multifetch(fetches)
-      for((topic, resp) <- topics.zip(response.toList))
-    	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      val iter = response.iterator
+      for(topic <- topics) {
+        if (iter.hasNext) {
+          val resp = iter.next
+      	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+        }
+        else
+          fail("fewer responses than expected")
+      }
     }
   }
 
@@ -194,8 +210,15 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     // wait a bit for produced message to be available
     Thread.sleep(200)
     val response = consumer.multifetch(getFetchRequestList(fetches: _*))
-    for((topic, resp) <- topics.zip(response.toList))
-  	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+    val iter = response.iterator
+    for(topic <- topics) {
+      if (iter.hasNext) {
+        val resp = iter.next
+        TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      }
+      else
+        fail("fewer responses than expected")
+    }
   }
 
   private def getMessageList(messages: Message*): java.util.List[Message] = {

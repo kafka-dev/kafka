@@ -63,7 +63,7 @@ private[consumer] class FetcherRunnable(val name: String,
         val response = simpleConsumer.multifetch(fetches : _*)
 
         var read = 0
-        for((messages, info) <- response.zip(partitionTopicInfos.iterator)) {
+        for((messages, info) <- response.zip(partitionTopicInfos)) {
           try {
             var done = false
             if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
