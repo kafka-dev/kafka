@@ -29,7 +29,6 @@ class KafkaMessageStream(private val queue: BlockingQueue[FetchedDataChunk], con
    extends Iterable[Message] with java.lang.Iterable[Message]{
 
   private val logger = Logger.getLogger(getClass())
-  private val shutdownCommand = new FetchedDataChunk(null, null)
   private val iter: ConsumerIterator = new ConsumerIterator(queue, consumerTimeoutMs)
     
   /**

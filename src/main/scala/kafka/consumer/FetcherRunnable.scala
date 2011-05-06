@@ -77,7 +77,7 @@ private[consumer] class FetcherRunnable(val name: String,
               }
             }
             if (!done)
-              read += info.enqueue(messages)
+              read += info.enqueue(messages, info.getFetchOffset)
           }
           catch {
             case e1: IOException =>
@@ -87,7 +87,7 @@ private[consumer] class FetcherRunnable(val name: String,
               if (!stopped) {
                 // this is likely a repeatable error, log it and trigger an exception in the consumer
                 logger.error("error in FetcherRunnable for " + info + ": " + e2 + Utils.stackTrace(e2))
-                info.enqueueError(e2)
+                info.enqueueError(e2, info.getFetchOffset)
               }
               // re-throw the exception to stop the fetcher
               throw e2
