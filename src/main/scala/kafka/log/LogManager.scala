@@ -125,7 +125,7 @@ private[kafka] class LogManager(val config: KafkaConfig,
       startupLatch.countDown
     }
     logger.info("Starting log flusher every " + config.flushSchedulerThreadRate + " ms with the following overrides " + logFlushIntervalMap)
-    logFlusherScheduler.scheduleWithRate(flushAllLogs, 30 * 1000, config.flushSchedulerThreadRate)
+    logFlusherScheduler.scheduleWithRate(flushAllLogs, config.flushSchedulerThreadRate, config.flushSchedulerThreadRate)
   }
 
   private def awaitStartup() {

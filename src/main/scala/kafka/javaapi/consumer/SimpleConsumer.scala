@@ -31,11 +31,23 @@ class SimpleConsumer(val host: String,
                      val bufferSize: Int) {
   val underlying = new kafka.consumer.SimpleConsumer(host, port, soTimeout, bufferSize)
 
+  /**
+   *  Fetch a set of messages from a topic.
+   *
+   *  @param request  specifies the topic name, topic partition, starting byte offset, maximum bytes to be fetched.
+   *  @return a set of fetched messages
+   */
   def fetch(request: FetchRequest): ByteBufferMessageSet = {
     import kafka.javaapi.Implicits._
     underlying.fetch(request)
   }
 
+  /**
+   *  Combine multiple fetch requests in one call.
+   *
+   *  @param fetches  a sequence of fetch requests.
+   *  @return a sequence of fetch responses
+   */
   def multifetch(fetches: java.util.List[FetchRequest]): MultiFetchResponse = {
     import scala.collection.JavaConversions._
     import kafka.javaapi.Implicits._
@@ -43,9 +55,11 @@ class SimpleConsumer(val host: String,
   }
 
   /**
-   * Get a list of valid offsets (up to maxSize) before the given time.
-   * The result is a list of offsets, in descending order.
-   * @param time: time in millisecs (if -1, just get from the latest available)
+   *  Get a list of valid offsets (up to maxSize) before the given time.
+   *  The result is a list of offsets, in descending order.
+   *
+   *  @param time: time in millisecs (-1, from the latest offset available, -2 from the smallest offset available)
+   *  @return an array of offsets
    */
   def getOffsetsBefore(topic: String, partition: Int, time: Long, maxNumOffsets: Int): Array[Long] =
     underlying.getOffsetsBefore(topic, partition, time, maxNumOffsets)

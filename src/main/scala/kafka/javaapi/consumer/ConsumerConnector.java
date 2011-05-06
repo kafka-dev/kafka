@@ -23,8 +23,11 @@ import java.util.Map;
 
 public interface ConsumerConnector {
     /**
-     *  create a list of MessageStreams for each topic.
-     *  java binding.
+     *  Create a list of MessageStreams for each topic.
+     *
+     *  @param topicCountMap  a map of (topic, #streams) pair
+     *  @return a map of (topic, list of  KafkaMessageStream) pair. The number of items in the
+     *          list is #streams. Each KafkaMessageStream supports an iterator of messages.
      */
     public Map<String, List<KafkaMessageStream>> createMessageStreams(Map<String, Integer> topicCountMap);
 
@@ -34,7 +37,7 @@ public interface ConsumerConnector {
     public void commitOffsets();
 
     /**
-     *  shut down the connector
+     *  Shut down the connector
      */
     public void shutdown();
 }

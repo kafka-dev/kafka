@@ -25,7 +25,11 @@ import org.apache.log4j.Logger
  */
 trait ConsumerConnector {
   /**
-   *  create a list of MessageStreams for each topic.
+   *  Create a list of MessageStreams for each topic.
+   *
+   *  @param topicCountMap  a map of (topic, #streams) pair
+   *  @return a map of (topic, list of  KafkaMessageStream) pair. The number of items in the
+   *          list is #streams. Each KafkaMessageStream supports an iterator of messages.
    */
   def createMessageStreams(topicCountMap: Map[String,Int]) : Map[String,List[KafkaMessageStream]]
 
@@ -35,7 +39,7 @@ trait ConsumerConnector {
   def commitOffsets
   
   /**
-   *  shut down the connector
+   *  Shut down the connector
    */
   def shutdown()
 }
@@ -44,13 +48,24 @@ object Consumer {
   private val logger = Logger.getLogger(getClass())  
   private val consumerStatsMBeanName = "kafka:type=kafka.ConsumerStats"
 
-  // constructor of ConsumerConnector
+  /**
+   *  Create a ConsumerConnector
+   *
+   *  @param config  at the minimum, need to specify the groupid of the consumer and the zookeeper
+   *                 connection string zk.connect.
+   */
   def create(config: ConsumerConfig): ConsumerConnector = {
     val consumerConnect = new ZookeeperConsumerConnector(config)
     Utils.swallow(logger.warn, Utils.registerMBean(consumerConnect, consumerStatsMBeanName))
     consumerConnect
   }
 
+  /**
+   *  Create a ConsumerConnector
+   *
+   *  @param config  at the minimum, need to specify the groupid of the consumer and the zookeeper
+   *                 connection string zk.connect.
+   */
   def createJavaConsumerConnector(config: ConsumerConfig): kafka.javaapi.consumer.ConsumerConnector = {
     val consumerConnect = new kafka.javaapi.consumer.ZookeeperConsumerConnector(config)
     Utils.swallow(logger.warn, Utils.registerMBean(consumerConnect, consumerStatsMBeanName))
