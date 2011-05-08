@@ -132,6 +132,39 @@ class ProducerTest extends JUnitSuite {
   }
 
   @Test
+  def testSendSingleMessage() {
+    val props = new Properties()
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    props.put("broker.partition.info", "0:localhost:9092")
+
+
+    val config = new ProducerConfig(props)
+    val partitioner = new StaticPartitioner
+    val serializer = new StringSerializer
+
+    // 2 sync producers
+    val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
+    val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
+    // it should send to random partition on broker 1
+    syncProducer1.send(topic, -1, new ByteBufferMessageSet(new Message("t".getBytes())))
+    EasyMock.expectLastCall
+    syncProducer1.close
+    EasyMock.expectLastCall
+    EasyMock.replay(syncProducer1)
+
+    syncProducers.put(brokerId1, syncProducer1)
+
+    val producerPool = new ProducerPool[String](config, serializer, syncProducers,
+      new ConcurrentHashMap[Int, AsyncProducer[String]]())
+    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+
+    producer.send(new ProducerData[String, String](topic, "t"))
+    producer.close
+
+    EasyMock.verify(syncProducer1)
+  }
+
+  @Test
   def testInvalidPartition() {
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.NegativePartitioner")

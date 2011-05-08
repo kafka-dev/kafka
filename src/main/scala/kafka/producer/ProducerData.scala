@@ -22,6 +22,8 @@ class ProducerData[K, V](private val topic: String,
 
   def this(t: String, d: Seq[V]) = this(topic = t, key = null.asInstanceOf[K], data = d)
 
+  def this(t: String, d: V) = this(topic = t, key = null.asInstanceOf[K], data = List(d))
+
   def getTopic: String = topic
 
   def getKey: K = key
