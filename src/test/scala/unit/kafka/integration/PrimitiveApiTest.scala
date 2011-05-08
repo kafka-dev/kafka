@@ -19,14 +19,17 @@ package kafka.integration
 import scala.collection._
 import junit.framework.TestCase
 import junit.framework.Assert._
-import kafka.TestUtils
 import kafka.api.{ProducerRequest, FetchRequest}
 import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.common.{OffsetOutOfRangeException, InvalidPartitionException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before, Test}
+import java.util.Properties
+import kafka.producer.{ProducerData, Producer, ProducerConfig}
+import kafka.serializer.StringDecoder
+import kafka.utils.{TestZKUtils, TestUtils}
+import org.junit.{Assert, After, Before, Test}
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -42,43 +45,24 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
   val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
   @Test
-  def testProduceAndFetch() {
-    // send some messages
-    val topic = "test"
+  def testDefaultEncoderProducerAndFetch() {
+    val topic = "test-topic"
+    val props = new Properties()
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    props.put("broker.partition.info", "0:localhost:9999")
+    val config = new ProducerConfig(props)
 
-//    send an empty messageset first
-    val sent2 = new ByteBufferMessageSet(Seq.empty[Message]: _*)
-    producer.send(topic, sent2)
+    val stringProducer1 = new Producer[String, String](config)
+    stringProducer1.send(new ProducerData[String, String](topic, "test", Array("test-message")))
     Thread.sleep(200)
-    sent2.buffer.rewind
-    var fetched2 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
-    TestUtils.checkEquals(sent2.iterator, fetched2.iterator)
 
-    // send some messages
-    val sent3 = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
-    producer.send(topic, sent3)
-    Thread.sleep(200)
-    sent3.buffer.rewind
-    var fetched3: ByteBufferMessageSet = null
-    while(fetched3 == null || fetched3.validBytes == 0)
-      fetched3 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
-    TestUtils.checkEquals(sent3.iterator, fetched3.iterator)
+    var fetched = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
+    assertTrue(fetched.iterator.hasNext)
 
-    // temporarily set request handler logger to a higher level
-    requestHandlerLogger.setLevel(Level.FATAL)
-
-    // send an invalid offset
-    try {
-      val fetchedWithError = consumer.fetch(new FetchRequest(topic, 0, -1, 10000))
-      fetchedWithError.iterator
-      fail("expect exception")
-    }
-    catch {
-      case e: OffsetOutOfRangeException => "this is good"
-    }
-
-    // restore set request handler logger to a higher level
-    requestHandlerLogger.setLevel(Level.ERROR)
+    val fetchedMessage = fetched.iterator.next
+    val stringDecoder = new StringDecoder
+    val fetchedStringMessage = stringDecoder.toEvent(fetchedMessage)
+    assertEquals("test-message", fetchedStringMessage)
   }
 
   @Test

@@ -26,7 +26,7 @@ import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
-import kafka.{TestUtils, TestZKUtils}
+import kafka.utils.{TestUtils, TestZKUtils}
 
 class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
 

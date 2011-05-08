@@ -17,7 +17,7 @@ package kafka.javaapi.message
 
 import java.nio.ByteBuffer
 import kafka.common.ErrorMapping
-import kafka.message.{Message, MessageSet}
+import kafka.message.Message
 import java.nio.channels.WritableByteChannel
 
 class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends MessageSet {
@@ -26,7 +26,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends M
   def this(buffer: ByteBuffer) = this(buffer,ErrorMapping.NO_ERROR)
 
   def this(messages: java.util.List[Message]) {
-    this(ByteBuffer.allocate(MessageSet.messageSetSize(messages)))
+    this(ByteBuffer.allocate(kafka.message.MessageSet.messageSetSize(messages)))
     val iter = messages.iterator
     while(iter.hasNext) {
       val message = iter.next
@@ -42,7 +42,18 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends M
   def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long =
       underlying.writeTo(channel, offset, size)
 
-  override def iterator: Iterator[Message] = underlying.iterator
+  override def iterator: java.util.Iterator[Message] = new java.util.Iterator[Message] {
+    val underlyingIterator = underlying.iterator
+    override def hasNext(): Boolean = {
+      underlyingIterator.hasNext
+    }
+
+    override def next(): Message = {
+      underlyingIterator.next
+    }
+
+    override def remove = throw new UnsupportedOperationException("remove API on MessageSet is not supported")
+  }
 
   override def toString: String = underlying.toString
 
@@ -56,7 +67,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends M
     }
   }
 
-  override def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
+  def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
   override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode
 

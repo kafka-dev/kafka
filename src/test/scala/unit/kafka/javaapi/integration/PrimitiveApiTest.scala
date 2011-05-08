@@ -17,19 +17,16 @@
 package kafka.javaapi.integration
 
 import scala.collection._
-import junit.framework.TestCase
-import junit.framework.Assert._
-import kafka.TestUtils
-import kafka.api.{FetchRequest}
-import kafka.message.{Message}
+import kafka.api.FetchRequest
+import kafka.message.Message
 import kafka.common.{InvalidPartitionException, OffsetOutOfRangeException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before, Test}
+import org.junit.Test
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.javaapi.ProducerRequest
-import kafka.javaapi.MultiFetchResponse
+import kafka.utils.TestUtils
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -57,10 +54,12 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     var fetched2 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
     TestUtils.checkEquals(sent2.iterator, fetched2.iterator)
 
+
     // send some messages
     val sent3 = new ByteBufferMessageSet(getMessageList(new Message("hello".getBytes()),
       new Message("there".getBytes())))
     producer.send(topic, sent3)
+
     Thread.sleep(200)
     sent3.buffer.rewind
     var fetched3: ByteBufferMessageSet = null
@@ -104,8 +103,15 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
       // wait a bit for produced message to be available
       Thread.sleep(200)
       val response = consumer.multifetch(getFetchRequestList(fetches: _*))
-      for((topic, resp) <- topics.zip(response.toList))
-    	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      val iter = response.iterator
+      for(topic <- topics) {
+        if (iter.hasNext) {
+          val resp = iter.next
+      	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+        }
+        else
+          fail("fewer responses than expected")
+      }
     }
 
     // temporarily set request handler logger to a higher level
@@ -119,8 +125,9 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
 
       try {
         val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
-        for(resp <- responses)
-    	    resp.iterator
+        val iter = responses.iterator
+        while (iter.hasNext)
+    	    iter.next.iterator
         fail("expect exception")
       }
       catch {
@@ -136,8 +143,9 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
 
       try {
         val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
-        for(resp <- responses)
-    	    resp.iterator
+        val iter = responses.iterator
+        while (iter.hasNext)
+    	    iter.next.iterator
         fail("expect exception")
       }
       catch {
@@ -168,8 +176,15 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
       // wait a bit for produced message to be available
       Thread.sleep(200)
       val response = consumer.multifetch(fetches)
-      for((topic, resp) <- topics.zip(response.toList))
-    	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      val iter = response.iterator
+      for(topic <- topics) {
+        if (iter.hasNext) {
+          val resp = iter.next
+      	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+        }
+        else
+          fail("fewer responses than expected")
+      }
     }
   }
 
@@ -195,8 +210,15 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     // wait a bit for produced message to be available
     Thread.sleep(200)
     val response = consumer.multifetch(getFetchRequestList(fetches: _*))
-    for((topic, resp) <- topics.zip(response.toList))
-  	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+    val iter = response.iterator
+    for(topic <- topics) {
+      if (iter.hasNext) {
+        val resp = iter.next
+        TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      }
+      else
+        fail("fewer responses than expected")
+    }
   }
 
   private def getMessageList(messages: Message*): java.util.List[Message] = {

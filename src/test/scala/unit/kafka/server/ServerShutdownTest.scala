@@ -15,7 +15,7 @@
  */
 package kafka.server
 
-import kafka.TestUtils
+import kafka.utils.TestUtils
 import java.io.File
 import kafka.utils.Utils
 import kafka.message.{Message, ByteBufferMessageSet}

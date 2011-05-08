@@ -65,7 +65,7 @@ import kafka.api.OffsetRequest
  */
 private[kafka] object ZookeeperConsumerConnector {
   val MAX_N_RETRIES = 4
-  val shutdownCommand: FetchedDataChunk = new FetchedDataChunk(null, null)
+  val shutdownCommand: FetchedDataChunk = new FetchedDataChunk(null, null, -1L)
 }
 
 /**

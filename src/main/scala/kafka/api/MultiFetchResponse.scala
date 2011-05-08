@@ -21,7 +21,7 @@ import scala.collection.mutable
 import kafka.utils.IteratorTemplate
 import kafka.message._
 
-class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int) extends IteratorTemplate[ByteBufferMessageSet] {
+class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int) extends Iterable[ByteBufferMessageSet] {
   private val messageSets = new mutable.ListBuffer[ByteBufferMessageSet]
   
   for(i <- 0 until numSets) {
@@ -34,16 +34,18 @@ class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int) extends Itera
     messageSets += new ByteBufferMessageSet(copy, errorCode)
   }
  
-  private val iter = messageSets.iterator
+  def iterator : Iterator[ByteBufferMessageSet] = {
+    new IteratorTemplate[ByteBufferMessageSet] {
+      val iter = messageSets.iterator
 
-  def iterator = iter
+      override def makeNext(): ByteBufferMessageSet = {
+        if(iter.hasNext)
+          iter.next
+        else
+          return allDone
+      }
+    }
+  }
 
   override def toString() = this.messageSets.toString
-
-  protected def makeNext(): ByteBufferMessageSet = {
-    if(iter.hasNext)
-      iter.next
-    else
-      return allDone
-  }
 }

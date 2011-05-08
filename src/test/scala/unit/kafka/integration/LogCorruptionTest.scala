@@ -9,9 +9,9 @@ import kafka.utils.Utils
 import kafka.api.FetchRequest
 import kafka.common.InvalidMessageSizeException
 import kafka.zk.ZooKeeperTestHarness
-import kafka.{TestZKUtils, TestUtils}
+import kafka.utils.{TestZKUtils, TestUtils}
 import kafka.message.{Message, ByteBufferMessageSet}
-import kafka.consumer.{FetcherRunnable, ZookeeperConsumerConnector, ConsumerConfig}
+import kafka.consumer.{ZookeeperConsumerConnector, ConsumerConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}

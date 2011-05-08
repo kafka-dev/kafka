@@ -22,7 +22,7 @@ import junit.framework.Assert._
 import org.junit.Test
 import kafka.message.Message
 
-class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
+class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestCases {
 
   override def createMessageSet(messages: Seq[Message]): ByteBufferMessageSet = 
     new ByteBufferMessageSet(getMessageList(messages: _*))

@@ -17,14 +17,12 @@
 package kafka.zk
 
 import junit.framework.Assert._
-import kafka.utils._
 import java.util.Collections
-import kafka.cluster.{Broker, Cluster}
-import kafka.consumer.{Fetcher, ConsumerConfig, ZookeeperConsumerConnector}
+import kafka.consumer.{ConsumerConfig, ZookeeperConsumerConnector}
 import java.lang.Thread
-import kafka.{TestZKUtils, TestUtils}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Before, Test}
+import kafka.utils.{TestUtils, ZkUtils, ZKGroupTopicDirs, TestZKUtils}
 
 class ZKLoadBalanceTest extends JUnitSuite with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect

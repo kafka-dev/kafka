@@ -25,13 +25,14 @@ import kafka.message.Message
  * All calls to elements should produce the same thread-safe iterator? Should have a seperate thread
  * that feeds messages into a blocking queue for processing.
  */
-class KafkaMessageStream(val queue: BlockingQueue[FetchedDataChunk], consumerTimeoutMs: Int)
+class KafkaMessageStream(private val queue: BlockingQueue[FetchedDataChunk], consumerTimeoutMs: Int)
    extends Iterable[Message] with java.lang.Iterable[Message]{
 
   private val logger = Logger.getLogger(getClass())
-  private val shutdownCommand = new FetchedDataChunk(null, null)
   private val iter: ConsumerIterator = new ConsumerIterator(queue, consumerTimeoutMs)
     
-  /** Iterator factory method for java */
-  def iterator(): ConsumerIterator = iter  
+  /**
+   *  Create an iterator over messages in the stream.
+   */
+  def iterator(): ConsumerIterator = iter
 }

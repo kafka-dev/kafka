@@ -16,11 +16,11 @@
 
 package kafka.javaapi
 
-import message.ByteBufferMessageSet
 import kafka.utils.IteratorTemplate
 import java.nio.ByteBuffer
+import message.ByteBufferMessageSet
 
-class MultiFetchResponse(buffer: ByteBuffer, numSets: Int) extends IteratorTemplate[ByteBufferMessageSet] {
+class MultiFetchResponse(buffer: ByteBuffer, numSets: Int) extends java.lang.Iterable[ByteBufferMessageSet] {
   val underlyingBuffer = ByteBuffer.wrap(buffer.array)
     // this has the side effect of setting the initial position of buffer correctly
   val errorCode = underlyingBuffer.getShort
@@ -30,11 +30,15 @@ class MultiFetchResponse(buffer: ByteBuffer, numSets: Int) extends IteratorTempl
 
   override def toString() = underlying.toString
 
-  protected def makeNext(): ByteBufferMessageSet = {
-    if(underlying.iterator.hasNext)
-      underlying.iterator.next
-    else
-      return allDone
+  def iterator : java.util.Iterator[ByteBufferMessageSet] = {
+    new IteratorTemplate[ByteBufferMessageSet] {
+      val iter = underlying.iterator
+      override def makeNext(): ByteBufferMessageSet = {
+        if(iter.hasNext)
+          iter.next
+        else
+          return allDone
+      }
+    }
   }
-
 }

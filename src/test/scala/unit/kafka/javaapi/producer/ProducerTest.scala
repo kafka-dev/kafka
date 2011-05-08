@@ -20,7 +20,7 @@ import java.util.Properties
 import org.apache.log4j.{Logger, Level}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import kafka.zk.EmbeddedZookeeper
-import kafka.{TestZKUtils, TestUtils}
+import kafka.utils.{TestZKUtils, TestUtils}
 import kafka.message.Message
 import org.junit.{After, Before, Test}
 import junit.framework.Assert

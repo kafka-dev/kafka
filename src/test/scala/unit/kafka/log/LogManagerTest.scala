@@ -17,14 +17,12 @@
 package kafka.log
 
 import java.io._
-import kafka.utils._
-import kafka.message._
-import kafka.common._
 import junit.framework.Assert._
-import kafka.TestUtils
 import kafka.server.KafkaConfig
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.utils.{Utils, MockTime, TestUtils}
+import kafka.common.OffsetOutOfRangeException
 
 class LogManagerTest extends JUnitSuite {
 

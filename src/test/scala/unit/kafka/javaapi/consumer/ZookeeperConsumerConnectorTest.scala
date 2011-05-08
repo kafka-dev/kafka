@@ -24,7 +24,7 @@ import kafka.message.{Message}
 import org.apache.log4j.Logger
 import scala.collection._
 import kafka.utils.Utils
-import kafka.{TestZKUtils, TestUtils}
+import kafka.utils.{TestZKUtils, TestUtils}
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
 import scala.collection.JavaConversions._

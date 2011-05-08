@@ -19,7 +19,7 @@ package kafka.producer
 import kafka.message.{Message, ByteBufferMessageSet}
 import junit.framework.{Assert, TestCase}
 import kafka.utils.SystemTime
-import kafka.TestUtils
+import kafka.utils.TestUtils
 import kafka.server.{KafkaServer, KafkaConfig}
 import org.apache.log4j.{Logger, Level}
 import org.scalatest.junit.JUnitSuite

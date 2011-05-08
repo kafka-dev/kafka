@@ -26,12 +26,11 @@ import kafka.consumer._
 import kafka.cluster._
 import kafka.message._
 import kafka.server._
-import kafka.utils._
-import kafka.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{Before, After, Test}
 import kafka.integration.ProducerConsumerTestHarness
 import kafka.integration.KafkaServerTestHarness
+import kafka.utils.TestUtils
 
 class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
 
@@ -44,7 +43,7 @@ class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
   val messages = new mutable.HashMap[Int, ByteBufferMessageSet]
   val topic = "topic"
   val cluster = new Cluster(configs.map(c => new Broker(c.brokerId, c.brokerId.toString, "localhost", c.port)))
-  val shutdown = new FetchedDataChunk(null, null)
+  val shutdown = ZookeeperConsumerConnector.shutdownCommand
   val queue = new LinkedBlockingQueue[FetchedDataChunk]
   val topicInfos = configs.map(c => new PartitionTopicInfo(topic,
                                                       c.brokerId,

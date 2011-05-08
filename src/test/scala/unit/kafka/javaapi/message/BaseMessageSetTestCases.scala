@@ -16,12 +16,11 @@
 
 package kafka.javaapi.message
 
-import java.util.Arrays
 import junit.framework.Assert._
-import kafka.TestUtils._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import kafka.message.{Message, MessageSet, FileMessageSet}
+import kafka.message.Message
+import kafka.utils.TestUtils
 
 trait BaseMessageSetTestCases extends JUnitSuite {
   
@@ -31,15 +30,16 @@ trait BaseMessageSetTestCases extends JUnitSuite {
 
   @Test
   def testWrittenEqualsRead {
+    import scala.collection.JavaConversions._
     val messageSet = createMessageSet(messages)
-    checkEquals(messages.iterator, messageSet.iterator)
+    TestUtils.checkEquals(asList(messages).iterator, messageSet.iterator)
   }
 
   @Test
   def testIteratorIsConsistent() {
     val m = createMessageSet(messages)
     // two iterators over the same set should give the same results
-    checkEquals(m.iterator, m.iterator)
+    TestUtils.checkEquals(m.iterator, m.iterator)
   }
 
   @Test
@@ -48,7 +48,7 @@ trait BaseMessageSetTestCases extends JUnitSuite {
                  0L,
                  createMessageSet(Array[Message]()).sizeInBytes)
     assertEquals("Predicted size should equal actual size.", 
-                 MessageSet.messageSetSize(messages).toLong, 
+                 kafka.message.MessageSet.messageSetSize(messages).toLong,
                  createMessageSet(messages).sizeInBytes)
   }
 
@@ -59,12 +59,12 @@ trait BaseMessageSetTestCases extends JUnitSuite {
     testWriteToWithMessageSet(createMessageSet(messages))
   }
 
-  def testWriteToWithMessageSet(set: MessageSet) {
-    val channel = tempChannel()
+  private def testWriteToWithMessageSet(set: MessageSet) {
+    val channel = TestUtils.tempChannel()
     val written = set.writeTo(channel, 0, 1024)
     assertEquals("Expect to write the number of bytes in the set.", set.sizeInBytes, written)
     val newSet = new FileMessageSet(channel, false)
-    checkEquals(set.iterator, newSet.iterator)
+    TestUtils.checkEquals(set.iterator, newSet.iterator)
   }
   
 }

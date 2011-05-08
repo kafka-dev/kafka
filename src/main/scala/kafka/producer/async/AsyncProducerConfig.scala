@@ -36,7 +36,7 @@ trait AsyncProducerConfigShared {
   val batchSize = Utils.getInt(props, "batch.size", 200)
 
   /** the serializer class for events */
-  val serializerClass = Utils.getString(props, "serializer.class")
+  val serializerClass = Utils.getString(props, "serializer.class", "kafka.serializer.DefaultEncoder")
 
   /** the callback handler for one or multiple events */
   val cbkHandler = Utils.getString(props, "callback.handler", null)

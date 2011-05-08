@@ -31,10 +31,8 @@ public class SimpleConsumerDemo
 {
   private static void printMessages(ByteBufferMessageSet messageSet)
   {
-    Iterator<Message> it =  messageSet.iterator();
-    while(it.hasNext())
-    {
-      System.out.println(ExampleUtils.getMessage(it.next()));
+    for (Message message : messageSet) {
+      System.out.println(ExampleUtils.getMessage(message));
     }
   }
 
@@ -76,11 +74,10 @@ public class SimpleConsumerDemo
     list.add(req);
     MultiFetchResponse response = simpleConsumer.multifetch(list);
     int fetchReq = 0;
-    while(response.hasNext())
+    for (ByteBufferMessageSet resMessageSet : response )
     {
       System.out.println("Response from fetch request no: " + ++fetchReq);
-      messageSet = response.next();
-      printMessages(messageSet);
+      printMessages(resMessageSet);
     }
   }
 

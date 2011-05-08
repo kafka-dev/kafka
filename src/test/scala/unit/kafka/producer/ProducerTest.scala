@@ -21,18 +21,17 @@ import java.util.Properties
 import org.apache.log4j.{Logger, Level}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import kafka.zk.EmbeddedZookeeper
-import kafka.{TestZKUtils, TestUtils}
 import kafka.message.{ByteBufferMessageSet, Message}
 import org.junit.{After, Before, Test}
 import junit.framework.Assert
 import kafka.serializer.Encoder
 import collection.mutable.HashMap
 import org.easymock.EasyMock
-import kafka.utils.Utils
 import java.util.concurrent.ConcurrentHashMap
 import kafka.cluster.Partition
 import org.scalatest.junit.JUnitSuite
 import kafka.common.{InvalidConfigException, UnavailableProducerException, InvalidPartitionException}
+import kafka.utils.{TestUtils, TestZKUtils, Utils}
 
 class ProducerTest extends JUnitSuite {
   private val topic = "test-topic"
@@ -178,6 +177,32 @@ class ProducerTest extends JUnitSuite {
       Assert.fail("Should fail with InvalidPartitionException")
     }catch {
       case e: InvalidPartitionException => // expected, do nothing
+    }
+  }
+
+  @Test
+  def testDefaultEncoder() {
+    val props = new Properties()
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
+    val config = new ProducerConfig(props)
+
+    val stringProducer1 = new Producer[String, String](config)
+    try {
+      stringProducer1.send(new ProducerData[String, String](topic, "test", Array("test")))
+      fail("Should fail with ClassCastException due to incompatible Encoder")
+    } catch {
+      case e: ClassCastException =>
+    }
+
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    val stringProducer2 = new Producer[String, String](new ProducerConfig(props))
+    stringProducer2.send(new ProducerData[String, String](topic, "test", Array("test")))
+
+    val messageProducer1 = new Producer[String, Message](config)
+    try {
+      messageProducer1.send(new ProducerData[String, Message](topic, "test", Array(new Message("test".getBytes))))
+    } catch {
+      case e: ClassCastException => fail("Should not fail with ClassCastException due to default Encoder")
     }
   }
 

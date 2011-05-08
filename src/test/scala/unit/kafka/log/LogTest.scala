@@ -20,12 +20,11 @@ import java.io._
 import java.nio._
 import java.util.ArrayList
 import junit.framework.Assert._
-import kafka.message._
-import kafka.utils._
-import kafka.common._
-import kafka.TestUtils
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.utils.{Utils, TestUtils, Range}
+import kafka.common.OffsetOutOfRangeException
+import kafka.message.{MessageSet, ByteBufferMessageSet, Message}
 
 class LogTest extends JUnitSuite {
   
