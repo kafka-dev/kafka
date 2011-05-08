@@ -59,11 +59,11 @@ private[producer] class ConfigBrokerPartitionInfo(config: ProducerConfig) extend
    */
   private def getConfigTopicPartitionInfo(): SortedSet[Partition] = {
     val brokerInfoList = config.brokerPartitionInfo.split(",")
-    if(brokerInfoList.size == 0) throw new InvalidConfigException("broker.partition.info is empty")
+    if(brokerInfoList.size == 0) throw new InvalidConfigException("broker.list is empty")
     // check if each individual broker info is valid => (brokerId: brokerHost: brokerPort)
     brokerInfoList.foreach { bInfo =>
       val brokerInfo = bInfo.split(":")
-      if(brokerInfo.size < 3) throw new InvalidConfigException("broker.partition.info has invalid value")
+      if(brokerInfo.size < 3) throw new InvalidConfigException("broker.list has invalid value")
     }
     val brokerPartitions = brokerInfoList.map(bInfo => (bInfo.split(":").head.toInt, 1))
     var brokerParts = SortedSet.empty[Partition]

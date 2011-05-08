@@ -27,9 +27,9 @@ class ProducerConfig(val props: Properties) extends ZKConfig(props)
   /** For bypassing zookeeper based auto partition discovery, use this config   *
    *  to pass in static broker and per-broker partition information. Format-    *
    *  brokerid1:host1:port1:numPartitions1, brokerid2:host2:port2:numPartitions2*/
-  val brokerPartitionInfo = Utils.getString(props, "broker.partition.info", null)
+  val brokerPartitionInfo = Utils.getString(props, "broker.list", null)
   if(brokerPartitionInfo != null && Utils.getString(props, "partitioner.class", null) != null)
-    throw new InvalidConfigException("partitioner.class cannot be used when broker.partition.info is set")
+    throw new InvalidConfigException("partitioner.class cannot be used when broker.list is set")
 
   /** the partitioner class for partitioning events amongst sub-topics */
   val partitionerClass = Utils.getString(props, "partitioner.class", "kafka.producer.DefaultPartitioner")
@@ -43,7 +43,7 @@ class ProducerConfig(val props: Properties) extends ZKConfig(props)
   /** When using static broker configuration option for the Producer, use this config *
    *  to override the default number of partitions for a topic on all brokers. If     *
    *  specified for a topic, it will override the default number of partitions value  *
-   *  defined in broker.partition.info
+   *  defined in broker.list
    *  Format-topic1:numPartitions1, topic2:numPartitions2                             */
   val topicPartitions = Utils.getString(props, "topic.num.partitions", null)
 

@@ -134,7 +134,7 @@ class ProducerTest extends JUnitSuite {
   def testSendSingleMessage() {
     val props = new Properties()
     props.put("serializer.class", "kafka.serializer.StringEncoder")
-    props.put("broker.partition.info", "0:localhost:9092")
+    props.put("broker.list", "0:localhost:9092")
 
 
     val config = new ProducerConfig(props)
@@ -336,13 +336,13 @@ class ProducerTest extends JUnitSuite {
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
-    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1 + ":" + 4 + "," +
+    props.put("broker.list", brokerId1 + ":" + "localhost" + ":" + port1 + ":" + 4 + "," +
                                        brokerId2 + ":" + "localhost" + ":" + port2 + ":" + 4)
 
     var config: ProducerConfig = null
     try {
       config = new ProducerConfig(props)
-      fail("should fail with InvalidConfigException due to presence of partitioner.class and broker.partition.info")
+      fail("should fail with InvalidConfigException due to presence of partitioner.class and broker.list")
     }catch {
       case e: InvalidConfigException => // expected
     }
@@ -353,7 +353,7 @@ class ProducerTest extends JUnitSuite {
     val props = new Properties()
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
-    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1)
+    props.put("broker.list", brokerId1 + ":" + "localhost" + ":" + port1)
 
     val config = new ProducerConfig(props)
     val partitioner = new StaticPartitioner
@@ -495,7 +495,7 @@ class ProducerTest extends JUnitSuite {
     val props = new Properties()
     props.put("serializer.class", "kafka.producer.StringSerializer")
     props.put("producer.type", "async")
-    props.put("broker.partition.info", brokerId1 + ":" + "localhost" + ":" + port1)
+    props.put("broker.list", brokerId1 + ":" + "localhost" + ":" + port1)
     val config = new ProducerConfig(props)
     val partitioner = new DefaultPartitioner[String]
     val serializer = new StringSerializer
