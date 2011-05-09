@@ -13,6 +13,8 @@ class KafkaProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProj
       <exclude module="javax"/>
       <exclude module="jmxri"/>
       <exclude module="jmxtools"/>
+      <exclude module="mail"/>
+      <exclude module="jms"/>
     </dependencies>
 
   val jopt = "net.sf.jopt-simple" % "jopt-simple" % "3.2"
