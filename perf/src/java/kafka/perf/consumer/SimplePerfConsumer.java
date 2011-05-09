@@ -2,9 +2,9 @@ package kafka.perf.consumer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import scala.collection.Iterator;
 
 import kafka.api.FetchRequest;
 import kafka.javaapi.MultiFetchResponse;
@@ -53,10 +53,11 @@ public class SimplePerfConsumer extends Thread
         FetchRequest req = new FetchRequest(topic, i, offset, fetchSize);
         list.add(req);
       }
+
+
       MultiFetchResponse response = simpleConsumer.multifetch(list);
-      if(response.hasNext())
+      for (ByteBufferMessageSet messages: response)
       {
-        ByteBufferMessageSet messages = response.next();
         offset+= messages.validBytes();
         bytesRec.getAndAdd(messages.sizeInBytes());
         
