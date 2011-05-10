@@ -51,20 +51,4 @@ trait BaseMessageSetTestCases extends JUnitSuite {
                  kafka.message.MessageSet.messageSetSize(messages).toLong,
                  createMessageSet(messages).sizeInBytes)
   }
-
-  @Test
-  def testWriteTo() {
-    // test empty message set
-    testWriteToWithMessageSet(createMessageSet(Array[Message]()))
-    testWriteToWithMessageSet(createMessageSet(messages))
-  }
-
-  private def testWriteToWithMessageSet(set: MessageSet) {
-    val channel = TestUtils.tempChannel()
-    val written = set.writeTo(channel, 0, 1024)
-    assertEquals("Expect to write the number of bytes in the set.", set.sizeInBytes, written)
-    val newSet = new FileMessageSet(channel, false)
-    TestUtils.checkEquals(set.iterator, newSet.iterator)
-  }
-  
 }

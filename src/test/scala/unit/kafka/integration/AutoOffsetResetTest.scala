@@ -105,7 +105,7 @@ class AutoOffsetResetTest extends JUnit3Suite with ZooKeeperTestHarness {
     for (thread <- threadList)
       thread.start
 
-    threadList(0).join(1100)
+    threadList(0).join(2000)
 
     logger.info("Asserting...")
     assertEquals(numMessages, nMessages.get)
@@ -158,7 +158,7 @@ class AutoOffsetResetTest extends JUnit3Suite with ZooKeeperTestHarness {
     for (thread <- threadList)
       thread.start
 
-    threadList(0).join(1100)
+    threadList(0).join(2000)
 
     logger.info("Asserting...")
     assertEquals(numMessages, nMessages.get)
@@ -211,7 +211,7 @@ class AutoOffsetResetTest extends JUnit3Suite with ZooKeeperTestHarness {
     for (thread <- threadList)
       thread.start
 
-    threadList(0).join(1100)
+    threadList(0).join(2000)
 
     logger.info("Asserting...")
 
