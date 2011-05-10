@@ -32,12 +32,12 @@ private[javaapi] object Implicits {
   }
 
   implicit def toJavaSyncProducer(producer: kafka.producer.SyncProducer): kafka.javaapi.producer.SyncProducer = {
-    logger.info("Implicit instantiation of Java Sync Producer")
+    logger.debug("Implicit instantiation of Java Sync Producer")
     new kafka.javaapi.producer.SyncProducer(producer)
   }
 
   implicit def toSyncProducer(producer: kafka.javaapi.producer.SyncProducer): kafka.producer.SyncProducer = {
-    logger.info("Implicit instantiation of Sync Producer")
+    logger.debug("Implicit instantiation of Sync Producer")
     producer.underlying
   }
 
