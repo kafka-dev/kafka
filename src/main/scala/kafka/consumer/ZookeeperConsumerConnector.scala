@@ -270,12 +270,22 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long = {
     val cluster = ZkUtils.getCluster(zkClient)
     val broker = cluster.getBroker(brokerId)
-    // find latest offset using SimpleConsumer
-    val simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SOCKET_TIMEOUT,
-                                            ConsumerConfig.SOCKET_BUFFER_SIZE)
-    val latestOffset = simpleConsumer.getOffsetsBefore(topic, partitionId,
-                                                       OffsetRequest.LATEST_TIME, 1)
-    latestOffset(0)
+    var latestOffsetValue: Long = -1L
+    var simpleConsumer: SimpleConsumer = null
+    try {
+      // find latest offset using SimpleConsumer
+       simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SOCKET_TIMEOUT,
+        ConsumerConfig.SOCKET_BUFFER_SIZE)
+      val latestOffset = simpleConsumer.getOffsetsBefore(topic, partitionId,
+        OffsetRequest.LATEST_TIME, 1)
+      latestOffsetValue = latestOffset(0)
+    }catch {
+      case e: Exception => logger.error("Exception while fetching latest offsets for JMX " + e)
+    }finally {
+      if(simpleConsumer != null)
+        simpleConsumer.close
+    }
+    latestOffsetValue
   }
 
   class ZKSessionExpireListenner(val dirs: ZKGroupDirs,
