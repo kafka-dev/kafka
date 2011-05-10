@@ -188,8 +188,6 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
   trait CoreDependencies {
     val log4j = "log4j" % "log4j" % "1.2.15"
     val jopt = "net.sf.jopt-simple" % "jopt-simple" % "3.2"
-    val zkclient = "com.github.sgroschupf" % "zkclient" % "0.1"
-    val zookeeper = "org.apache.zookeeper" % "zookeeper" % "3.3.0"
   }
 
 }
