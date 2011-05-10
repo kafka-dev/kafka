@@ -20,11 +20,10 @@ import junit.framework.Assert._
 import java.util.Collections
 import kafka.consumer.{ConsumerConfig, ZookeeperConsumerConnector}
 import java.lang.Thread
-import org.scalatest.junit.JUnitSuite
-import org.junit.{Before, Test}
+import org.scalatest.junit.JUnit3Suite
 import kafka.utils.{TestUtils, ZkUtils, ZKGroupTopicDirs, TestZKUtils}
 
-class ZKLoadBalanceTest extends JUnitSuite with ZooKeeperTestHarness {
+class ZKLoadBalanceTest extends JUnit3Suite with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect
   var dirs : ZKGroupTopicDirs = null
   val topic = "topic1"
@@ -32,14 +31,12 @@ class ZKLoadBalanceTest extends JUnitSuite with ZooKeeperTestHarness {
   val firstConsumer = "consumer1"
   val secondConsumer = "consumer2"
 
-  @Before
   override def setUp() {
     super.setUp()
 
     dirs = new ZKGroupTopicDirs(group, topic)
   }
 
-  @Test
   def testLoadBalance() {
     // create the first partition
     ZkUtils.setupPartition(zookeeper.client, 400, "broker1", 1111, "topic1", 1)

@@ -24,11 +24,10 @@ import kafka.utils.ZKGroupTopicDirs
 import kafka.consumer.{ConsumerTimeoutException, ConsumerConfig, ConsumerConnector, Consumer}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before, Test}
+import org.scalatest.junit.JUnit3Suite
 import kafka.utils.{TestUtils, TestZKUtils}
 
-class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
+class AutoOffsetResetTest extends JUnit3Suite with ZooKeeperTestHarness {
 
   val zkConnect = TestZKUtils.zookeeperConnect
   val topic = "test_topic"
@@ -44,7 +43,6 @@ class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
   val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
-  @Before
   override def setUp() {
     super.setUp()
     kafkaServer = TestUtils.createServer(kafkaConfig)
@@ -53,7 +51,6 @@ class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
     requestHandlerLogger.setLevel(Level.FATAL)
   }
 
-  @After
   override def tearDown() {
     // restore set request handler logger to a higher level
     requestHandlerLogger.setLevel(Level.ERROR)
@@ -61,7 +58,6 @@ class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
     super.tearDown
   }
   
-  @Test
   def testEarliestOffsetResetForward() = {
     val producer = TestUtils.createProducer("localhost", brokerPort)
 
@@ -116,7 +112,6 @@ class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
     consumerConnector.shutdown
   }
 
-  @Test
   def testEarliestOffsetResetBackward() = {
     val producer = TestUtils.createProducer("localhost", brokerPort)
 
@@ -170,7 +165,6 @@ class AutoOffsetResetTest extends JUnitSuite with ZooKeeperTestHarness {
     consumerConnector.shutdown
   }
 
-  @Test
   def testLatestOffsetResetForward() = {
     val producer = TestUtils.createProducer("localhost", brokerPort)
 

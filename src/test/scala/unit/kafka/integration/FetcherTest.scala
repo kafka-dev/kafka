@@ -19,20 +19,16 @@ package kafka.consumer
 import java.util.concurrent._
 import java.util.concurrent.atomic._
 import scala.collection._
-import junit.framework.TestCase
 import junit.framework.Assert._
 
-import kafka.consumer._
 import kafka.cluster._
 import kafka.message._
 import kafka.server._
-import org.scalatest.junit.JUnitSuite
-import org.junit.{Before, After, Test}
-import kafka.integration.ProducerConsumerTestHarness
+import org.scalatest.junit.JUnit3Suite
 import kafka.integration.KafkaServerTestHarness
 import kafka.utils.TestUtils
 
-class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
+class FetcherTest extends JUnit3Suite with KafkaServerTestHarness {
 
   val numNodes = 2
   val configs = 
@@ -55,20 +51,17 @@ class FetcherTest extends JUnitSuite with KafkaServerTestHarness {
   
   var fetcher: Fetcher = null
 
-  @Before
-  override def init() {
-    super.init
+  override def setUp() {
+    super.setUp
     fetcher = new Fetcher(new ConsumerConfig(TestUtils.createConsumerProperties("", "", "")), null)
     fetcher.initConnections(topicInfos, cluster, Set(queue))
   }
 
-  @After
-  override def destroy() {
+  override def tearDown() {
     fetcher.shutdown
-    super.destroy
+    super.tearDown
   }
     
-  @Test
   def testFetcher() {
     val perNode = 2
     var count = sendMessages(perNode)

@@ -16,22 +16,20 @@
 
 package kafka.javaapi.integration
 
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before}
+import org.scalatest.junit.JUnit3Suite
 import java.util.Properties
 import kafka.producer.SyncProducerConfig
 import kafka.javaapi.producer.SyncProducer
 import kafka.javaapi.consumer.SimpleConsumer
 
-trait ProducerConsumerTestHarness extends JUnitSuite {
+trait ProducerConsumerTestHarness extends JUnit3Suite {
   
     val port: Int
     val host = "localhost"
     var producer: SyncProducer = null
     var consumer: SimpleConsumer = null
 
-    @Before
-    def initialize() {
+    override def setUp() {
       val props = new Properties()
       props.put("host", host)
       props.put("port", port.toString)
@@ -42,11 +40,12 @@ trait ProducerConsumerTestHarness extends JUnitSuite {
       consumer = new SimpleConsumer(host,
                                    port,
                                    1000000,
-                                   64*1024)      
+                                   64*1024)
+      super.setUp
     }
 
-  @After
-   def close() {
+   override def tearDown() {
+     super.tearDown
      producer.close()
      consumer.close()
    }

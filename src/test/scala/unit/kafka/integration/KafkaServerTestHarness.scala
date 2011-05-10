@@ -22,27 +22,26 @@ import kafka.producer._
 import kafka.consumer._
 import kafka.message._
 import kafka.server._
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before}
 import kafka.utils.{Utils, TestUtils}
+import org.scalatest.junit.JUnit3Suite
 
 /**
  * A test harness that brings up some number of broker nodes
  */
-trait KafkaServerTestHarness extends JUnitSuite {
+trait KafkaServerTestHarness extends JUnit3Suite {
 
   val configs: List[KafkaConfig]
   var servers: List[KafkaServer] = null
 
-  @Before
-  def init() {
+  override def setUp() {
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
     servers = configs.map(TestUtils.createServer(_))
+    super.setUp
   }
 
-  @After
-  def destroy() {
+  override def tearDown() {
+    super.tearDown
     servers.map(server => server.shutdown())
     servers.map(server => Utils.rm(server.config.logDir))
   }
