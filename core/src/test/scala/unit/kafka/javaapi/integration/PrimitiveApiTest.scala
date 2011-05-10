@@ -22,8 +22,7 @@ import kafka.message.Message
 import kafka.common.{InvalidPartitionException, OffsetOutOfRangeException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
+import org.scalatest.junit.JUnit3Suite
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.javaapi.ProducerRequest
 import kafka.utils.TestUtils
@@ -31,7 +30,7 @@ import kafka.utils.TestUtils
 /**
  * End to end tests of the primitive apis against a local server
  */
-class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with KafkaServerTestHarness {
+class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with kafka.integration.KafkaServerTestHarness {
   
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
@@ -41,7 +40,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
   val configs = List(config)
   val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
-  @Test
   def testProduceAndFetch() {
     // send some messages
     val topic = "test"
@@ -84,7 +82,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
-  @Test
   def testProduceAndMultiFetch() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -157,7 +154,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
-  @Test
   def testProduceAndMultiFetchJava() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -188,7 +184,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     }
   }
 
-  @Test
   def testMultiProduce() {
     // send some messages
     val topics = List("test1", "test2", "test3");

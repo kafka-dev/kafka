@@ -16,21 +16,19 @@
 
 package kafka.zk
 
-import kafka.utils.TestUtils
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before}
+import org.scalatest.junit.JUnit3Suite
 
-trait ZooKeeperTestHarness extends JUnitSuite {
+trait ZooKeeperTestHarness extends JUnit3Suite {
   val zkConnect: String
   var zookeeper: EmbeddedZookeeper = null
 
-  @Before
-  def setUp() {
+  override def setUp() {
     zookeeper = new EmbeddedZookeeper(zkConnect)
+    super.setUp
   }
 
-  @After
-  def tearDown() {
+  override def tearDown() {
+    super.tearDown
     zookeeper.shutdown()
   }
 

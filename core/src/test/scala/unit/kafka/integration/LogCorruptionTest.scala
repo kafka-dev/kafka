@@ -1,7 +1,5 @@
 package kafka.log
 
-import junit.framework.TestCase
-import junit.framework.Assert._
 import kafka.server.KafkaConfig
 import java.io.File
 import java.nio.ByteBuffer
@@ -12,13 +10,11 @@ import kafka.zk.ZooKeeperTestHarness
 import kafka.utils.{TestZKUtils, TestUtils}
 import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.consumer.{ZookeeperConsumerConnector, ConsumerConfig}
-import org.apache.log4j.{Level, Logger}
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before, Test}
+import org.scalatest.junit.JUnit3Suite
 import kafka.integration.ProducerConsumerTestHarness
 import kafka.integration.KafkaServerTestHarness
 
-class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with KafkaServerTestHarness with ZooKeeperTestHarness {
+class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness with KafkaServerTestHarness with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect  
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
@@ -29,7 +25,6 @@ class LogCorruptionTest extends JUnitSuite with ProducerConsumerTestHarness with
   val topic = "test"
   val partition = 0
 
-  @Test
   def testMessageSizeTooLarge() {
     // send some messages
     val sent1 = new ByteBufferMessageSet(new Message("hello".getBytes()))

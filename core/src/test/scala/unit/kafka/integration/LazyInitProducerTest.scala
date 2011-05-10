@@ -23,14 +23,13 @@ import kafka.api.{ProducerRequest, FetchRequest}
 import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before, Test}
+import org.scalatest.junit.JUnit3Suite
 import kafka.utils.{TestUtils, Utils}
 
 /**
  * End to end tests of the primitive apis against a local server
  */
-class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness   {
+class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness   {
 
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
@@ -41,9 +40,8 @@ class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness  
   var servers: List[KafkaServer] = null
   val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
-  @Before
-  override def initialize() {
-    super.initialize
+  override def setUp() {
+    super.setUp
     if(configs.size <= 0)
       throw new IllegalArgumentException("Must suply at least one server config.")
     servers = configs.map(TestUtils.createServer(_))
@@ -52,17 +50,15 @@ class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness  
     requestHandlerLogger.setLevel(Level.FATAL)    
   }
 
-  @After
-  override def close() {
+  override def tearDown() {
     // restore set request handler logger to a higher level
     requestHandlerLogger.setLevel(Level.ERROR)
 
-    super.close    
+    super.tearDown    
     servers.map(server => server.shutdown())
     servers.map(server => Utils.rm(server.config.logDir))
   }
   
-  @Test
   def testProduceAndFetch() {
     // send some messages
     val topic = "test"
@@ -87,7 +83,6 @@ class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness  
     assertTrue(exceptionThrown)
   }
 
-  @Test
   def testProduceAndMultiFetch() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -129,7 +124,6 @@ class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness  
     }
   }
 
-  @Test
   def testMultiProduce() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -154,7 +148,6 @@ class LazyInitProducerTest extends JUnitSuite with ProducerConsumerTestHarness  
   	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
   }
 
-  @Test
   def testMultiProduceResend() {
     // send some messages
     val topics = List("test1", "test2", "test3");

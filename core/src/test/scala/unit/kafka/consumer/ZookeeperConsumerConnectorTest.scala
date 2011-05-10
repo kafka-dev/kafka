@@ -25,10 +25,9 @@ import org.apache.log4j.Logger
 import scala.collection._
 import kafka.utils.Utils
 import kafka.utils.{TestZKUtils, TestUtils}
-import org.scalatest.junit.JUnitSuite
-import org.junit.{After, Before, Test}
+import org.scalatest.junit.JUnit3Suite
 
-class ZookeeperConsumerConnectorTest extends JUnitSuite with KafkaServerTestHarness with ZooKeeperTestHarness {
+class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHarness with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
 
   val zookeeperConnect = TestZKUtils.zookeeperConnect
@@ -50,7 +49,6 @@ class ZookeeperConsumerConnectorTest extends JUnitSuite with KafkaServerTestHarn
   val consumer3 = "consumer3"
   val nMessages = 2
 
-  @Test
   def testBasic() {
     var actualMessages: List[Message] = Nil
 

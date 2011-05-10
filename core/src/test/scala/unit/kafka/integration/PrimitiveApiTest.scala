@@ -17,24 +17,22 @@
 package kafka.integration
 
 import scala.collection._
-import junit.framework.TestCase
 import junit.framework.Assert._
 import kafka.api.{ProducerRequest, FetchRequest}
 import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.common.{OffsetOutOfRangeException, InvalidPartitionException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
-import org.scalatest.junit.JUnitSuite
+import org.scalatest.junit.JUnit3Suite
 import java.util.Properties
 import kafka.producer.{ProducerData, Producer, ProducerConfig}
 import kafka.serializer.StringDecoder
-import kafka.utils.{TestZKUtils, TestUtils}
-import org.junit.{Assert, After, Before, Test}
+import kafka.utils.TestUtils
 
 /**
  * End to end tests of the primitive apis against a local server
  */
-class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with KafkaServerTestHarness {
+class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with KafkaServerTestHarness {
   
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
@@ -44,7 +42,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
   val configs = List(config)
   val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
-  @Test
   def testDefaultEncoderProducerAndFetch() {
     val topic = "test-topic"
     val props = new Properties()
@@ -65,7 +62,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     assertEquals("test-message", fetchedStringMessage)
   }
 
-  @Test
   def testProduceAndMultiFetch() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -128,7 +124,6 @@ class PrimitiveApiTest extends JUnitSuite with ProducerConsumerTestHarness with 
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
-  @Test
   def testMultiProduce() {
     // send some messages
     val topics = List("test1", "test2", "test3");
