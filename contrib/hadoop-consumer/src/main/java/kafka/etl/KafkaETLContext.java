@@ -108,7 +108,7 @@ public class KafkaETLContext {
     
     public boolean hasMore () {
         return _messageIt != null && _messageIt.hasNext() 
-                || _response != null && _response.hasNext() 
+                || _response != null && _response.iterator().hasNext()
                 || _offset < _offsetRange[1]; 
     }
     
@@ -116,9 +116,11 @@ public class KafkaETLContext {
         if ( !hasMore() ) return false;
         
         boolean gotNext = get(key, value);
-        
-        while ( !gotNext && _response != null && _response.hasNext()) {
-            ByteBufferMessageSet msgSet = _response.next();
+
+        Iterator<ByteBufferMessageSet> iter = _response.iterator();
+
+        while ( !gotNext && _response != null && iter.hasNext()) {
+            ByteBufferMessageSet msgSet = iter.next();
             if ( hasError(msgSet)) return false;
             _messageIt =  (Iterator<Message>) msgSet.iterator();
             gotNext = get(key, value);

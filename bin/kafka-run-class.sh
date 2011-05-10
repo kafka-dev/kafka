@@ -8,7 +8,7 @@ fi
 
 base_dir=$(dirname $0)/..
 
-for file in $base_dir/target/scala_2.8.0/*.jar;
+for file in $base_dir/core/target/scala_2.8.0/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
 done
@@ -20,7 +20,7 @@ do
   fi
 done
 
-for file in $base_dir/lib_managed/scala_2.8.0/compile/*.jar;
+for file in $base_dir/core/lib_managed/scala_2.8.0/compile/*.jar;
 do
   if [ ${file##*/} != "sbt-launch.jar" ]; then
     CLASSPATH=$CLASSPATH:$file

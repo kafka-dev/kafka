@@ -27,8 +27,10 @@ SimpleKafkaETLJob sets up job properties and files Hadoop job.
 SimpleKafkaETLMapper dumps kafka data into hdfs. 
 
 HOW TO RUN:
-1. Complile using "ant" and you will see kafka-etl-contrib-<version>.jar
-under $KAFKA_ROOT/dist.
+1. Complile using "sbt" to create a package for hadoop consumer code.
+./sbt
+project hadoop consumer
+package-all
 
 2. Produce test events in server and generate offset files
   1) Start kafka server [ Follow the quick start - 
