@@ -37,10 +37,6 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   override def next(): Message = {
     val message = super.next
     currentTopicInfo.consumed(MessageSet.entrySize(message))
-    ZookeeperConsumerStats.recordConsumedOffset(currentTopicInfo.topic,
-                                                new Partition(currentTopicInfo.partition.brokerId,
-                                                currentTopicInfo.partition.partId),
-                                                currentTopicInfo.getConsumeOffset)
     message
   }
 

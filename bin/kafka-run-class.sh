@@ -8,6 +8,11 @@ fi
 
 base_dir=$(dirname $0)/..
 
+for file in $base_dir/project/boot/scala-2.8.0/lib/*.jar;
+do
+  CLASSPATH=$CLASSPATH:$file
+done
+
 for file in $base_dir/core/target/scala_2.8.0/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file

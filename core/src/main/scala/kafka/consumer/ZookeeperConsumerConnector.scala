@@ -264,18 +264,53 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
   def getOffsetLag(topic: String, brokerId: Int, partitionId: Int): Long =
     getLatestOffset(topic, brokerId, partitionId) - getConsumedOffset(topic, brokerId, partitionId)
 
-  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long =
-    ZookeeperConsumerStats.getConsumedOffset(topic, brokerId, partitionId)
+  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long = {
+    val partition = new Partition(brokerId, partitionId)
+    val partitionInfos = topicRegistry.get(topic)
+    if (partitionInfos != null) {
+      val partitionInfo = partitionInfos.get(partition)
+      if (partitionInfo != null)
+        return partitionInfo.getConsumeOffset
+    }
+
+    //otherwise, try to get it from zookeeper
+    try {
+      val topicDirs = new ZKGroupTopicDirs(config.groupId, topic)
+      val znode = topicDirs.consumerOffsetDir + "/" + partition.name
+      val offsetString = ZkUtils.readDataMaybeNull(zkClient, znode)
+      if (offsetString != null)
+        return offsetString.toLong
+      else
+        return -1
+    }
+    catch {
+      case e =>
+        logger.error("error in getConsumedOffset JMX " + e)
+    }
+    return -2
+  }
 
   def getLatestOffset(topic: String, brokerId: Int, partitionId: Int): Long = {
-    val cluster = ZkUtils.getCluster(zkClient)
-    val broker = cluster.getBroker(brokerId)
-    // find latest offset using SimpleConsumer
-    val simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SOCKET_TIMEOUT,
+    var simpleConsumer: SimpleConsumer = null
+    var producedOffset: Long = -1L
+    try {
+      val cluster = ZkUtils.getCluster(zkClient)
+      val broker = cluster.getBroker(brokerId)
+      simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SOCKET_TIMEOUT,
                                             ConsumerConfig.SOCKET_BUFFER_SIZE)
-    val latestOffset = simpleConsumer.getOffsetsBefore(topic, partitionId,
+      val latestOffset = simpleConsumer.getOffsetsBefore(topic, partitionId,
                                                        OffsetRequest.LATEST_TIME, 1)
-    latestOffset(0)
+      producedOffset = latestOffset(0)
+    }
+    catch {
+      case e =>
+        logger.error("error in getLatestOffset jmx " + e)
+    }
+    finally {
+      if (simpleConsumer != null)
+        simpleConsumer.close
+    }
+    producedOffset
   }
 
   class ZKSessionExpireListenner(val dirs: ZKGroupDirs,
@@ -528,47 +563,6 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       partTopicInfoMap.put(partition, partTopicInfo)
       if (logger.isDebugEnabled)
         logger.debug(partTopicInfo + " selected new offset " + offset)
-    }
-  }
-}
-
-@threadsafe
-object ZookeeperConsumerStats {
-  private val topicConsumedOffsetsMap = new ConcurrentHashMap[String, ConcurrentMap[Partition, AtomicLong]]()
-  private val lock = new Object()
-
-  def recordConsumedOffset(topic: String, brokerPartition: Partition, offset: Long) =
-    recordOffset(topic, brokerPartition, offset, topicConsumedOffsetsMap)
-
-  def getConsumedOffset(topic: String, brokerId: Int, partitionId: Int): Long =
-    getOffsets(topic, brokerId, partitionId, topicConsumedOffsetsMap)
-
-  private def getOffsets(topic: String, brokerId: Int, partitionId: Int,
-                       topicOffsetsMap: ConcurrentMap[String, ConcurrentMap[Partition, AtomicLong]]): Long = {
-    lock synchronized {
-    val offsetMap = topicOffsetsMap.get(topic)
-    if(offsetMap != null) {
-      val offset = offsetMap.get(new Partition(brokerId, partitionId))
-      if(offset != null)
-        offset.get
-      else -2
-    }
-    else -1
-    }
-  }
-
-  private def recordOffset(topic: String, brokerPartition: Partition, offset: Long,
-                           topicOffsetMap: ConcurrentMap[String, ConcurrentMap[Partition, AtomicLong]]) = {
-    lock synchronized {
-      var offsetMap = topicOffsetMap.get(topic)
-      if(offsetMap == null) {
-        offsetMap = new ConcurrentHashMap[Partition, AtomicLong]()
-      }
-      var oldOffset = offsetMap.get(brokerPartition)
-      if(oldOffset == null) oldOffset = new AtomicLong(offset)
-      else oldOffset.set(offset)
-      offsetMap.put(brokerPartition, oldOffset)
-      topicOffsetMap.put(topic, offsetMap)
     }
   }
 }
