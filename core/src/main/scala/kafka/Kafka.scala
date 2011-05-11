@@ -20,11 +20,15 @@ import consumer.ConsumerConfig
 import org.apache.log4j.Logger
 import server.{KafkaConfig, KafkaServerStartable, KafkaServer}
 import utils.Utils
+import org.apache.log4j.jmx.LoggerDynamicMBean
 
 object Kafka {
   private val logger = Logger.getLogger(Kafka.getClass)
 
   def main(args: Array[String]): Unit = {
+    val kafkaLog4jMBeanName = "kafka:type=kafka.KafkaLog4j"
+    Utils.swallow(logger.warn, Utils.registerMBean(new LoggerDynamicMBean(Logger.getRootLogger()), kafkaLog4jMBeanName))
+
     if(args.length != 1 && args.length != 2) {
       println("USAGE: java [options] " + classOf[KafkaServer].getSimpleName() + " server.properties [consumer.properties")
       System.exit(1)
