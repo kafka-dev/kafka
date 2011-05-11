@@ -25,6 +25,11 @@ do
   fi
 done
 
+for file in $base_dir/core/lib/*.jar;
+do
+  CLASSPATH=$CLASSPATH:$file
+done
+
 for file in $base_dir/core/lib_managed/scala_2.8.0/compile/*.jar;
 do
   if [ ${file##*/} != "sbt-launch.jar" ]; then
