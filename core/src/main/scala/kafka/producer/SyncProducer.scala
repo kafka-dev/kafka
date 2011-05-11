@@ -166,8 +166,9 @@ class SyncProducer(val config: SyncProducerConfig) {
         logger.debug("Connecting to " + config.host + ":" + config.port + " for producing")
         channel = SocketChannel.open()
         channel.socket.setSendBufferSize(config.bufferSize)
-        channel.connect(new InetSocketAddress(config.host, config.port))
         channel.configureBlocking(true)
+        channel.socket.setSoTimeout(config.socketTimeoutMs)
+        channel.connect(new InetSocketAddress(config.host, config.port))
       }
       catch {
         case e: Exception => {

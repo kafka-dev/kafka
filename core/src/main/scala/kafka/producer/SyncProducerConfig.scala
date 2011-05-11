@@ -34,6 +34,9 @@ trait SyncProducerConfigShared {
 
   val connectTimeoutMs = Utils.getInt(props, "connect.timeout.ms", 5000)
 
+  /** the socket timeout for network requests */
+  val socketTimeoutMs = Utils.getInt(props, "socket.timeout.ms", 30000)  
+
   val reconnectInterval = Utils.getInt(props, "reconnect.interval", 30000)
 
   val maxMessageSize = Utils.getInt(props, "max.message.size", 1000000)
