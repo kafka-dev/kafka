@@ -175,11 +175,8 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
   }
 
   private def getLogDir(): File = {
-    val ioDir = System.getProperty("java.io.tmpdir")
-    val f = new File(ioDir, "kafka-logs")
-    f.mkdirs()
-    f.deleteOnExit()
-    f
+    val dir = TestUtils.tempDir()
+    dir
   }
 }
 
