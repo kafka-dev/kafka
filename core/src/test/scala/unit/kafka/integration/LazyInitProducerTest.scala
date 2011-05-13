@@ -169,7 +169,7 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
       messageSet.buffer.rewind
 
     // wait a bit for produced message to be available
-    Thread.sleep(200)
+    Thread.sleep(750)
     val response = consumer.multifetch(fetches: _*)
     for((topic, resp) <- topics.zip(response.toList))
   	  TestUtils.checkEquals(TestUtils.stackedIterator(messages(topic).iterator, messages(topic).iterator), resp.iterator)
