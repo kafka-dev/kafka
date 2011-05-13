@@ -373,7 +373,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     }
 
     private def getConsumersPerTopic(group: String) : mutable.Map[String, List[String]] = {
-      val consumers = ZkUtils.getChildren(zkClient, dirs.consumerRegistryDir)
+      val consumers = ZkUtils.getChildrenCreatePathIfNeeded(zkClient, dirs.consumerRegistryDir)
       val consumersPerTopicMap = new mutable.HashMap[String, List[String]]
       for (consumer <- consumers) {
         val topicCount = getTopicCount(consumer)

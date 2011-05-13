@@ -35,15 +35,8 @@ object ZkUtils {
    *  make sure a persistent path exists in ZK. Create the path if not exist.
    */
   def makeSurePersistentPathExists(client: ZkClient, path: String) {
-    if (!client.exists(path)) {
-      try {
-        client.createPersistent(path, true)
-      }
-      catch {
-        case e: ZkNodeExistsException => // normal, let it go
-        case e2 => throw e2
-      }
-    }
+    if (!client.exists(path))
+      client.createPersistent(path, true) // won't throw NoNodeException or NodeExistsException
   }
 
   /**
@@ -180,6 +173,24 @@ object ZkUtils {
     client.getChildren(path)
   }
 
+  def getChildrenCreatePathIfNeeded(client: ZkClient, path: String): Seq[String] = {
+    import scala.collection.JavaConversions._
+    // triggers implicit conversion from java list to scala Seq
+
+    var ret: java.util.List[String] = null
+    try {
+      ret = client.getChildren(path)
+    }
+    catch {
+      case e: ZkNoNodeException => {
+        client.createPersistent(path, true)
+        ret = client.getChildren(path)
+      }
+      case e2 => throw e2
+    }
+    return ret
+  }
+
   /**
    * Check if the given path exists
    */
@@ -191,7 +202,7 @@ object ZkUtils {
 
   def getCluster(zkClient: ZkClient) : Cluster = {
     val cluster = new Cluster
-    val nodes = getChildren(zkClient, brokerIdsPath)
+    val nodes = getChildrenCreatePathIfNeeded(zkClient, brokerIdsPath)
     for (node <- nodes) {
       val brokerZKString = readData(zkClient, brokerIdsPath + "/" + node)
       cluster.add(Broker.createBroker(node.toInt, brokerZKString))
@@ -203,9 +214,9 @@ object ZkUtils {
     val ret = new mutable.HashMap[String, List[String]]()
     for (topic <- topics) {
       var partList: List[String] = Nil
-      val brokers = ZkUtils.getChildren(zkClient, brokerTopicsPath + "/" + topic)
+      val brokers = getChildrenCreatePathIfNeeded(zkClient, brokerTopicsPath + "/" + topic)
       for (broker <- brokers) {
-        val nParts = ZkUtils.readData(zkClient, brokerTopicsPath + "/" + topic + "/" + broker).toInt
+        val nParts = readData(zkClient, brokerTopicsPath + "/" + topic + "/" + broker).toInt
         for (part <- 0 until nParts)
           partList ::= broker + "-" + part
       }
