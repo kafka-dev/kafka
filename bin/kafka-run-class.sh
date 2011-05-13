@@ -18,13 +18,6 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
-for file in $base_dir/lib/*.jar;
-do
-  if [ ${file##*/} != "sbt-launch.jar" ]; then
-    CLASSPATH=$CLASSPATH:$file
-  fi
-done
-
 for file in $base_dir/core/lib/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
