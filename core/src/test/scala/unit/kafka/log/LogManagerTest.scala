@@ -66,8 +66,9 @@ class LogManagerTest extends JUnitSuite {
       log.append(set)
       offset += set.sizeInBytes
     }
+    log.flush
     assertTrue("There should be more than one segment now.", log.numberOfSegments > 1)
-    time.currentMs += maxLogAge + 10000
+    time.currentMs += maxLogAge + 1100
     logManager.cleanupLogs()
     assertEquals("Now there should only be only one segment.", 1, log.numberOfSegments)
     assertEquals("Should get empty fetch off new log.", 0L, log.read(offset, 1024).sizeInBytes)
