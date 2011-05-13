@@ -1,19 +1,10 @@
 #!/bin/bash
 
-if [ $# -lt 1 ];
-then
-  echo "USAGE: $0 classname [opts]"
-  exit 1
-fi
-
 base_dir=$(dirname $0)/..
 
-#CLASSPATH=$CLASSPATH:bin
-for file in $base_dir/lib/*.jar;
+for file in $base_dir/project/boot/scala-2.8.0/lib/*.jar;
 do
-  if [ ${file##*/} != "sbt-launch.jar" ]; then
-      CLASSPATH=$CLASSPATH:$file
-  fi
+  CLASSPATH=$CLASSPATH:$file
 done
 for file in $base_dir/core/lib_managed/scala_2.8.0/compile/*.jar;
 do
