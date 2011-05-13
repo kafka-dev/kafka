@@ -67,7 +67,8 @@ class LogManagerTest extends JUnitSuite {
       offset += set.sizeInBytes
     }
     assertTrue("There should be more than one segment now.", log.numberOfSegments > 1)
-    time.currentMs += maxLogAge + 10000
+    // TODO: Why is 50000 the best magic number?  Why is a nice small number like 1 not sufficient?
+    time.currentMs += maxLogAge + 50000
     logManager.cleanupLogs()
     assertEquals("Now there should only be only one segment.", 1, log.numberOfSegments)
     assertEquals("Should get empty fetch off new log.", 0L, log.read(offset, 1024).sizeInBytes)
