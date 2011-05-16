@@ -404,6 +404,31 @@ class ProducerTest extends JUnitSuite {
   }
 
   @Test
+  def testZKSendWithDeadBroker() {
+    val props = new Properties()
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    props.put("partitioner.class", "kafka.producer.StaticPartitioner")
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
+
+    val config = new ProducerConfig(props)
+    val serializer = new StringEncoder
+
+    val producer = new Producer[String, String](config)
+    try {
+      producer.send(new ProducerData[String, String]("new-topic", "test", Array("test1")))
+      Thread.sleep(100)
+      // kill 2nd broker
+      server2.shutdown
+      Thread.sleep(100)
+      producer.send(new ProducerData[String, String]("new-topic", "test", Array("test1")))
+      Thread.sleep(100)
+    } catch {
+      case e: Exception => fail("Not expected")
+    }
+    producer.close
+  }
+
+  @Test
   def testPartitionedSendToNewTopic() {
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")

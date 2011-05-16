@@ -267,6 +267,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
           mergedBrokerParts = oldBrokerParts ++ updatedBrokerParts
         case None =>
       }
+      // keep only brokers that are alive
+      mergedBrokerParts = mergedBrokerParts.filter(bp => allBrokers.contains(bp.brokerId))
       topicBrokerPartitions += (topic -> mergedBrokerParts)
       logger.debug("[TopicBrokersListener] Final stored list of broker and corresponding partitions: " + mergedBrokerParts.toString)
       // find the old list of brokers for this topic
@@ -275,7 +277,6 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
           logger.debug("[TopicBrokersListener] Old list of brokers: " + brokersParts.map(bp => bp.brokerId).toString)
         case None =>
       }
-      logger.debug("[TopicBrokersListener] List of broker partitions for topic " + topic + " are " + updatedBrokerParts.toString)
     }
 
     def resetState = {
@@ -313,6 +314,22 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
           allBrokers += (bid -> new Broker(bid, brokerHostPort(1), brokerHostPort(1), brokerHostPort(2).toInt))
           logger.debug("[BrokerListener] Invoking the callback for broker: " + bid)
           producerCbk(bid, brokerHostPort(1), brokerHostPort(2).toInt)
+        }
+        // remove dead brokers from the in memory list of live brokers
+        val deadBrokers = oldBrokerIds.toSet &~ updatedBrokerList.toSet
+        logger.debug("[BrokerListener] Deleting broker ids for dead brokers " + deadBrokers.toString)
+        deadBrokers.foreach {bid =>
+          allBrokers = allBrokers - bid
+          // also remove this dead broker from particular topics
+          topicBrokerPartitions.keySet.foreach{ topic =>
+            topicBrokerPartitions.get(topic) match {
+              case Some(oldBrokerPartitionList) =>
+                val aliveBrokerPartitionList = oldBrokerPartitionList.filter(bp => bp.brokerId != bid)
+                topicBrokerPartitions += (topic -> aliveBrokerPartitionList)
+                logger.debug("[BrokerListener] Removing dead broker ids for topic " + topic + " = " + aliveBrokerPartitionList.toString)
+              case None =>
+            }
+          }
         }
       }
     }
