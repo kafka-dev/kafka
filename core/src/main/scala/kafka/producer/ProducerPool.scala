@@ -31,7 +31,7 @@ class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
                       private val syncProducers: ConcurrentMap[Int, SyncProducer],
                       private val asyncProducers: ConcurrentMap[Int, AsyncProducer[V]],
-                      private val eventHandler: IEventHandler[V] = null,
+                      private val eventHandler: EventHandler[V] = null,
                       private val cbkHandler: CallbackHandler[V] = null) {
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
   private var sync: Boolean = true
@@ -42,7 +42,7 @@ class ProducerPool[V](private val config: ProducerConfig,
   }
 
   def this(config: ProducerConfig, serializer: Encoder[V],
-           eventHandler: IEventHandler[V], cbkHandler: CallbackHandler[V]) =
+           eventHandler: EventHandler[V], cbkHandler: CallbackHandler[V]) =
     this(config, serializer,
          new ConcurrentHashMap[Int, SyncProducer](),
          new ConcurrentHashMap[Int, AsyncProducer[V]](),

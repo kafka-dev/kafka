@@ -41,9 +41,9 @@ private[javaapi] object Implicits {
     producer.underlying
   }
 
-  implicit def toScalaEventHandler[T](eventHandler: kafka.javaapi.producer.async.IEventHandler[T])
-       : kafka.producer.async.IEventHandler[T] = {
-    new kafka.producer.async.IEventHandler[T] {
+  implicit def toScalaEventHandler[T](eventHandler: kafka.javaapi.producer.async.EventHandler[T])
+       : kafka.producer.async.EventHandler[T] = {
+    new kafka.producer.async.EventHandler[T] {
       override def init(props: java.util.Properties) { eventHandler.init(props) }
       override def handle(events: Seq[QueueItem[T]], producer: kafka.producer.SyncProducer) {
         import collection.JavaConversions._
@@ -53,9 +53,9 @@ private[javaapi] object Implicits {
     }
   }
 
-  implicit def toJavaEventHandler[T](eventHandler: kafka.producer.async.IEventHandler[T])
-    : kafka.javaapi.producer.async.IEventHandler[T] = {
-    new kafka.javaapi.producer.async.IEventHandler[T] {
+  implicit def toJavaEventHandler[T](eventHandler: kafka.producer.async.EventHandler[T])
+    : kafka.javaapi.producer.async.EventHandler[T] = {
+    new kafka.javaapi.producer.async.EventHandler[T] {
       override def init(props: java.util.Properties) { eventHandler.init(props) }
       override def handle(events: java.util.List[QueueItem[T]], producer: kafka.javaapi.producer.SyncProducer) {
         import collection.JavaConversions._

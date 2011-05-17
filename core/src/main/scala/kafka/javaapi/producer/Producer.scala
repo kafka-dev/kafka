@@ -56,12 +56,12 @@ class Producer[K,V](config: ProducerConfig,
   import kafka.javaapi.Implicits._
   def this(config: ProducerConfig,
            encoder: Encoder[V],
-           eventHandler: kafka.javaapi.producer.async.IEventHandler[V],
+           eventHandler: kafka.javaapi.producer.async.EventHandler[V],
            cbkHandler: kafka.javaapi.producer.async.CallbackHandler[V],
            partitioner: Partitioner[K]) = {
     this(config, partitioner,
          new ProducerPool[V](config, encoder,
-                             new kafka.producer.async.IEventHandler[V] {
+                             new kafka.producer.async.EventHandler[V] {
                                override def init(props: Properties) { eventHandler.init(props) }
                                override def handle(events: Seq[QueueItem[V]], producer: kafka.producer.SyncProducer) {
                                  import collection.JavaConversions._

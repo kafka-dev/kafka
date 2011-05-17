@@ -16,7 +16,7 @@
 
 package kafka.producer
 
-import async.{QueueItem, CallbackHandler, IEventHandler}
+import async.{QueueItem, CallbackHandler, EventHandler}
 import org.apache.log4j.Logger
 import kafka.serializer.Encoder
 import kafka.utils._
@@ -83,7 +83,7 @@ class Producer[K,V](config: ProducerConfig,
    */
   def this(config: ProducerConfig,
            encoder: Encoder[V],
-           eventHandler: IEventHandler[V],
+           eventHandler: EventHandler[V],
            cbkHandler: CallbackHandler[V],
            partitioner: Partitioner[K]) =
     this(config, partitioner,

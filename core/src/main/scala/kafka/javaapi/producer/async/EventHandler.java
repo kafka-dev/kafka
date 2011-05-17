@@ -25,7 +25,7 @@ import java.util.Properties;
  * Handler that dispatches the batched data from the queue of the
  * asynchronous producer.
  */
-public interface IEventHandler<T> {
+public interface EventHandler<T> {
     /**
      * Initializes the event handler using a Properties object
      * @param props the properties used to initialize the event handler

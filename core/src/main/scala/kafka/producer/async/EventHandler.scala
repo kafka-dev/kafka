@@ -13,66 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
-
 package kafka.producer.async
 
-import kafka.message.ByteBufferMessageSet
-import collection.mutable.HashMap
-import collection.mutable.Map
-import org.apache.log4j.Logger
-import kafka.api.ProducerRequest
-import kafka.serializer.Encoder
-import kafka.producer.SyncProducer
 import java.util.Properties
+import kafka.producer.SyncProducer
 
-private[async] class EventHandler[T](val producer: SyncProducer,
-                                     val serializer: Encoder[T],
-                                     val cbkHandler: CallbackHandler[T]) extends IEventHandler[T] {
+/**
+ * Handler that dispatches the batched data from the queue of the
+ * asynchronous producer.
+ */
+trait EventHandler[T] {
+  /**
+   * Initializes the event handler using a Properties object
+   * @param props the properties used to initialize the event handler
+  */
+  def init(props: Properties) {}
 
-  private val logger = Logger.getLogger(classOf[EventHandler[T]])
+  /**
+   * Callback to dispatch the batched data and send it to a Kafka server
+   * @param events the data sent to the producer
+   * @param producer the low-level producer used to send the data
+  */
+  def handle(events: Seq[QueueItem[T]], producer: SyncProducer)
 
-  override def init(props: Properties) { }
-
-  override def handle(events: Seq[QueueItem[T]], syncProducer: SyncProducer) {
-    var processedEvents = events
-    if(cbkHandler != null)
-      processedEvents = cbkHandler.beforeSendingData(events)
-    send(serialize(collate(processedEvents)), syncProducer)
-  }
-
-  private def send(messagesPerTopic: Map[(String, Int), ByteBufferMessageSet], syncProducer: SyncProducer) {
-    if(messagesPerTopic.size > 0) {
-      val requests = messagesPerTopic.map(f => new ProducerRequest(f._1._1, f._1._2, f._2)).toArray
-      syncProducer.multiSend(requests)
-      if(logger.isDebugEnabled)
-        logger.debug("kafka producer sent messages for topics " + messagesPerTopic)
-    }
-  }
-
-  private def serialize(eventsPerTopic: Map[(String,Int), Seq[T]]): Map[(String, Int), ByteBufferMessageSet] = {
-    import scala.collection.JavaConversions._
-    val eventsPerTopicMap = eventsPerTopic.map(e => ((e._1._1, e._1._2) , e._2.map(l => serializer.toMessage(l))))
-    eventsPerTopicMap.map(e => ((e._1._1, e._1._2) , new ByteBufferMessageSet(e._2: _*)))
-  }
-
-  private def collate(events: Seq[QueueItem[T]]): Map[(String,Int), Seq[T]] = {
-    val collatedEvents = new HashMap[(String, Int), Seq[T]]
-    val distinctTopics = events.map(e => e.getTopic).toSeq.distinct
-    val distinctPartitions = events.map(e => e.getPartition).distinct
-
-    var remainingEvents = events
-    distinctTopics foreach { topic =>
-      val topicEvents = remainingEvents partition (e => e.getTopic.equals(topic))
-      remainingEvents = topicEvents._2
-      distinctPartitions.foreach { p =>
-        val topicPartitionEvents = topicEvents._1 partition (e => (e.getPartition == p))
-        collatedEvents += ( (topic, p) -> topicPartitionEvents._1.map(q => q.getData).toSeq)
-      }
-    }
-    collatedEvents
-  }
-
-  override def close = {
-    producer.close
-  }
+  /**
+   * Cleans up and shuts down the event handler
+  */
+  def close {}
 }
