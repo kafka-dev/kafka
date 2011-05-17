@@ -66,8 +66,8 @@ private[async] class EventHandler[T](val producer: SyncProducer,
       remainingEvents = topicEvents._2
       distinctPartitions.foreach { p =>
         val topicPartitionEvents = topicEvents._1 partition (e => (e.getPartition == p))
-        logger.info("Extracted events " + topicPartitionEvents._1.toString + " for (" + topic + "," + p)
-        logger.info("Remaining events " + topicPartitionEvents._2.toString)
+        logger.debug("Extracted events " + topicPartitionEvents._1.toString + " for (" + topic + "," + p)
+        logger.debug("Remaining events " + topicPartitionEvents._2.toString)
         collatedEvents += ( (topic, p) -> topicPartitionEvents._1.map(q => q.getData).toSeq)
       }
     }

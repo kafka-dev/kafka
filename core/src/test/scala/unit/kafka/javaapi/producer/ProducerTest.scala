@@ -24,7 +24,6 @@ import kafka.utils.{TestZKUtils, TestUtils}
 import kafka.message.Message
 import org.junit.{After, Before, Test}
 import junit.framework.Assert
-import kafka.serializer.Encoder
 import collection.mutable.HashMap
 import org.easymock.EasyMock
 import kafka.utils.Utils
@@ -37,6 +36,7 @@ import kafka.producer.ProducerPool
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.producer.async.{AsyncProducer, AsyncProducerConfig}
 import kafka.javaapi.Implicits._
+import kafka.serializer.{StringEncoder, Encoder}
 
 class ProducerTest extends JUnitSuite {
   private val topic = "test-topic"
@@ -381,6 +381,55 @@ class ProducerTest extends JUnitSuite {
   }
 
   @Test
+  def testZKSendToNewTopic() {
+    val props = new Properties()
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    props.put("partitioner.class", "kafka.producer.StaticPartitioner")
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
+
+    val config = new ProducerConfig(props)
+    val serializer = new StringEncoder
+
+    val producer = new Producer[String, String](config)
+    try {
+      import scala.collection.JavaConversions._
+      producer.send(new ProducerData[String, String]("new-topic", "test", asList(Array("test1"))))
+      Thread.sleep(100)
+      producer.send(new ProducerData[String, String]("new-topic", "test", asList(Array("test1"))))
+      Thread.sleep(100)
+    } catch {
+      case e: Exception => fail("Not expected")
+    }
+    producer.close
+  }
+
+  @Test
+  def testZKSendWithDeadBroker() {
+    val props = new Properties()
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    props.put("partitioner.class", "kafka.producer.StaticPartitioner")
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
+
+    val config = new ProducerConfig(props)
+    val serializer = new StringEncoder
+
+    val producer = new Producer[String, String](config)
+    try {
+      import scala.collection.JavaConversions._
+      producer.send(new ProducerData[String, String]("new-topic", "test", asList(Array("test1"))))
+      Thread.sleep(100)
+      // kill 2nd broker
+      server2.shutdown
+      Thread.sleep(100)
+      producer.send(new ProducerData[String, String]("new-topic", "test", asList(Array("test1"))))
+      Thread.sleep(100)
+    } catch {
+      case e: Exception => fail("Not expected")
+    }
+    producer.close
+  }
+
+  @Test
   def testPartitionedSendToNewTopic() {
     val props = new Properties()
     props.put("partitioner.class", "kafka.producer.StaticPartitioner")
@@ -389,17 +438,16 @@ class ProducerTest extends JUnitSuite {
 
     val config = new ProducerConfig(props)
     val partitioner = new StaticPartitioner
-    val serializer = new StringSerializer
+    val serializer = new StringEncoder
 
     // 2 sync producers
     val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
     val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
-    val messages1 = new java.util.ArrayList[Message]
-    messages1.add(new Message("test1".getBytes()))
-    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(messages1))
+    import scala.collection.JavaConversions._
+    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(asList(Array(new Message("test1".getBytes)))))
     EasyMock.expectLastCall
-    syncProducer1.send("test-topic1", 1, new ByteBufferMessageSet(messages1))
+    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(asList(Array(new Message("test1".getBytes)))))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -414,20 +462,17 @@ class ProducerTest extends JUnitSuite {
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
     val producer = new Producer[String, String](config, partitioner, producerPool, false)
 
-    val messagesContent = new java.util.ArrayList[String]
-    messagesContent.add("test1")
-    producer.send(new ProducerData[String, String]("test-topic1", "test", messagesContent))
+    producer.send(new ProducerData[String, String]("test-topic1", "test", asList(Array("test1"))))
+    Thread.sleep(100)
 
     // now send again to this topic using a real producer, this time all brokers would have registered
     // their partitions in zookeeper
-    val messages = new java.util.ArrayList[Message]
-    messages.add(new Message("test".getBytes()))
-    producer1.send("test-topic1", new ByteBufferMessageSet(messages))
+    producer1.send("test-topic1", new ByteBufferMessageSet(asList(Array(new Message("test".getBytes())))))
+    Thread.sleep(100)
 
     // wait for zookeeper to register the new topic
-    Thread.sleep(500)
-
-    producer.send(new ProducerData[String, String]("test-topic1", "test1", messagesContent))
+    producer.send(new ProducerData[String, String]("test-topic1", "test1", asList(Array("test1"))))
+    Thread.sleep(100)
     producer.close
 
     EasyMock.verify(syncProducer1)
