@@ -57,6 +57,7 @@ private[producer] object ZKBrokerPartitionInfo {
  */
 private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (Int, String, Int) => Unit) extends BrokerPartitionInfo {
   private val logger = Logger.getLogger(classOf[ZKBrokerPartitionInfo])
+  private val zkWatcherLock = new Object
   private val zkClient = new ZkClient(config.zkConnect, config.zkSessionTimeoutMs, config.zkConnectionTimeoutMs,
     StringSerializer)
   // maintain a map from topic -> list of (broker, num_partitions) from zookeeper
@@ -184,43 +185,44 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
 
     @throws(classOf[Exception])
     def handleChildChange(parentPath : String, curChilds : java.util.List[String]) {
+      zkWatcherLock synchronized {
+        logger.trace("Watcher fired for path: " + parentPath)
+        import scala.collection.JavaConversions._
 
-      logger.trace("Watcher fired for path: " + parentPath)
-      import scala.collection.JavaConversions._
+        parentPath match {
+          case "/brokers/topics" =>        // this is a watcher for /broker/topics path
+            val updatedTopics = asBuffer(curChilds)
+            logger.debug("[BrokerTopicsListener] List of topics changed at " + parentPath + " Updated topics -> " +
+              curChilds.toString)
+            logger.debug("[BrokerTopicsListener] Old list of topics: " + oldBrokerTopicPartitionsMap.keySet.toString)
+            logger.debug("[BrokerTopicsListener] Updated list of topics: " + updatedTopics.toSet.toString)
+            val newTopics = updatedTopics.toSet &~ oldBrokerTopicPartitionsMap.keySet
+            logger.debug("[BrokerTopicsListener] List of newly registered topics: " + newTopics.toString)
+            newTopics.foreach { topic =>
+              val brokerTopicPath = ZkUtils.brokerTopicsPath + "/" + topic
+              val brokerList = ZkUtils.getChildrenCreatePathIfNeeded(zkClient, brokerTopicPath)
+              processNewBrokerInExistingTopic(topic, brokerList)
+              zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
+                brokerTopicsListener)
+            }
+          case "/brokers/ids"    =>        // this is a watcher for /broker/ids path
+            logger.debug("[BrokerTopicsListener] List of brokers changed in the Kafka cluster " + parentPath +
+              "\t Currently registered list of brokers -> " + curChilds.toString)
+            processBrokerChange(parentPath, curChilds)
+          case _ =>
+            val pathSplits = parentPath.split("/")
+            val topic = pathSplits.last
+            if(pathSplits.length == 4 && pathSplits(2).equals("topics")) {
+              logger.debug("[BrokerTopicsListener] List of brokers changed at " + parentPath + "\t Currently registered " +
+                " list of brokers -> " + curChilds.toString + " for topic -> " + topic)
+              processNewBrokerInExistingTopic(topic, asBuffer(curChilds))
+            }
+        }
 
-      parentPath match {
-        case "/brokers/topics" =>        // this is a watcher for /broker/topics path
-          val updatedTopics = asBuffer(curChilds)
-          logger.debug("[BrokerTopicsListener] List of topics changed at " + parentPath + " Updated topics -> " +
-                  curChilds.toString)
-          logger.debug("[BrokerTopicsListener] Old list of topics: " + oldBrokerTopicPartitionsMap.keySet.toString)
-          logger.debug("[BrokerTopicsListener] Updated list of topics: " + updatedTopics.toSet.toString)
-          val newTopics = updatedTopics.toSet &~ oldBrokerTopicPartitionsMap.keySet
-          logger.debug("[BrokerTopicsListener] List of newly registered topics: " + newTopics.toString)
-          newTopics.foreach { topic =>
-            val brokerTopicPath = ZkUtils.brokerTopicsPath + "/" + topic
-            val brokerList = ZkUtils.getChildrenCreatePathIfNeeded(zkClient, brokerTopicPath)
-            processNewBrokerInExistingTopic(topic, brokerList)
-            zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
-                                           brokerTopicsListener)
-          }
-        case "/brokers/ids"    =>        // this is a watcher for /broker/ids path
-          logger.debug("[BrokerTopicsListener] List of brokers changed in the Kafka cluster " + parentPath +
-                       "\t Currently registered list of brokers -> " + curChilds.toString)
-          processBrokerChange(parentPath, curChilds)
-        case _ =>
-          val pathSplits = parentPath.split("/")
-          val topic = pathSplits.last
-          if(pathSplits.length == 4 && pathSplits(2).equals("topics")) {
-            logger.debug("[BrokerTopicsListener] List of brokers changed at " + parentPath + "\t Currently registered " +
-              " list of brokers -> " + curChilds.toString + " for topic -> " + topic)
-            processNewBrokerInExistingTopic(topic, asBuffer(curChilds))
-          }
+        // update the data structures tracking older state values
+        oldBrokerTopicPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
+        oldBrokerIdMap = collection.mutable.Map.empty[Int, Broker] ++  allBrokers
       }
-
-      // update the data structures tracking older state values
-      oldBrokerTopicPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
-      oldBrokerIdMap = collection.mutable.Map.empty[Int, Broker] ++  allBrokers
     }
 
     def processBrokerChange(parentPath: String, curChilds: Seq[String]) {
