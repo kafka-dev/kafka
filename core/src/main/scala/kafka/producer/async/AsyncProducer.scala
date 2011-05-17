@@ -50,7 +50,7 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
     cbkHandler.init(cbkHandlerProps)
   private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.random.nextInt, queue,
     serializer, producer,
-    if(eventHandler != null) eventHandler else new EventHandler[T](producer, serializer, cbkHandler),
+    if(eventHandler != null) eventHandler else new EventHandler[T](serializer, cbkHandler),
     cbkHandler, config.queueTime, config.batchSize, AsyncProducer.shutdown)
   sendThread.setDaemon(false)
 
@@ -111,6 +111,7 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
     queue.put(new QueueItem(AsyncProducer.shutdown.asInstanceOf[T], null, -1))
     sendThread.join(3000)
     sendThread.shutdown
+    producer.close
     closed.set(true)
     logger.info("Closed AsyncProducer")
   }

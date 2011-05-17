@@ -25,9 +25,8 @@ import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
 import java.util.Properties
 
-private[async] class EventHandler[T](val producer: SyncProducer,
-                                     val serializer: Encoder[T],
-                                     val cbkHandler: CallbackHandler[T]) extends IEventHandler[T] {
+class EventHandler[T](val serializer: Encoder[T],
+                      val cbkHandler: CallbackHandler[T]) extends IEventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[EventHandler[T]])
 
@@ -66,8 +65,10 @@ private[async] class EventHandler[T](val producer: SyncProducer,
       remainingEvents = topicEvents._2
       distinctPartitions.foreach { p =>
         val topicPartitionEvents = topicEvents._1 partition (e => (e.getPartition == p))
-        logger.info("Extracted events " + topicPartitionEvents._1.toString + " for (" + topic + "," + p)
-        logger.info("Remaining events " + topicPartitionEvents._2.toString)
+        if(logger.isDebugEnabled) {
+          logger.debug("Extracted events " + topicPartitionEvents._1.toString + " for (" + topic + "," + p)
+          logger.debug("Remaining events " + topicPartitionEvents._2.toString)
+        }
         collatedEvents += ( (topic, p) -> topicPartitionEvents._1.map(q => q.getData).toSeq)
       }
     }
@@ -75,6 +76,5 @@ private[async] class EventHandler[T](val producer: SyncProducer,
   }
 
   override def close = {
-    producer.close
   }
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-num_messages=20000000
+num_messages=2000000
 message_size=200
 
 base_dir=$(dirname $0)/..
@@ -13,8 +13,8 @@ $base_dir/../../bin/zookeeper-server-start.sh $base_dir/config/zookeeper.propert
 $base_dir/../../bin/kafka-server-start.sh $base_dir/config/server.properties 2>&1 > $base_dir/kafka.log &
 
 sleep 4
-echo "start producing messages ..."
-$base_dir/../../bin/kafka-run-class.sh kafka.tools.ProducerPerformance --server kafka://localhost:9092 --topic test01 --messages $num_messages --message-size $message_size --batch-size 200 --threads 1
+echo "start producing $num_messages messages ..."
+$base_dir/../../bin/kafka-run-class.sh kafka.tools.ProducerPerformance --brokerinfo broker.list=0:localhost:9092 --topic test01 --messages $num_messages --message-size $message_size --batch-size 200 --threads 1 --reporting-interval 100000 num_messages --async --delay-btw-batch-ms 10
 
 echo "wait for data to be persisted" 
 cur_offset="-1"
