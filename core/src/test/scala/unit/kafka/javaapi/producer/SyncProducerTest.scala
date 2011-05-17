@@ -32,7 +32,7 @@ import kafka.javaapi.ProducerRequest
 class SyncProducerTest extends JUnitSuite {
   private var messageBytes =  new Array[Byte](2);
   private var server: KafkaServer = null
-  val simpleProducerLogger = Logger.getLogger(classOf[SyncProducer])
+  val simpleProducerLogger = Logger.getLogger(classOf[kafka.producer.SyncProducer])
 
   @Before
   def setUp() {
