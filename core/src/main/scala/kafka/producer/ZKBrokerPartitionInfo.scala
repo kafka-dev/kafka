@@ -18,12 +18,12 @@ package kafka.producer
 import kafka.utils.{StringSerializer, ZkUtils, ZKConfig}
 import collection.mutable.HashMap
 import collection.mutable.Map
-import collection.SortedSet
 import org.apache.log4j.Logger
 import collection.immutable.TreeSet
 import kafka.cluster.{Broker, Partition}
 import org.apache.zookeeper.Watcher.Event.KeeperState
 import org.I0Itec.zkclient.{IZkStateListener, IZkChildListener, ZkClient}
+import collection.SortedSet
 
 private[producer] object ZKBrokerPartitionInfo {
   /**
@@ -61,24 +61,25 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
     StringSerializer)
   // maintain a map from topic -> list of (broker, num_partitions) from zookeeper
   private var topicBrokerPartitions = getZKTopicPartitionInfo
-
-  private val topicBrokersListener = new TopicBrokersListener(topicBrokerPartitions)
-
-  // register listener for change of topics to keep topicsBrokerPartitions updated
-  private val topicsListener = new TopicsListener(topicBrokerPartitions, topicBrokersListener)
-  zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath, topicsListener)
-
-  // register listener for change of brokers for each topic to keep topicsBrokerPartitions updated
-  topicBrokerPartitions.keySet.foreach(topic => zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
-                                                topicBrokersListener))
+  // maintain a map from broker id to the corresponding Broker object
   private var allBrokers = getZKBrokerInfo
 
+  // use just the brokerTopicsListener for all watchers
+  private val brokerTopicsListener = new BrokerTopicsListener(topicBrokerPartitions, allBrokers)
+  // register listener for change of topics to keep topicsBrokerPartitions updated
+  zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath, brokerTopicsListener)
+
+  // register listener for change of brokers for each topic to keep topicsBrokerPartitions updated
+  topicBrokerPartitions.keySet.foreach {topic =>
+    zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic, brokerTopicsListener)
+    logger.debug("Registering listener on path: " + ZkUtils.brokerTopicsPath + "/" + topic)
+  }
+
   // register listener for new broker
-  private val brokerListener = new BrokerListener(allBrokers.keySet.toSeq)
-  zkClient.subscribeChildChanges(ZkUtils.brokerIdsPath, brokerListener)
+  zkClient.subscribeChildChanges(ZkUtils.brokerIdsPath, brokerTopicsListener)
 
   // register listener for session expired event
-  zkClient.subscribeStateChanges(new ZKSessionExpirationListener(brokerListener, topicBrokersListener, topicsListener))
+  zkClient.subscribeStateChanges(new ZKSessionExpirationListener(brokerTopicsListener))
 
   /**
    * Return a sequence of (brokerId, numPartitions)
@@ -98,7 +99,7 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
         // add the rest of the available brokers with default 1 partition for this topic, so all of the brokers
         // participate in hosting this topic.
         topicBrokerPartitions += (topic -> numBrokerPartitions)
-        logger.debug("Adding following broker id, partition id for NEW topic " + topic + "=" + numBrokerPartitions.toString)
+        logger.debug("Adding following broker id, partition id for NEW topic: " + topic + "=" + numBrokerPartitions.toString)
     }
     numBrokerPartitions
   }
@@ -135,7 +136,7 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
       val numPartitions = brokerList.map(bid => ZkUtils.readData(zkClient, brokerTopicPath + "/" + bid).toInt)
       val brokerPartitions = brokerList.map(bid => bid.toInt).zip(numPartitions)
       val sortedBrokerPartitions = brokerPartitions.sortWith((id1, id2) => id1._1 < id2._1)
-      logger.debug("Broker ids and # of partitions on each: " + topic + " = " + sortedBrokerPartitions.toString)
+      logger.debug("Broker ids and # of partitions on each for topic: " + topic + " = " + sortedBrokerPartitions.toString)
 
       var brokerParts = SortedSet.empty[Partition]
       sortedBrokerPartitions.foreach { bp =>
@@ -145,7 +146,7 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
         }
       }
       brokerPartitionsPerTopic += (topic -> brokerParts)
-      logger.debug("Sorted Broker ids and partition ids: " + topic + " = " + brokerParts.toString)
+      logger.debug("Sorted list of broker ids and partition ids on each for topic: " + topic + " = " + brokerParts.toString)
     }
     brokerPartitionsPerTopic
   }
@@ -166,158 +167,78 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
   }
 
   /**
-   * Listens to new topic registrations in zookeeper and keeps the related data structures updated
-   */
-  class TopicsListener(val originalTopicBrokerPartitionsMap: collection.mutable.Map[String, SortedSet[Partition]],
-                       val topicBrokersListener: TopicBrokersListener)
-          extends IZkChildListener {
-    private var oldTopicBrokerPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ originalTopicBrokerPartitionsMap
-    private val logger = Logger.getLogger(classOf[TopicsListener])
-
-    logger.debug("[TopicsListener] Creating topic listener with this default broker id, partition id " + oldTopicBrokerPartitionsMap.toString)
-
-    @throws(classOf[Exception])
-    def handleChildChange(parentPath : String, curChilds : java.util.List[String]) {
-      // check if event is for new topic
-      import scala.collection.JavaConversions._
-      // check to see if this event indicates new topic or a newly registered broker for an existing topic
-      logger.debug("[TopicsListener] Path changed at " + parentPath + " with updated children -> " +
-              curChilds.toString)
-      processNewTopic(asBuffer(curChilds))
-      oldTopicBrokerPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
-    }
-
-    /**
-     * Generate a mapping from broker id to (brokerId, numPartitions) for the list of brokers
-     * registered under the specified topics
-     * @param updatedTopics the list of new topics in zookeeper
-     */
-    def processNewTopic(updatedTopics: Seq[String]) = {
-      logger.debug("[TopicsListener] Old list of topics: " + oldTopicBrokerPartitionsMap.keySet.toString)
-      logger.debug("[TopicsListener] Updated list of topics: " + updatedTopics.toSet.toString)
-      val newTopics = updatedTopics.toSet &~ oldTopicBrokerPartitionsMap.keySet
-      logger.debug("[TopicsListener] New list of topics: " + newTopics.toString)
-      newTopics.foreach { topic =>
-        // find the number of broker partitions registered for this topic
-        val brokerTopicPath = ZkUtils.brokerTopicsPath + "/" + topic
-        val brokerList = ZkUtils.getChildrenCreatePathIfNeeded(zkClient, brokerTopicPath)
-        import ZKBrokerPartitionInfo._
-        val updatedBrokerParts = getBrokerPartitions(zkClient, topic, brokerList.map(b => b.toInt).toList)
-        // update the number of partitions on existing brokers
-        var mergedBrokerParts: SortedSet[Partition] = TreeSet[Partition]() ++ updatedBrokerParts
-        topicBrokerPartitions.get(topic) match {
-          case Some(oldBrokerParts) =>
-            mergedBrokerParts = oldBrokerParts ++ updatedBrokerParts
-          case None =>
-        }
-        logger.debug("[TopicsListener] List of broker partitions for new topic " + topic + " are " + mergedBrokerParts.toString)
-        topicBrokerPartitions += (topic -> mergedBrokerParts)
-        zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
-                                       topicBrokersListener)
-      }
-    }
-
-    def resetState = {
-      logger.debug("[TopicsListener] Before reseting state " + oldTopicBrokerPartitionsMap.toString)
-      oldTopicBrokerPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
-      logger.debug("[TopicsListener] After reseting state " + oldTopicBrokerPartitionsMap.toString)
-    }
-  }
-
-  /**
    * Listens to new broker registrations under a particular topic, in zookeeper and
    * keeps the related data structures updated
    */
-  class TopicBrokersListener(val originalTopicBrokerPartitionsMap: collection.mutable.Map[String, SortedSet[Partition]])
-          extends IZkChildListener {
-    private var oldTopicBrokerPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ originalTopicBrokerPartitionsMap
-    private val logger = Logger.getLogger(classOf[TopicBrokersListener])
+  class BrokerTopicsListener(val originalBrokerTopicsPartitionsMap: collection.mutable.Map[String, SortedSet[Partition]],
+                             val originalBrokerIdMap: Map[Int, Broker]) extends IZkChildListener {
+    private var oldBrokerTopicPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++
+                                              originalBrokerTopicsPartitionsMap
+    private var oldBrokerIdMap = collection.mutable.Map.empty[Int, Broker] ++ originalBrokerIdMap
+    private val logger = Logger.getLogger(classOf[BrokerTopicsListener])
 
-    logger.debug("[TopicBrokersListener] Creating topic listener with this default broker id, partition id " + oldTopicBrokerPartitionsMap.toString)
-
-    @throws(classOf[Exception])
-    def handleChildChange(parentPath : String, curChilds : java.util.List[String]) {
-      // check if event is for new topic
-      import scala.collection.JavaConversions._
-      val topic = parentPath.split("/").last
-      // check to see if this event indicates new topic or a newly registered broker for an existing topic
-      logger.debug("[TopicBrokersListener] Path changed at " + parentPath + " with updated children -> " +
-              curChilds.toString + " for topic -> " + topic)
-
-      processNewBrokerInExistingTopic(parentPath, asBuffer(curChilds))
-      oldTopicBrokerPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
-    }
-
-    /**                        
-     * Generate the updated mapping of (brokerId, numPartitions) for the new list of brokers
-     * registered under some topic
-     * @param parentPath the path of the topic under which the brokers have changed
-     * @param curChilds the list of changed brokers
-     */
-    def processNewBrokerInExistingTopic(parentPath: String, curChilds: Seq[String]) = {
-      val topic = parentPath.split("/").last
-      val updatedBrokerList = curChilds.map(b => b.toInt)
-      import ZKBrokerPartitionInfo._
-      val updatedBrokerParts:SortedSet[Partition] = getBrokerPartitions(zkClient, topic, updatedBrokerList.toList)
-      logger.debug("[BrokerListener] Updated list of brokers: " + curChilds.toString)
-      // update the number of partitions on existing brokers
-      var mergedBrokerParts: SortedSet[Partition] = TreeSet[Partition]() ++ updatedBrokerParts
-      topicBrokerPartitions.get(topic) match {
-        case Some(oldBrokerParts) =>
-          mergedBrokerParts = oldBrokerParts ++ updatedBrokerParts
-        case None =>
-      }
-      // keep only brokers that are alive
-      mergedBrokerParts = mergedBrokerParts.filter(bp => allBrokers.contains(bp.brokerId))
-      topicBrokerPartitions += (topic -> mergedBrokerParts)
-      logger.debug("[TopicBrokersListener] Final stored list of broker and corresponding partitions: " + mergedBrokerParts.toString)
-      // find the old list of brokers for this topic
-      oldTopicBrokerPartitionsMap.get(topic) match {
-        case Some(brokersParts) =>
-          logger.debug("[TopicBrokersListener] Old list of brokers: " + brokersParts.map(bp => bp.brokerId).toString)
-        case None =>
-      }
-    }
-
-    def resetState = {
-      logger.debug("[TopicBrokersListener] Before reseting state " + oldTopicBrokerPartitionsMap.toString)
-      oldTopicBrokerPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
-      logger.debug("[TopicBrokersListener] After reseting state " + oldTopicBrokerPartitionsMap.toString)
-    }
-  }
-
-  /**
-   * Listens to new broker registrations in zookeeper and keeps the related data structures updated
-   */
-  class BrokerListener(val brokerList: Seq[Int])
-          extends IZkChildListener {
-    private var oldBrokerIds = Seq.empty[Int] ++ brokerList
-    private val logger = Logger.getLogger(classOf[BrokerListener])
+    logger.debug("[BrokerTopicsListener] Creating broker topics listener to watch the following paths - \n" +
+    "/broker/topics, /broker/topics/topic, /broker/ids")
+    logger.debug("[BrokerTopicsListener] Initialized this broker topics listener with initial mapping of broker id to " +
+      "partition id per topic with " + oldBrokerTopicPartitionsMap.toString)
 
     @throws(classOf[Exception])
     def handleChildChange(parentPath : String, curChilds : java.util.List[String]) {
-      logger.debug("[BrokerListener] Path changed at " + parentPath + " with updated children -> " + curChilds.toString)
-      logger.debug("[BrokerListener] Old list of brokers: " + oldBrokerIds.toSet.toString)
+
+      logger.trace("Watcher fired for path: " + parentPath)
       import scala.collection.JavaConversions._
-      handleBrokerChange(parentPath, asBuffer(curChilds))
+
+      parentPath match {
+        case "/brokers/topics" =>        // this is a watcher for /broker/topics path
+          val updatedTopics = asBuffer(curChilds)
+          logger.debug("[BrokerTopicsListener] List of topics changed at " + parentPath + " Updated topics -> " +
+                  curChilds.toString)
+          logger.debug("[BrokerTopicsListener] Old list of topics: " + oldBrokerTopicPartitionsMap.keySet.toString)
+          logger.debug("[BrokerTopicsListener] Updated list of topics: " + updatedTopics.toSet.toString)
+          val newTopics = updatedTopics.toSet &~ oldBrokerTopicPartitionsMap.keySet
+          logger.debug("[BrokerTopicsListener] List of newly registered topics: " + newTopics.toString)
+          newTopics.foreach { topic =>
+            val brokerTopicPath = ZkUtils.brokerTopicsPath + "/" + topic
+            val brokerList = ZkUtils.getChildrenCreatePathIfNeeded(zkClient, brokerTopicPath)
+            processNewBrokerInExistingTopic(topic, brokerList)
+            zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
+                                           brokerTopicsListener)
+          }
+        case "/brokers/ids"    =>        // this is a watcher for /broker/ids path
+          logger.debug("[BrokerTopicsListener] List of brokers changed in the Kafka cluster " + parentPath +
+                       "\t Currently registered list of brokers -> " + curChilds.toString)
+          processBrokerChange(parentPath, curChilds)
+        case _ =>
+          val pathSplits = parentPath.split("/")
+          val topic = pathSplits.last
+          if(pathSplits.length == 4 && pathSplits(2).equals("topics")) {
+            logger.debug("[BrokerTopicsListener] List of brokers changed at " + parentPath + "\t Currently registered " +
+              " list of brokers -> " + curChilds.toString + " for topic -> " + topic)
+            processNewBrokerInExistingTopic(topic, asBuffer(curChilds))
+          }
+      }
+
+      // update the data structures tracking older state values
+      oldBrokerTopicPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
+      oldBrokerIdMap = collection.mutable.Map.empty[Int, Broker] ++  allBrokers
     }
 
-    def handleBrokerChange(parentPath: String, curChilds: Seq[String]) {
+    def processBrokerChange(parentPath: String, curChilds: Seq[String]) {
       if(parentPath.equals(ZkUtils.brokerIdsPath)) {
         import scala.collection.JavaConversions._
         val updatedBrokerList = asBuffer(curChilds).map(bid => bid.toInt)
-        val newBrokers = updatedBrokerList.toSet &~ oldBrokerIds.toSet
-        logger.debug("[BrokerListener] New list of brokers: " + newBrokers.toString)
+        val newBrokers = updatedBrokerList.toSet &~ oldBrokerIdMap.keySet
+        logger.debug("[BrokerTopicsListener] List of newly registered brokers: " + newBrokers.toString)
         newBrokers.foreach { bid =>
           val brokerInfo = ZkUtils.readData(zkClient, ZkUtils.brokerIdsPath + "/" + bid)
           val brokerHostPort = brokerInfo.split(":")
           allBrokers += (bid -> new Broker(bid, brokerHostPort(1), brokerHostPort(1), brokerHostPort(2).toInt))
-          logger.debug("[BrokerListener] Invoking the callback for broker: " + bid)
+          logger.debug("[BrokerTopicsListener] Invoking the callback for broker: " + bid)
           producerCbk(bid, brokerHostPort(1), brokerHostPort(2).toInt)
         }
         // remove dead brokers from the in memory list of live brokers
-        val deadBrokers = oldBrokerIds.toSet &~ updatedBrokerList.toSet
-        logger.debug("[BrokerListener] Deleting broker ids for dead brokers " + deadBrokers.toString)
+        val deadBrokers = oldBrokerIdMap.keySet &~ updatedBrokerList.toSet
+        logger.debug("[BrokerTopicsListener] Deleting broker ids for dead brokers: " + deadBrokers.toString)
         deadBrokers.foreach {bid =>
           allBrokers = allBrokers - bid
           // also remove this dead broker from particular topics
@@ -326,7 +247,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
               case Some(oldBrokerPartitionList) =>
                 val aliveBrokerPartitionList = oldBrokerPartitionList.filter(bp => bp.brokerId != bid)
                 topicBrokerPartitions += (topic -> aliveBrokerPartitionList)
-                logger.debug("[BrokerListener] Removing dead broker ids for topic " + topic + " = " + aliveBrokerPartitionList.toString)
+                logger.debug("[BrokerTopicsListener] Removing dead broker ids for topic: " + topic + "\t " +
+                  "Updated list of broker id, partition id = " + aliveBrokerPartitionList.toString)
               case None =>
             }
           }
@@ -334,19 +256,53 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
       }
     }
 
+    /**
+     * Generate the updated mapping of (brokerId, numPartitions) for the new list of brokers
+     * registered under some topic
+     * @param parentPath the path of the topic under which the brokers have changed
+     * @param curChilds the list of changed brokers
+     */
+    def processNewBrokerInExistingTopic(topic: String, curChilds: Seq[String]) = {
+      val updatedBrokerList = curChilds.map(b => b.toInt)
+      import ZKBrokerPartitionInfo._
+      val updatedBrokerParts:SortedSet[Partition] = getBrokerPartitions(zkClient, topic, updatedBrokerList.toList)
+      logger.debug("[BrokerTopicsListener] Currently registered list of brokers for topic: " + topic + " are " +
+        curChilds.toString)
+      // update the number of partitions on existing brokers
+      var mergedBrokerParts: SortedSet[Partition] = TreeSet[Partition]() ++ updatedBrokerParts
+      topicBrokerPartitions.get(topic) match {
+        case Some(oldBrokerParts) =>
+          logger.debug("[BrokerTopicsListener] Unregistered list of brokers for topic: " + topic + " are " +
+            oldBrokerParts.toString)
+          mergedBrokerParts = oldBrokerParts ++ updatedBrokerParts
+        case None =>
+      }
+      // keep only brokers that are alive
+      mergedBrokerParts = mergedBrokerParts.filter(bp => allBrokers.contains(bp.brokerId))
+      topicBrokerPartitions += (topic -> mergedBrokerParts)
+      logger.debug("[BrokerTopicsListener] List of broker partitions for topic: " + topic + " are " + mergedBrokerParts.toString)
+      // find the old list of brokers for this topic
+      oldBrokerTopicPartitionsMap.get(topic) match {
+        case Some(brokersParts) =>
+          logger.debug("[BrokerTopicsListener] Old list of brokers: " + brokersParts.map(bp => bp.brokerId).toString)
+        case None =>
+      }
+    }
+
     def resetState = {
-      logger.debug("[BrokerListener] Before reseting state " + oldBrokerIds.toString)
-      oldBrokerIds = Seq.empty[Int] ++ allBrokers.keySet.toSeq
-      logger.debug("[BrokerListener] After reseting state " + oldBrokerIds.toString)
+      logger.debug("[BrokerTopicsListener] Before reseting broker topic partitions state " + oldBrokerTopicPartitionsMap.toString)
+      oldBrokerTopicPartitionsMap = collection.mutable.Map.empty[String, SortedSet[Partition]] ++ topicBrokerPartitions
+      logger.debug("[BrokerTopicsListener] After reseting broker topic partitions state " + oldBrokerTopicPartitionsMap.toString)
+      logger.debug("[BrokerTopicsListener] Before reseting broker id map state " + oldBrokerIdMap.toString)
+      oldBrokerIdMap = collection.mutable.Map.empty[Int, Broker] ++  allBrokers
+      logger.debug("[BrokerTopicsListener] After reseting broker id map state " + oldBrokerIdMap.toString)
     }
   }
 
   /**
    * Handles the session expiration event in zookeeper
    */
-  class ZKSessionExpirationListener(val brokerListener: BrokerListener,
-                                 val topicBrokersListener: TopicBrokersListener,
-                                 val topicsListener: TopicsListener)
+  class ZKSessionExpirationListener(val brokerTopicsListener: BrokerTopicsListener)
           extends IZkStateListener {
     @throws(classOf[Exception])
     def handleStateChanged(state: KeeperState) {
@@ -369,15 +325,13 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
       logger.info("ZK expired; release old list of broker partitions for topics ")
       topicBrokerPartitions = getZKTopicPartitionInfo
       allBrokers = getZKBrokerInfo
-      brokerListener.resetState
-      topicBrokersListener.resetState
-      topicsListener.resetState
+      brokerTopicsListener.resetState
 
       // register listener for change of brokers for each topic to keep topicsBrokerPartitions updated
       // NOTE: this is probably not required here. Since when we read from getZKTopicPartitionInfo() above,
       // it automatically recreates the watchers there itself
       topicBrokerPartitions.keySet.foreach(topic => zkClient.subscribeChildChanges(ZkUtils.brokerTopicsPath + "/" + topic,
-                                                topicBrokersListener))
+                                                brokerTopicsListener))
       // there is no need to re-register other listeners as they are listening on the child changes of
       // permanent nodes
     }

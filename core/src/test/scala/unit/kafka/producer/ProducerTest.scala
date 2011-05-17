@@ -32,6 +32,8 @@ import org.scalatest.junit.JUnitSuite
 import kafka.common.{InvalidConfigException, UnavailableProducerException, InvalidPartitionException}
 import kafka.utils.{TestUtils, TestZKUtils, Utils}
 import kafka.serializer.{StringEncoder, Encoder}
+import kafka.consumer.SimpleConsumer
+import kafka.api.FetchRequest
 
 class ProducerTest extends JUnitSuite {
   private val topic = "test-topic"
@@ -43,6 +45,8 @@ class ProducerTest extends JUnitSuite {
   private var server2: KafkaServer = null
   private var producer1: SyncProducer = null
   private var producer2: SyncProducer = null
+  private var consumer1: SimpleConsumer = null
+  private var consumer2: SimpleConsumer = null
   private var zkServer:EmbeddedZookeeper = null
   private val requestHandlerLogger = Logger.getLogger(classOf[KafkaRequestHandlers])
 
@@ -74,6 +78,9 @@ class ProducerTest extends JUnitSuite {
       override val port = port2
     })
     producer2.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
+
+    consumer1 = new SimpleConsumer("localhost", port1, 1000000, 64*1024)
+    consumer2 = new SimpleConsumer("localhost", port2, 1000000, 64*1024)
 
     // temporarily set request handler logger to a higher level
     requestHandlerLogger.setLevel(Level.FATAL)
@@ -393,12 +400,23 @@ class ProducerTest extends JUnitSuite {
 
     val producer = new Producer[String, String](config)
     try {
+      // Available broker id, partition id at this stage should be (0,0), (1,0)
+      // this should send the message to broker 0 on partition 0
       producer.send(new ProducerData[String, String]("new-topic", "test", Array("test1")))
       Thread.sleep(100)
+      // Available broker id, partition id at this stage should be (0,0), (0,1), (0,2), (0,3), (1,0)
+      // Since 4 % 5 = 4, this should send the message to broker 1 on partition 0
       producer.send(new ProducerData[String, String]("new-topic", "test", Array("test1")))
       Thread.sleep(100)
+      // cross check if brokers got the messages
+      val messageSet1 = consumer1.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
+      Assert.assertTrue("Message set should have 1 message", messageSet1.hasNext)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next)
+      val messageSet2 = consumer2.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
+      Assert.assertTrue("Message set should have 1 message", messageSet2.hasNext)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet2.next)
     } catch {
-      case e: Exception => fail("Not expected")
+      case e: Exception => fail("Not expected", e)
     }
     producer.close
   }
@@ -415,13 +433,24 @@ class ProducerTest extends JUnitSuite {
 
     val producer = new Producer[String, String](config)
     try {
+      // Available broker id, partition id at this stage should be (0,0), (1,0)
+      // Hence, this should send the message to broker 0 on partition 0
       producer.send(new ProducerData[String, String]("new-topic", "test", Array("test1")))
       Thread.sleep(100)
       // kill 2nd broker
       server2.shutdown
       Thread.sleep(100)
+      // Available broker id, partition id at this stage should be (0,0), (0,1), (0,2), (0,3), (1,0)
+      // Since 4 % 5 = 4, in a normal case, it would send to broker 1 on partition 0. But since broker 1 is down,
+      // 4 % 4 = 0, So it should send the message to broker 0 on partition 0
       producer.send(new ProducerData[String, String]("new-topic", "test", Array("test1")))
       Thread.sleep(100)
+      // cross check if brokers got the messages
+      val messageSet1 = consumer1.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
+      Assert.assertTrue("Message set should have 1 message", messageSet1.hasNext)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next)
+      Assert.assertTrue("Message set should have another message", messageSet1.hasNext)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next)
     } catch {
       case e: Exception => fail("Not expected")
     }
@@ -517,6 +546,7 @@ class ProducerTest extends JUnitSuite {
       override val numPartitions = 4
     }
     val server3 = TestUtils.createServer(serverConfig)
+    Thread.sleep(500)
 
     // send a message to the new broker to register it under topic "test-topic"
     val tempProps = new Properties()

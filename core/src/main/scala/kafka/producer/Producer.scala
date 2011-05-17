@@ -154,7 +154,7 @@ class Producer[K,V](config: ProducerConfig,
    */
   private def producerCbk(bid: Int, host: String, port: Int) =  {
     if(populateProducerPool) producerPool.addProducer(new Broker(bid, host, host, port))
-    else logger.debug("Skipping the callback..")
+    else logger.debug("Skipping the callback since populateProducerPool = false")
   }
 
   /**
