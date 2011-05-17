@@ -26,11 +26,11 @@ import org.I0Itec.zkclient.ZkClient
 import kafka.utils._
 import java.io.IOException
 
-private[consumer] class FetcherRunnable(val name: String,
-                                        val zkClient : ZkClient,
-                                        val config: ConsumerConfig,
-                                        val broker: Broker,
-                                        val partitionTopicInfos: List[PartitionTopicInfo])
+class FetcherRunnable(val name: String,
+                      val zkClient : ZkClient,
+                      val config: ConsumerConfig,
+                      val broker: Broker,
+                      val partitionTopicInfos: List[PartitionTopicInfo])
   extends Thread(name) {
   private val logger = Logger.getLogger(getClass())
   private val shutdownLatch = new CountDownLatch(1)

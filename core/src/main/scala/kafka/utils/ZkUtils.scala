@@ -23,7 +23,6 @@ import scala.collection._
 import java.util.Properties
 import org.I0Itec.zkclient.exception.{ZkNodeExistsException, ZkNoNodeException, ZkMarshallingError}
 import org.apache.log4j.Logger
-import org.apache.zookeeper.KeeperException.NotEmptyException
 
 object ZkUtils {
   val consumersPath = "/consumers"

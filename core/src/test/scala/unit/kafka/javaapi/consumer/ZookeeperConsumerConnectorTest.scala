@@ -21,7 +21,6 @@ import kafka.zk.ZooKeeperTestHarness
 import kafka.integration.KafkaServerTestHarness
 import kafka.server.KafkaConfig
 import kafka.message.{Message}
-import org.apache.log4j.Logger
 import scala.collection._
 import kafka.utils.Utils
 import kafka.utils.{TestZKUtils, TestUtils}
@@ -30,6 +29,7 @@ import scala.collection.JavaConversions._
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.consumer.{Consumer, ConsumerConfig, KafkaMessageStream, ConsumerTimeoutException}
 import javax.management.NotCompliantMBeanException
+import org.apache.log4j.{Level, Logger}
 
 class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHarness with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
@@ -54,6 +54,8 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
   val nMessages = 2
 
   def testBasic() {
+    val requestHandlerLogger = Logger.getLogger(classOf[kafka.server.KafkaRequestHandlers])
+    requestHandlerLogger.setLevel(Level.FATAL)
     var actualMessages: List[Message] = Nil
 
     // test consumer timeout logic
@@ -116,6 +118,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     zkConsumerConnector2.shutdown
     zkConsumerConnector3.shutdown
     logger.info("all consumer connectors stopped")
+    requestHandlerLogger.setLevel(Level.ERROR)
   }
 
   def sendMessages(messagesPerNode: Int, header: String): List[Message]= {
