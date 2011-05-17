@@ -86,7 +86,7 @@ private[consumer] class FetcherRunnable(val name: String,
             case e2 =>
               if (!stopped) {
                 // this is likely a repeatable error, log it and trigger an exception in the consumer
-                logger.error("error in FetcherRunnable for " + info + ": " + e2 + Utils.stackTrace(e2))
+                logger.error("error in FetcherRunnable for " + info, e2)
                 info.enqueueError(e2, info.getFetchOffset)
               }
               // re-throw the exception to stop the fetcher
@@ -106,7 +106,7 @@ private[consumer] class FetcherRunnable(val name: String,
         if (stopped)
           logger.info("FecherRunnable " + this + " interrupted")
         else
-          logger.error("error in FetcherRunnable " + e + Utils.stackTrace(e))
+          logger.error("error in FetcherRunnable ", e)
     }
 
     logger.info("stopping fetcher " + name + " to host " + broker.host)

@@ -35,7 +35,7 @@ private[consumer] object TopicCount {
     }
     catch {
       case e =>
-        logger.error("error parsing consumer json string " + jsonString)
+        logger.error("error parsing consumer json string " + jsonString, e)
         throw e
     }
 

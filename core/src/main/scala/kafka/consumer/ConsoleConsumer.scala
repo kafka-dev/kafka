@@ -75,6 +75,15 @@ object ConsoleConsumer {
                            .ofType(classOf[String])
     val resetBeginningOpt = parser.accepts("from-beginning", "If the consumer does not already have an established offset to consume from, " +
     		"start with the earliest message present in the log rather than the latest message.")
+    val autoCommitIntervalOpt = parser.accepts("autocommit.interval.ms", "The time interval at which to save the current offset in ms")
+                           .withRequiredArg
+                           .describedAs("ms")
+                           .ofType(classOf[java.lang.Integer])
+                           .defaultsTo(10*1000)
+    val maxMessagesOpt = parser.accepts("max-messages", "The maximum number of messages to consume before exiting. If not set, consumption is continual.")
+                           .withRequiredArg
+                           .describedAs("num_messages")
+                           .ofType(classOf[java.lang.Integer])
     
     val options: OptionSet = tryParse(parser, args)
     checkRequiredArgs(parser, options, topicIdOpt, zkConnectOpt)
@@ -84,6 +93,7 @@ object ConsoleConsumer {
     props.put("socket.buffer.size", options.valueOf(socketBufferSizeOpt).toString)
     props.put("fetch.size", options.valueOf(fetchSizeOpt).toString)
     props.put("auto.commit", "true")
+    props.put("autocommit.interval.ms", options.valueOf(autoCommitIntervalOpt).toString)
     props.put("autooffset.reset", if(options.has(resetBeginningOpt)) "smallest" else "largest")
     props.put("zk.connect", options.valueOf(zkConnectOpt))
     val config = new ConsumerConfig(props)
@@ -92,6 +102,8 @@ object ConsoleConsumer {
     val messageFormatterClass = Class.forName(options.valueOf(messageFormatterOpt))
     val formatterArgs = tryParseFormatterArgs(options.valuesOf(messageFormatterArgOpt))
     
+    val maxMessages = if(options.has(maxMessagesOpt)) options.valueOf(maxMessagesOpt).intValue else -1
+
     val connector = Consumer.create(config)
     
     Runtime.getRuntime.addShutdownHook(new Thread() {
@@ -103,16 +115,22 @@ object ConsoleConsumer {
       }
     })
     
-    val stream: KafkaMessageStream = connector.createMessageStreams(Map(topic -> 1)).get(topic).get.get(0)
-    
+    var stream: KafkaMessageStream = connector.createMessageStreams(Map(topic -> 1)).get(topic).get.get(0)
+    val iter = 
+      if(maxMessages >= 0)
+        stream.slice(0, maxMessages)
+      else
+        stream
+
     val formatter: MessageFormatter = messageFormatterClass.newInstance().asInstanceOf[MessageFormatter]
     formatter.init(formatterArgs)
     
-    for(message <- stream)
+    for(message <- iter)
       formatter.writeTo(message, System.out)
       
     System.out.flush()
     formatter.close()
+    connector.shutdown()
   }
   
   def tryParse(parser: OptionParser, args: Array[String]) = {
