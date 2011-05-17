@@ -98,7 +98,7 @@ private[async] class ProducerSendThread[T](val threadName: String,
   def tryToHandle(events: Seq[QueueItem[T]]) {
     try {
       if(logger.isDebugEnabled) logger.debug("Handling " + events.size + " events")
-      handler.handle(events, underlyingProducer)
+      handler.handle(events, underlyingProducer, serializer)
     }catch {
       case e: Exception => logger.error("Error in handling batch of " + events.size + " events", e)
     }

@@ -63,10 +63,11 @@ class Producer[K,V](config: ProducerConfig,
          new ProducerPool[V](config, encoder,
                              new kafka.producer.async.EventHandler[V] {
                                override def init(props: Properties) { eventHandler.init(props) }
-                               override def handle(events: Seq[QueueItem[V]], producer: kafka.producer.SyncProducer) {
+                               override def handle(events: Seq[QueueItem[V]], producer: kafka.producer.SyncProducer,
+                                                   encoder: Encoder[V]) {
                                  import collection.JavaConversions._
                                  import kafka.javaapi.Implicits._
-                                 eventHandler.handle(asList(events), producer)
+                                 eventHandler.handle(asList(events), producer, encoder)
                                }
                                override def close { eventHandler.close }
                              },

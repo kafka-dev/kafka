@@ -50,7 +50,7 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
     cbkHandler.init(cbkHandlerProps)
   private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.random.nextInt, queue,
     serializer, producer,
-    if(eventHandler != null) eventHandler else new DefaultEventHandler[T](serializer, cbkHandler),
+    if(eventHandler != null) eventHandler else new DefaultEventHandler[T](cbkHandler),
     cbkHandler, config.queueTime, config.batchSize, AsyncProducer.shutdown)
   sendThread.setDaemon(false)
 

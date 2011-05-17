@@ -25,18 +25,17 @@ import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
 import java.util.Properties
 
-private[kafka] class DefaultEventHandler[T](val serializer: Encoder[T],
-                                            val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
+private[kafka] class DefaultEventHandler[T](val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[DefaultEventHandler[T]])
 
   override def init(props: Properties) { }
 
-  override def handle(events: Seq[QueueItem[T]], syncProducer: SyncProducer) {
+  override def handle(events: Seq[QueueItem[T]], syncProducer: SyncProducer, serializer: Encoder[T]) {
     var processedEvents = events
     if(cbkHandler != null)
       processedEvents = cbkHandler.beforeSendingData(events)
-    send(serialize(collate(processedEvents)), syncProducer)
+    send(serialize(collate(processedEvents), serializer), syncProducer)
   }
 
   private def send(messagesPerTopic: Map[(String, Int), ByteBufferMessageSet], syncProducer: SyncProducer) {
@@ -48,7 +47,8 @@ private[kafka] class DefaultEventHandler[T](val serializer: Encoder[T],
     }
   }
 
-  private def serialize(eventsPerTopic: Map[(String,Int), Seq[T]]): Map[(String, Int), ByteBufferMessageSet] = {
+  private def serialize(eventsPerTopic: Map[(String,Int), Seq[T]],
+                        serializer: Encoder[T]): Map[(String, Int), ByteBufferMessageSet] = {
     import scala.collection.JavaConversions._
     val eventsPerTopicMap = eventsPerTopic.map(e => ((e._1._1, e._1._2) , e._2.map(l => serializer.toMessage(l))))
     eventsPerTopicMap.map(e => ((e._1._1, e._1._2) , new ByteBufferMessageSet(e._2: _*)))

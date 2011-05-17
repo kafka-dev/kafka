@@ -17,6 +17,7 @@ package kafka.javaapi.producer.async;
 
 import kafka.javaapi.producer.SyncProducer;
 import kafka.producer.async.QueueItem;
+import kafka.serializer.Encoder;
 
 import java.util.List;
 import java.util.Properties;
@@ -37,7 +38,7 @@ public interface EventHandler<T> {
      * @param events the data sent to the producer
      * @param producer the low-level producer used to send the data
     */
-    public void handle(List<QueueItem<T>> events, SyncProducer producer);
+    public void handle(List<QueueItem<T>> events, SyncProducer producer, Encoder<T> encoder);
 
     /**
      * Cleans up and shuts down the event handler

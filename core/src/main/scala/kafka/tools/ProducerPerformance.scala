@@ -119,7 +119,7 @@ object ProducerPerformance {
     val startMs = System.currentTimeMillis
     for(i <- 0 until numThreads) {
       executor.execute(Utils.runnable( () => {
-        val producer = new Producer[String, String](new ProducerConfig(props), encoder, new DefaultEventHandler(encoder, null), null, new DefaultPartitioner)
+        val producer = new Producer[String, String](new ProducerConfig(props), encoder, new DefaultEventHandler(null), null, new DefaultPartitioner)
         var bytesSent = 0L
         var lastBytesSent = 0L
         var nSends = 0

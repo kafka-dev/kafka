@@ -31,9 +31,14 @@ class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
                       private val syncProducers: ConcurrentMap[Int, SyncProducer],
                       private val asyncProducers: ConcurrentMap[Int, AsyncProducer[V]],
-                      private val eventHandler: EventHandler[V] = null,
+                      private val inputEventHandler: EventHandler[V] = null,
                       private val cbkHandler: CallbackHandler[V] = null) {
+
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
+  private var eventHandler = inputEventHandler
+  if(eventHandler == null)
+    eventHandler = new DefaultEventHandler(cbkHandler)
+
   private var sync: Boolean = true
   config.producerType match {
     case "sync" =>

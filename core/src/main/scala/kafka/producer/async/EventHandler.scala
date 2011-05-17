@@ -17,6 +17,7 @@ package kafka.producer.async
 
 import java.util.Properties
 import kafka.producer.SyncProducer
+import kafka.serializer.Encoder
 
 /**
  * Handler that dispatches the batched data from the queue of the
@@ -34,7 +35,7 @@ trait EventHandler[T] {
    * @param events the data sent to the producer
    * @param producer the low-level producer used to send the data
   */
-  def handle(events: Seq[QueueItem[T]], producer: SyncProducer)
+  def handle(events: Seq[QueueItem[T]], producer: SyncProducer, encoder: Encoder[T])
 
   /**
    * Cleans up and shuts down the event handler

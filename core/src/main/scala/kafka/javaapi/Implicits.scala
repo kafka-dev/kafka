@@ -19,6 +19,7 @@ import kafka.producer.ProducerPool
 import kafka.producer.async.QueueItem
 import java.nio.ByteBuffer
 import org.apache.log4j.Logger
+import kafka.serializer.Encoder
 
 private[javaapi] object Implicits {
   private val logger = Logger.getLogger(getClass())
@@ -45,9 +46,9 @@ private[javaapi] object Implicits {
        : kafka.producer.async.EventHandler[T] = {
     new kafka.producer.async.EventHandler[T] {
       override def init(props: java.util.Properties) { eventHandler.init(props) }
-      override def handle(events: Seq[QueueItem[T]], producer: kafka.producer.SyncProducer) {
+      override def handle(events: Seq[QueueItem[T]], producer: kafka.producer.SyncProducer, encoder: Encoder[T]) {
         import collection.JavaConversions._
-        eventHandler.handle(asList(events), producer)
+        eventHandler.handle(asList(events), producer, encoder)
       }
       override def close { eventHandler.close }
     }
@@ -57,9 +58,10 @@ private[javaapi] object Implicits {
     : kafka.javaapi.producer.async.EventHandler[T] = {
     new kafka.javaapi.producer.async.EventHandler[T] {
       override def init(props: java.util.Properties) { eventHandler.init(props) }
-      override def handle(events: java.util.List[QueueItem[T]], producer: kafka.javaapi.producer.SyncProducer) {
+      override def handle(events: java.util.List[QueueItem[T]], producer: kafka.javaapi.producer.SyncProducer,
+                          encoder: Encoder[T]) {
         import collection.JavaConversions._
-        eventHandler.handle(asBuffer(events), producer)
+        eventHandler.handle(asBuffer(events), producer, encoder)
       }
       override def close { eventHandler.close }
     }
