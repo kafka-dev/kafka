@@ -49,8 +49,10 @@ class SimpleConsumer(val host: String,
     channel.socket.setReceiveBufferSize(bufferSize)
     channel.socket.setSoTimeout(soTimeout)
     channel.connect(address)
-    if(logger.isTraceEnabled)
+    if(logger.isTraceEnabled) {
       logger.trace("requested receive buffer size=" + bufferSize + " actual receive buffer size= " + channel.socket.getReceiveBufferSize)
+      logger.trace("soTimeout=" + soTimeout + " actual soTimeout= " + channel.socket.getSoTimeout)
+    }
     channel
   }
 

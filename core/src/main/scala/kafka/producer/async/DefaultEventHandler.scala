@@ -25,8 +25,7 @@ import kafka.serializer.Encoder
 import kafka.producer.SyncProducer
 import java.util.Properties
 
-private[async] class DefaultEventHandler[T](val producer: SyncProducer,
-                                            val serializer: Encoder[T],
+private[kafka] class DefaultEventHandler[T](val serializer: Encoder[T],
                                             val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[DefaultEventHandler[T]])
@@ -73,6 +72,5 @@ private[async] class DefaultEventHandler[T](val producer: SyncProducer,
   }
 
   override def close = {
-    producer.close
   }
 }
