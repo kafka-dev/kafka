@@ -60,7 +60,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
     }
     catch {
       case e =>
-        logger.error("error processing ProduceRequst on " + request.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+        logger.error("error processing ProduceRequst on " + request.topic + ":" + partition, e)
         e match {
           case _: IOException =>
             logger.error("force shutdown due to " + e)
@@ -87,10 +87,10 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
       }
       catch {
         case e =>
-          logger.error("erorr processing MultiProduceRequst on " + produce.topic + ":" + partition + " " + e + Utils.stackTrace(e))
+          logger.error("erorr processing MultiProduceRequst on " + produce.topic + ":" + partition, e)
           e match {
             case _: IOException =>
-              logger.error("force shutdown due to " + e)
+              logger.error("force shutdown due to ", e)
               Runtime.getRuntime.halt(1)
             case _ =>
           }
@@ -125,7 +125,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
     }
     catch {
       case e =>
-        logger.error("error when processing request " + fetchRequest + " " + e + Utils.stackTrace(e))
+        logger.error("error when processing request " + fetchRequest, e)
         response=new MessageSetSend(MessageSet.Empty, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Throwable]]))
     }
     response

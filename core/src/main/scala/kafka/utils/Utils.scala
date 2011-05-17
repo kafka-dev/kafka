@@ -58,8 +58,8 @@ object Utils {
         catch {
           case t =>
             // log any error and the stack trace
-            logger.error(t)
-            logger.error(stackTrace(t))
+            logger.error(t, t)
+            logger.error(stackTrace(t), t)
         }
       }
     }

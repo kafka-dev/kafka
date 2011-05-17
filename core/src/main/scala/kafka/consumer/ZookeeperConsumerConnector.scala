@@ -214,7 +214,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     catch {
       case t: Throwable =>
       // log it and let it go
-        logger.error("exception during autoCommit: " + t)
+        logger.error("exception during autoCommit: ", t)
     }
   }
 
@@ -285,7 +285,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     }
     catch {
       case e =>
-        logger.error("error in getConsumedOffset JMX " + e)
+        logger.error("error in getConsumedOffset JMX ", e)
     }
     return -2
   }
@@ -304,7 +304,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     }
     catch {
       case e =>
-        logger.error("error in getLatestOffset jmx " + e)
+        logger.error("error in getLatestOffset jmx ", e)
     }
     finally {
       if (simpleConsumer != null)

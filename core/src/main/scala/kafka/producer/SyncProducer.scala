@@ -176,7 +176,7 @@ class SyncProducer(val config: SyncProducerConfig) {
           val endTimeMs = SystemTime.milliseconds
           if ( (endTimeMs - beginTimeMs + connectBackoffMs) > config.connectTimeoutMs)
           {
-            logger.error("Producer connection timing out after " + config.connectTimeoutMs + " ms")
+            logger.error("Producer connection timing out after " + config.connectTimeoutMs + " ms", e)
             throw e
           }
           logger.error("Connection attempt failed, next attempt in " + connectBackoffMs + " ms", e)

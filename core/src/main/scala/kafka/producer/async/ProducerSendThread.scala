@@ -47,7 +47,7 @@ private[async] class ProducerSendThread[T](val threadName: String,
       if(remainingEvents.size > 0)
         tryToHandle(remainingEvents)
     }catch {
-      case e: Exception => logger.error("Error in sending events: " + e.printStackTrace)
+      case e: Exception => logger.error("Error in sending events: ", e)
     }finally {
       shutdownLatch.countDown
     }
@@ -100,7 +100,7 @@ private[async] class ProducerSendThread[T](val threadName: String,
       if(logger.isDebugEnabled) logger.debug("Handling " + events.size + " events")
       handler.handle(events, underlyingProducer)
     }catch {
-      case e: Exception => logger.error("Error in handling batch of " + events.size + " events")
+      case e: Exception => logger.error("Error in handling batch of " + events.size + " events", e)
     }
   }
 }
