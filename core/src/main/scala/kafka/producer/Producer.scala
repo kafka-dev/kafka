@@ -70,23 +70,27 @@ class Producer[K,V](config: ProducerConfig,
   /**
    * This constructor can be used to provide pre-instantiated objects for all config parameters
    * that would otherwise be instantiated via reflection. i.e. encoder, partitioner, event handler and
-   * callback handler
+   * callback handler. If you use this constructor, encoder, eventHandler, callback handler and partitioner
+   * will not be picked up from the config.
    * @param config Producer Configuration object
-   * @param encoder Encoder used to convert an object of type V to a kafka.message.Message
+   * @param encoder Encoder used to convert an object of type V to a kafka.message.Message. If this is null it
+   * throws an InvalidConfigException
    * @param eventHandler the class that implements kafka.producer.async.IEventHandler[T] used to
-   * dispatch a batch of produce requests, using an instance of kafka.producer.SyncProducer
+   * dispatch a batch of produce requests, using an instance of kafka.producer.SyncProducer. If this is null, it
+   * uses the DefaultEventHandler
    * @param cbkHandler the class that implements kafka.producer.async.CallbackHandler[T] used to inject
-   * callbacks at various stages of the kafka.producer.AsyncProducer pipeline.
+   * callbacks at various stages of the kafka.producer.AsyncProducer pipeline. If this is null, the producer does
+   * not use the callback handler and hence does not invoke any callbacks
    * @param partitioner class that implements the kafka.producer.Partitioner[K], used to supply a custom
    * partitioning strategy on the message key (of type K) that is specified through the ProducerData[K, T]
-   * object in the  send API
+   * object in the  send API. If this is null, producer uses DefaultPartitioner
    */
   def this(config: ProducerConfig,
            encoder: Encoder[V],
            eventHandler: EventHandler[V],
            cbkHandler: CallbackHandler[V],
            partitioner: Partitioner[K]) =
-    this(config, partitioner,
+    this(config, if(partitioner == null) new DefaultPartitioner else partitioner,
          new ProducerPool[V](config, encoder, eventHandler, cbkHandler))
 
   /**

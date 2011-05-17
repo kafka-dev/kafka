@@ -39,6 +39,9 @@ class ProducerPool[V](private val config: ProducerConfig,
   if(eventHandler == null)
     eventHandler = new DefaultEventHandler(cbkHandler)
 
+  if(serializer == null)
+    throw new InvalidConfigException("serializer passed in is null!")
+
   private var sync: Boolean = true
   config.producerType match {
     case "sync" =>
