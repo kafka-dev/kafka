@@ -121,14 +121,14 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       logger.info("ZKConsumerConnector shutting down")
       try {
         scheduler.shutdown
+        fetcher match {
+          case Some(f) => f.shutdown
+          case None =>
+        }
         sendShudownToAllQueues
         if (zkClient != null) {
           zkClient.close()
           zkClient = null
-        }
-        fetcher match {
-          case Some(f) => f.shutdown
-          case None =>
         }
       }
       catch {
