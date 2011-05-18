@@ -172,7 +172,7 @@ object ZkUtils {
     client.getChildren(path)
   }
 
-  def getChildrenCreatePathIfNeeded(client: ZkClient, path: String): Seq[String] = {
+  def getChildrenParentMayNotExist(client: ZkClient, path: String): Seq[String] = {
     import scala.collection.JavaConversions._
     // triggers implicit conversion from java list to scala Seq
 
@@ -181,10 +181,8 @@ object ZkUtils {
       ret = client.getChildren(path)
     }
     catch {
-      case e: ZkNoNodeException => {
-        client.createPersistent(path, true)
-        ret = client.getChildren(path)
-      }
+      case e: ZkNoNodeException =>
+        return Nil
       case e2 => throw e2
     }
     return ret
@@ -201,7 +199,7 @@ object ZkUtils {
 
   def getCluster(zkClient: ZkClient) : Cluster = {
     val cluster = new Cluster
-    val nodes = getChildrenCreatePathIfNeeded(zkClient, brokerIdsPath)
+    val nodes = getChildrenParentMayNotExist(zkClient, brokerIdsPath)
     for (node <- nodes) {
       val brokerZKString = readData(zkClient, brokerIdsPath + "/" + node)
       cluster.add(Broker.createBroker(node.toInt, brokerZKString))
@@ -213,7 +211,7 @@ object ZkUtils {
     val ret = new mutable.HashMap[String, List[String]]()
     for (topic <- topics) {
       var partList: List[String] = Nil
-      val brokers = getChildrenCreatePathIfNeeded(zkClient, brokerTopicsPath + "/" + topic)
+      val brokers = getChildrenParentMayNotExist(zkClient, brokerTopicsPath + "/" + topic)
       for (broker <- brokers) {
         val nParts = readData(zkClient, brokerTopicsPath + "/" + topic + "/" + broker).toInt
         for (part <- 0 until nParts)
