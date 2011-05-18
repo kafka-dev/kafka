@@ -15,30 +15,24 @@
  */
 package kafka.examples;
 
-import kafka.javaapi.message.ByteBufferMessageSet;
-import kafka.javaapi.producer.SyncProducer;
-import kafka.message.Message;
-import kafka.producer.SyncProducerConfig;
+import kafka.javaapi.producer.ProducerData;
+import kafka.producer.ProducerConfig;
 import java.util.Properties;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Producer extends Thread
 {
-  private final SyncProducer producer;
+  private final kafka.javaapi.producer.Producer<Integer, String> producer;
   private final String topic;
   private final Properties props = new Properties();
 
   public Producer(String topic)
   {
-    props.put("host", KafkaProperties.kafkaServerURL);
-    props.put("port", String.valueOf(KafkaProperties.kafkaServerPort));
-    props.put("buffer.size", String.valueOf(KafkaProperties.kafkaProducerBufferSize));
-    props.put("connect.timeout.ms", String.valueOf(KafkaProperties.connectionTimeOut));
-    props.put("reconnect.interval", String.valueOf(KafkaProperties.reconnectInterval));
-    producer = new SyncProducer(new SyncProducerConfig(props));
-    this.topic = topic; 
-    
+    props.put("serializer.class", "kafka.serializer.StringEncoder");
+    props.put("zk.connect", "localhost:2181");
+    // Use random partitioner. Don't need the key type. Just set it to Integer.
+    // The message is of type String.
+    producer = new kafka.javaapi.producer.Producer<Integer, String>(new ProducerConfig(props));
+    this.topic = topic;
   }
   
   public void run() {
@@ -46,11 +40,7 @@ public class Producer extends Thread
     while(true)
     {
       String messageStr = new String("Message_" + messageNo);
-      Message message = new Message(messageStr.getBytes());
-      List<Message> messageList = new ArrayList<Message>();
-      messageList.add(message);
-      ByteBufferMessageSet set = new ByteBufferMessageSet(messageList);
-      producer.send(topic, set);
+      producer.send(new ProducerData<Integer, String>(topic, messageStr));
       messageNo++;
     }
   }
