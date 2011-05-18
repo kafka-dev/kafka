@@ -33,7 +33,7 @@ $base_dir/../../bin/kafka-run-class.sh kafka.Kafka $base_dir/config/server_targe
 
 sleep 4
 echo "start producing messages ..."
-$base_dir/../../bin/kafka-run-class.sh kafka.tools.ProducerPerformance --brokerinfo broker.list=1:localhost:9092,2:localhost:9091,3:localhost:9090 --topic test01 --messages $num_messages --message-size $message_size --batch-size 200 --vary-message-size --threads 1 --reporting-interval 400000 num_messages --async --delay-btw-batch-ms 10 &
+$base_dir/../../bin/kafka-run-class.sh kafka.tools.ProducerPerformance --brokerinfo zk.connect=localhost:2181 --topic test01 --messages $num_messages --message-size $message_size --batch-size 200 --vary-message-size --threads 1 --reporting-interval 400000 num_messages --async --delay-btw-batch-ms 10 &
 
 echo "wait for consumer to finish consuming ..."
 cur1_offset="-1"
