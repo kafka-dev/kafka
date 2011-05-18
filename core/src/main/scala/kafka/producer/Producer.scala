@@ -101,7 +101,9 @@ class Producer[K,V](config: ProducerConfig,
   def send(producerData: ProducerData[K,V]*) {
     val producerPoolRequests = producerData.map { pd =>
     // find the number of broker partitions registered for this topic
+      logger.debug("Getting the number of broker partitions registered for topic: " + pd.getTopic)
       val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(pd.getTopic).toSeq
+      logger.debug("Broker partitions registered for topic: " + pd.getTopic + " = " + numBrokerPartitions)
       val totalNumPartitions = numBrokerPartitions.length
       var brokerIdPartition: Partition = null
       var partition: Int = 0
