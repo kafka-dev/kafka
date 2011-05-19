@@ -80,7 +80,7 @@ class ProducerTest extends JUnitSuite {
     producer2.send("test-topic", new ByteBufferMessageSet(new Message("test".getBytes())))
 
     consumer1 = new SimpleConsumer("localhost", port1, 1000000, 64*1024)
-    consumer2 = new SimpleConsumer("localhost", port2, 1000000, 64*1024)
+    consumer2 = new SimpleConsumer("localhost", port2, 100, 64*1024)
 
     // temporarily set request handler logger to a higher level
     requestHandlerLogger.setLevel(Level.FATAL)
@@ -455,6 +455,63 @@ class ProducerTest extends JUnitSuite {
       case e: Exception => fail("Not expected")
     }
     producer.close
+  }
+
+  @Test
+  def testZKSendToExistingTopicWithNoBrokers() {
+    val props = new Properties()
+    props.put("serializer.class", "kafka.serializer.StringEncoder")
+    props.put("partitioner.class", "kafka.producer.StaticPartitioner")
+    props.put("zk.connect", TestZKUtils.zookeeperConnect)
+
+    val config = new ProducerConfig(props)
+    val serializer = new StringEncoder
+
+    val producer = new Producer[String, String](config)
+    var server: KafkaServer = null
+
+    try {
+      // shutdown server1
+      server1.shutdown
+      Thread.sleep(100)
+      // Available broker id, partition id at this stage should be (1,0)
+      // this should send the message to broker 1 on partition 0
+      producer.send(new ProducerData[String, String]("new-topic", "test", Array("test")))
+      Thread.sleep(100)
+      // cross check if brokers got the messages
+      val messageSet1 = consumer2.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
+      Assert.assertTrue("Message set should have 1 message", messageSet1.hasNext)
+      Assert.assertEquals(new Message("test".getBytes), messageSet1.next)
+
+      // shutdown server2
+      server2.shutdown
+      Thread.sleep(100)
+      // delete the new-topic logs
+      Utils.rm(server2.config.logDir)
+      Thread.sleep(100)
+      // start it up again. So broker 2 exists under /broker/ids, but nothing exists under /broker/topics/new-topic
+      val props2 = TestUtils.createBrokerConfig(brokerId1, port1)
+      val config2 = new KafkaConfig(props2) {
+        override val numPartitions = 4
+      }
+      server = TestUtils.createServer(config2)
+      Thread.sleep(100)
+
+      // now there are no brokers registered under test-topic.
+      producer.send(new ProducerData[String, String]("new-topic", "test", Array("test")))
+      Thread.sleep(100)
+
+      // cross check if brokers got the messages
+      val messageSet2 = consumer1.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
+      Assert.assertTrue("Message set should have 1 message", messageSet2.hasNext)
+      Assert.assertEquals(new Message("test".getBytes), messageSet2.next)
+
+    } catch {
+      case e: Exception => fail("Not expected", e)
+    }finally {
+      server.shutdown
+      producer.close
+    }
   }
 
   @Test

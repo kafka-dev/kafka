@@ -280,6 +280,12 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
      * @param curChilds the list of changed brokers
      */
     def processNewBrokerInExistingTopic(topic: String, curChilds: Seq[String]) = {
+      // find the old list of brokers for this topic
+      oldBrokerTopicPartitionsMap.get(topic) match {
+        case Some(brokersParts) =>
+          logger.debug("[BrokerTopicsListener] Old list of brokers: " + brokersParts.map(bp => bp.brokerId).toString)
+        case None =>
+      }
       val updatedBrokerList = curChilds.map(b => b.toInt)
       import ZKBrokerPartitionInfo._
       val updatedBrokerParts:SortedSet[Partition] = getBrokerPartitions(zkClient, topic, updatedBrokerList.toList)
@@ -298,12 +304,6 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
       mergedBrokerParts = mergedBrokerParts.filter(bp => allBrokers.contains(bp.brokerId))
       topicBrokerPartitions += (topic -> mergedBrokerParts)
       logger.debug("[BrokerTopicsListener] List of broker partitions for topic: " + topic + " are " + mergedBrokerParts.toString)
-      // find the old list of brokers for this topic
-      oldBrokerTopicPartitionsMap.get(topic) match {
-        case Some(brokersParts) =>
-          logger.debug("[BrokerTopicsListener] Old list of brokers: " + brokersParts.map(bp => bp.brokerId).toString)
-        case None =>
-      }
     }
 
     def resetState = {
