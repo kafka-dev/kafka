@@ -29,7 +29,9 @@ import kafka.utils._
 private[server] class MultiMessageSetSend(val sets: List[MessageSetSend]) extends MultiSend(new ByteBufferSend(6) :: sets) {
   
   val buffer = this.sends.head.asInstanceOf[ByteBufferSend].buffer
-  buffer.putInt(2 + sets.foldLeft(0)(_ + _.sendSize))
+  val allMessageSetSize: Int = sets.foldLeft(0)(_ + _.sendSize)
+  val expectedBytesToWrite: Int = 4 + 2 + allMessageSetSize
+  buffer.putInt(2 + allMessageSetSize)
   buffer.putShort(0)
   buffer.rewind()
   

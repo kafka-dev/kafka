@@ -84,18 +84,27 @@ private[kafka] trait Send extends Transmission {
 /**
  * A set of composite sends, sent one after another
  */
-class MultiSend[S <: Send](val sends: List[S]) extends Send {
-  
+abstract class MultiSend[S <: Send](val sends: List[S]) extends Send {
+  val expectedBytesToWrite: Int
   private var current = sends
-  
+  var totalWritten = 0
+
   def writeTo(channel: WritableByteChannel): Int = {
 	  expectIncomplete
     val written = current.head.writeTo(channel)
+    totalWritten += written
     if(current.head.complete)
       current = current.tail
     written
   }
   
-  def complete = current == Nil
-
+  def complete: Boolean = {
+    if (current == Nil) {
+      if (totalWritten != expectedBytesToWrite)
+        logger.error("mismatch in sending bytes over socket; expected: " + expectedBytesToWrite + " actual: " + totalWritten)
+      return true
+    }
+    else
+      return false
+  }
 }
