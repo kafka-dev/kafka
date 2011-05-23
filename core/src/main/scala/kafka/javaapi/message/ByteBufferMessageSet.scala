@@ -39,9 +39,6 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends M
 
   def validBytes: Int = underlying.validBytes
 
-  def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long =
-      underlying.writeTo(channel, offset, size)
-
   override def iterator: java.util.Iterator[Message] = new java.util.Iterator[Message] {
     val underlyingIterator = underlying.iterator
     override def hasNext(): Boolean = {
