@@ -28,11 +28,6 @@ import java.nio.channels.WritableByteChannel
  */
 abstract class MessageSet extends java.lang.Iterable[Message] {
 
-  /** Write the messages in this set to the given channel starting at the given offset byte.
-    * Less than the complete amount may be written, but no more than maxSize can be. The number
-    * of bytes written is returned */
-  def writeTo(channel: WritableByteChannel, offset: Long, maxSize: Long): Long
-
   /**
    * Provides an iterator over the messages in this set
    */
