@@ -51,7 +51,13 @@ private[server] class MessageSetSend(val messages: MessageSet, val errorCode: In
       written += fileBytesSent.asInstanceOf[Int]
       sent += fileBytesSent
     }
-    
+
+    if(logger.isTraceEnabled)
+      if (channel.isInstanceOf[SocketChannel]) {
+        val socketChannel = channel.asInstanceOf[SocketChannel]
+        logger.trace(sent + " bytes written to " + socketChannel.socket.getRemoteSocketAddress() + " expecting to send " + size + " bytes")
+      }
+
     if(sent >= size)
       complete = true
     written
