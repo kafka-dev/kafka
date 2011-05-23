@@ -35,7 +35,7 @@ object ProducerShell {
                            .withRequiredArg
                            .describedAs("kafka://hostname:port")
                            .ofType(classOf[String])
-    val topicOpt = parser.accepts("topic", "REQUIRED: The topic to consume from.")
+    val topicOpt = parser.accepts("topic", "REQUIRED: The topic to produce to.")
                            .withRequiredArg
                            .describedAs("topic")
                            .ofType(classOf[String])

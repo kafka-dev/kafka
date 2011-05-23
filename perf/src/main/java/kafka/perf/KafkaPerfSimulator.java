@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Random;
+import java.io.IOException;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -313,7 +314,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
     if(!(options.hasArgument(KAFKA_SERVER) || options.hasArgument(REPORT_FILE) 
          ||  options.hasArgument(XAXIS)))
-      printUsage();
+      printUsage(parser);
       
     kafkaServersURL = (String)options.valueOf(KAFKA_SERVER);
     reportFileName= (String)options.valueOf(REPORT_FILE);
@@ -348,10 +349,15 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     System.out.println("numTopic: " + numTopic);
   }
   
-  private static void printUsage()
+  private static void printUsage(OptionParser parser)
   {
-    System.out.println("kafka server name is requied");
-    System.exit(0);
+      System.err.println("Missing required argument");
+      try {
+        parser.printHelpOn(System.err);
+      }catch(IOException ioe) {
+        ioe.printStackTrace();
+      }
+      System.exit(0);
   }
   
   public static void main(String[] args) throws Exception {
