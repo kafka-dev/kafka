@@ -5,4 +5,8 @@ messages from Kafka server.
 
 In order to run demo:
    1. Start Zookeeper and the Kafka server
-   2. Run 'ant' from inside the java directory
+   2. ./sbt from top-level kafka directory
+   3. Switch to the kafka java examples project -> project Kafka Java Examples
+   4. execute run -> run
+   5. For unlimited producer-consumer run, select option 1
+      For simple consumer demo, select option 2
