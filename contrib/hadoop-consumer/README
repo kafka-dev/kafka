@@ -27,12 +27,16 @@ SimpleKafkaETLJob sets up job properties and files Hadoop job.
 SimpleKafkaETLMapper dumps kafka data into hdfs. 
 
 HOW TO RUN:
-1. Complile using "sbt" to create a package for hadoop consumer code.
-./sbt
-project hadoop consumer
-package-all
+In order to run this, make sure the HADOOP_HOME environment variable points to 
+your hadoop installation directory.
 
-2. Produce test events in server and generate offset files
+1. Complile using "sbt" to create a package for hadoop consumer code.
+./sbt package
+
+2. Run the hadoop-setup.sh script that enables write permission on the 
+   required HDFS directory
+
+3. Produce test events in server and generate offset files
   1) Start kafka server [ Follow the quick start - 
                         http://sna-projects.com/kafka/quickstart.php ]
 
@@ -45,7 +49,7 @@ package-all
   3) Produce test events to Kafka server and generate offset files
    ./run-class.sh kafka.etl.impl.DataGenerator test/test.properties
 
-3. Fetch generated topic into HDFS:
+4. Fetch generated topic into HDFS:
   1) Update test/test.properties to change the following parameters:
 	hadoop.job.ugi	: id and group 
 	input           : input location 
