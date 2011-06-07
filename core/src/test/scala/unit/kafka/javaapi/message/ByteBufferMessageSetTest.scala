@@ -24,8 +24,8 @@ import kafka.message.Message
 
 class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestCases {
 
-  override def createMessageSet(messages: Seq[Message]): ByteBufferMessageSet = 
-    new ByteBufferMessageSet(false, getMessageList(messages: _*))
+  override def createMessageSet(messages: Seq[Message], compressed: Boolean=false): ByteBufferMessageSet =
+    new ByteBufferMessageSet(compressed, getMessageList(messages: _*))
   
   @Test
   def testValidBytes() {
@@ -39,10 +39,32 @@ class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestC
   }
 
   @Test
+  def testValidBytesWithCompression () {
+    val messages = new ByteBufferMessageSet(true, getMessageList(new Message("hello".getBytes()),
+      new Message("there".getBytes())))
+    val buffer = ByteBuffer.allocate(messages.sizeInBytes.toInt + 2)
+    buffer.put(messages.buffer)
+    buffer.putShort(4)
+    val messagesPlus = new ByteBufferMessageSet(buffer, 0, true)
+    assertEquals("Adding invalid bytes shouldn't change byte count", messages.validBytes, messagesPlus.validBytes)
+  }
+
+  @Test
   def testEquals() {
     val messages = new ByteBufferMessageSet(false, getMessageList(new Message("hello".getBytes()),
       new Message("there".getBytes())))
     val moreMessages = new ByteBufferMessageSet(false, getMessageList(new Message("hello".getBytes()),
+      new Message("there".getBytes())))
+
+    assertEquals(messages, moreMessages)
+    assertTrue(messages.equals(moreMessages))
+  }
+
+  @Test
+  def testEqualsWithCompression () {
+    val messages = new ByteBufferMessageSet(true, getMessageList(new Message("hello".getBytes()),
+      new Message("there".getBytes())))
+    val moreMessages = new ByteBufferMessageSet(true, getMessageList(new Message("hello".getBytes()),
       new Message("there".getBytes())))
 
     assertEquals(messages, moreMessages)

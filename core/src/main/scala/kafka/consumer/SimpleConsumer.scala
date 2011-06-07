@@ -101,7 +101,7 @@ class SimpleConsumer(val host: String,
       val endTime = SystemTime.nanoseconds
       SimpleConsumerStats.recordFetchRequest(endTime - startTime)
       SimpleConsumerStats.recordConsumptionThroughput(response._1.buffer.limit)
-      new ByteBufferMessageSet(response._1.buffer, response._2, false)
+      new ByteBufferMessageSet(response._1.buffer, response._2, true)
     }
   }
 

@@ -6,18 +6,20 @@ import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import java.nio.ByteBuffer
+import org.apache.log4j.Logger
 
 object CompressionUtils {
   var DEFAULT_COMPRESSION_CODEC = 1;
   //0 is reserved to indicate no compression
   val GZIP_COMPRESSION = 1;
-  
+  private val logger = Logger.getLogger(getClass)
   def compress(messages:Iterable[Message]):Message = compress(messages, DEFAULT_COMPRESSION_CODEC)
   
   def compress(messages:Iterable[Message], compressionCodec:Int):Message = compressionCodec match {
     case GZIP_COMPRESSION =>
       val outputStream:ByteArrayOutputStream = new ByteArrayOutputStream()
       val gzipOutput:GZIPOutputStream = new GZIPOutputStream(outputStream)
+      logger.debug("Allocating message byte buffer of size = " + MessageSet.messageSetSize(messages))
       val messageByteBuffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
       for (message <- messages) {
         message.serializeTo(messageByteBuffer)

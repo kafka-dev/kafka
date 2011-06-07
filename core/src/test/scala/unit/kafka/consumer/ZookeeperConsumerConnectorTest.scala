@@ -37,11 +37,11 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
   val topic = "topic1"
   val configs =
     for(props <- TestUtils.createBrokerConfigs(numNodes))
-      yield new KafkaConfig(props) {
-        override val enableZookeeper = true
-        override val numPartitions = numParts
-        override val zkConnect = zookeeperConnect
-      }
+    yield new KafkaConfig(props) {
+      override val enableZookeeper = true
+      override val numPartitions = numParts
+      override val zkConnect = zookeeperConnect
+    }
   val group = "group1"
   val consumer0 = "consumer0"
   val consumer1 = "consumer1"
@@ -192,20 +192,59 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
+  def testCompressionSetConsumption() {
+    val requestHandlerLogger = Logger.getLogger(classOf[kafka.server.KafkaRequestHandlers])
+    requestHandlerLogger.setLevel(Level.FATAL)
+
+    var actualMessages: List[Message] = Nil
+
+    // shutdown one server
+    servers.last.shutdown
+    Thread.sleep(500)
+
+    // send some messages to each broker
+    val sentMessages = sendMessages(configs.head, 200, "batch1", true)
+    // test consumer timeout logic
+    val consumerConfig0 = new ConsumerConfig(
+      TestUtils.createConsumerProperties(zkConnect, group, consumer0)) {
+      override val consumerTimeoutMs = 5000
+    }
+    val zkConsumerConnector0 = new ZookeeperConsumerConnector(consumerConfig0, true)
+    val topicMessageStreams0 = zkConsumerConnector0.createMessageStreams(Predef.Map(topic -> 1))
+    getMessages(100, topicMessageStreams0)
+    zkConsumerConnector0.shutdown
+    // at this point, only some part of the message set was consumed. So consumed offset should still be 0
+    // also fetched offset should be 0
+    val zkConsumerConnector1 = new ZookeeperConsumerConnector(consumerConfig0, true)
+    val topicMessageStreams1 = zkConsumerConnector1.createMessageStreams(Predef.Map(topic -> 1))
+    val receivedMessages = getMessages(400, topicMessageStreams1)
+    val sortedReceivedMessages = receivedMessages.sortWith((s,t) => s.checksum < t.checksum)
+    val sortedSentMessages = sentMessages.sortWith((s,t) => s.checksum < t.checksum)
+    assertEquals(sortedSentMessages, sortedReceivedMessages)
+    zkConsumerConnector1.shutdown
+
+    requestHandlerLogger.setLevel(Level.ERROR)
+  }
+
+  def sendMessages(conf: KafkaConfig, messagesPerNode: Int, header: String, compression: Boolean): List[Message]= {
+    var messages: List[Message] = Nil
+    val producer = TestUtils.createProducer("localhost", conf.port)
+    for (partition <- 0 until numParts) {
+      val ms = 0.until(messagesPerNode).map(x =>
+        new Message((header + conf.brokerId + "-" + partition + "-" + x).getBytes)).toArray
+      val mSet = new ByteBufferMessageSet(compression, ms: _*)
+      for (message <- ms)
+        messages ::= message
+      producer.send(topic, partition, mSet)
+    }
+    producer.close()
+    messages
+  }
+
   def sendMessages(messagesPerNode: Int, header: String, compression: Boolean=false): List[Message]= {
     var messages: List[Message] = Nil
     for(conf <- configs) {
-      val producer = TestUtils.createProducer("localhost", conf.port)
-      for (partition <- 0 until numParts) {
-        val ms = 0.until(messagesPerNode).map(x =>
-          new Message((header + conf.brokerId + "-" + partition + "-" + x).getBytes)).toArray
-        val mSet = new ByteBufferMessageSet(compression, ms: _*)
-        for (message <- ms)
-          messages ::= message
-        println("Size of message set = " + mSet.sizeInBytes)
-        producer.send(topic, partition, mSet)
-      }
-      producer.close()
+      messages ++= sendMessages(conf, messagesPerNode, header, compression)
     }
     messages.sortWith((s,t) => s.checksum < t.checksum)
   }

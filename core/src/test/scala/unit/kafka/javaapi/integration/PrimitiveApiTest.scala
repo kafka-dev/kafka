@@ -82,6 +82,50 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
+  def testProduceAndFetchWithCompression() {
+    // send some messages
+    val topic = "test"
+
+//    send an empty messageset first
+    val sent2 = new ByteBufferMessageSet(true, getMessageList(Seq.empty[Message]: _*))
+    sent2.enableDeepIteration
+    producer.send(topic, sent2)
+    Thread.sleep(200)
+    sent2.buffer.rewind
+    var fetched2 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
+    TestUtils.checkEquals(sent2.iterator, fetched2.iterator)
+
+
+    // send some messages
+    val sent3 = new ByteBufferMessageSet(true, getMessageList(new Message("hello".getBytes()),
+      new Message("there".getBytes())))
+    sent3.enableDeepIteration
+    producer.send(topic, sent3)
+
+    Thread.sleep(200)
+    sent3.buffer.rewind
+    var fetched3: ByteBufferMessageSet = null
+    while(fetched3 == null || fetched3.validBytes == 0)
+      fetched3 = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
+    TestUtils.checkEquals(sent3.iterator, fetched3.iterator)
+
+    // temporarily set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.FATAL)
+
+    // send an invalid offset
+    try {
+      val fetchedWithError = consumer.fetch(new FetchRequest(topic, 0, -1, 10000))
+      fetchedWithError.iterator
+      fail("expect exception")
+    }
+    catch {
+      case e: OffsetOutOfRangeException => "this is good"
+    }
+
+    // restore set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.ERROR)
+  }
+
   def testProduceAndMultiFetch() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -154,6 +198,79 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
+  def testProduceAndMultiFetchWithCompression() {
+    // send some messages
+    val topics = List("test1", "test2", "test3");
+    {
+      val messages = new mutable.HashMap[String, ByteBufferMessageSet]
+      val fetches = new mutable.ArrayBuffer[FetchRequest]
+      for(topic <- topics) {
+        val set = new ByteBufferMessageSet(true, getMessageList(new Message(("a_" + topic).getBytes),
+                                                                 new Message(("b_" + topic).getBytes)))
+        set.enableDeepIteration
+        messages += topic -> set
+        producer.send(topic, set)
+        set.buffer.rewind
+        fetches += new FetchRequest(topic, 0, 0, 10000)
+      }
+
+      // wait a bit for produced message to be available
+      Thread.sleep(200)
+      val response = consumer.multifetch(getFetchRequestList(fetches: _*))
+      val iter = response.iterator
+      for(topic <- topics) {
+        if (iter.hasNext) {
+          val resp = iter.next
+      	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+        }
+        else
+          fail("fewer responses than expected")
+      }
+    }
+
+    // temporarily set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.FATAL)
+
+    {
+      // send some invalid offsets
+      val fetches = new mutable.ArrayBuffer[FetchRequest]
+      for(topic <- topics)
+        fetches += new FetchRequest(topic, 0, -1, 10000)
+
+      try {
+        val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
+        val iter = responses.iterator
+        while (iter.hasNext)
+    	    iter.next.iterator
+        fail("expect exception")
+      }
+      catch {
+        case e: OffsetOutOfRangeException => "this is good"
+      }
+    }
+
+    {
+      // send some invalid partitions
+      val fetches = new mutable.ArrayBuffer[FetchRequest]
+      for(topic <- topics)
+        fetches += new FetchRequest(topic, -1, 0, 10000)
+
+      try {
+        val responses = consumer.multifetch(getFetchRequestList(fetches: _*))
+        val iter = responses.iterator
+        while (iter.hasNext)
+    	    iter.next.iterator
+        fail("expect exception")
+      }
+      catch {
+        case e: InvalidPartitionException => "this is good"
+      }
+    }
+
+    // restore set request handler logger to a higher level
+    requestHandlerLogger.setLevel(Level.ERROR)
+  }
+
   def testProduceAndMultiFetchJava() {
     // send some messages
     val topics = List("test1", "test2", "test3");
@@ -163,6 +280,37 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       for(topic <- topics) {
         val set = new ByteBufferMessageSet(false, getMessageList(new Message(("a_" + topic).getBytes),
                                                                  new Message(("b_" + topic).getBytes)))
+        messages += topic -> set
+        producer.send(topic, set)
+        set.buffer.rewind
+        fetches.add(new FetchRequest(topic, 0, 0, 10000))
+      }
+
+      // wait a bit for produced message to be available
+      Thread.sleep(200)
+      val response = consumer.multifetch(fetches)
+      val iter = response.iterator
+      for(topic <- topics) {
+        if (iter.hasNext) {
+          val resp = iter.next
+      	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+        }
+        else
+          fail("fewer responses than expected")
+      }
+    }
+  }
+
+  def testProduceAndMultiFetchJavaWithCompression() {
+    // send some messages
+    val topics = List("test1", "test2", "test3");
+    {
+      val messages = new mutable.HashMap[String, ByteBufferMessageSet]
+      val fetches : java.util.ArrayList[FetchRequest] = new java.util.ArrayList[FetchRequest]
+      for(topic <- topics) {
+        val set = new ByteBufferMessageSet(true, getMessageList(new Message(("a_" + topic).getBytes),
+                                                                 new Message(("b_" + topic).getBytes)))
+        set.enableDeepIteration
         messages += topic -> set
         producer.send(topic, set)
         set.buffer.rewind
@@ -202,6 +350,39 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     for (messageSet <- messages.values)
       messageSet.buffer.rewind
       
+    // wait a bit for produced message to be available
+    Thread.sleep(200)
+    val response = consumer.multifetch(getFetchRequestList(fetches: _*))
+    val iter = response.iterator
+    for(topic <- topics) {
+      if (iter.hasNext) {
+        val resp = iter.next
+        TestUtils.checkEquals(messages(topic).iterator, resp.iterator)
+      }
+      else
+        fail("fewer responses than expected")
+    }
+  }
+
+  def testMultiProduceWithCompression() {
+    // send some messages
+    val topics = List("test1", "test2", "test3");
+    val messages = new mutable.HashMap[String, ByteBufferMessageSet]
+    val fetches = new mutable.ArrayBuffer[FetchRequest]
+    var produceList: List[ProducerRequest] = Nil
+    for(topic <- topics) {
+      val set = new ByteBufferMessageSet(true, getMessageList(new Message(("a_" + topic).getBytes),
+                                                               new Message(("b_" + topic).getBytes)))
+      set.enableDeepIteration
+      messages += topic -> set
+      produceList ::= new ProducerRequest(topic, 0, set)
+      fetches += new FetchRequest(topic, 0, 0, 10000)
+    }
+    producer.multiSend(produceList.toArray)
+
+    for (messageSet <- messages.values)
+      messageSet.buffer.rewind
+
     // wait a bit for produced message to be available
     Thread.sleep(200)
     val response = consumer.multifetch(getFetchRequestList(fetches: _*))

@@ -25,8 +25,7 @@ import kafka.utils.TestUtils
 trait BaseMessageSetTestCases extends JUnitSuite {
   
   val messages = Array(new Message("abcd".getBytes()), new Message("efgh".getBytes()))
-  
-  def createMessageSet(messages: Seq[Message]): MessageSet
+  def createMessageSet(messages: Seq[Message], compressed: Boolean=false): MessageSet
 
   @Test
   def testWrittenEqualsRead {
@@ -43,6 +42,13 @@ trait BaseMessageSetTestCases extends JUnitSuite {
   }
 
   @Test
+  def testIteratorIsConsistentWithCompression() {
+    val m = createMessageSet(messages, true)
+    // two iterators over the same set should give the same results
+    TestUtils.checkEquals(m.iterator, m.iterator)
+  }
+
+  @Test
   def testSizeInBytes() {
     assertEquals("Empty message set should have 0 bytes.",
                  0L,
@@ -50,5 +56,12 @@ trait BaseMessageSetTestCases extends JUnitSuite {
     assertEquals("Predicted size should equal actual size.", 
                  kafka.message.MessageSet.messageSetSize(messages).toLong,
                  createMessageSet(messages).sizeInBytes)
+  }
+
+  @Test
+  def testSizeInBytesWithCompression () {
+    assertEquals("Empty message set should have 0 bytes.",
+                 30L,           // overhead of the GZIP output stream
+                 createMessageSet(Array[Message](), true).sizeInBytes)
   }
 }
