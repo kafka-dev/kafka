@@ -69,12 +69,11 @@ class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness wit
     }
     catch {
       case e: InvalidMessageSizeException => println("This is good")
-      case e1: Exception => println("This is not bad, too" + e1.printStackTrace)
     }
 
     // test ZookeeperConsumer
     val consumerConfig1 = new ConsumerConfig(
-      TestUtils.createConsumerProperties(zkConnect, "group1", "consumer1", 5500))
+      TestUtils.createConsumerProperties(zkConnect, "group1", "consumer1", 10000))
     val zkConsumerConnector1 = new ZookeeperConsumerConnector(consumerConfig1)
     val topicMessageStreams1 = zkConsumerConnector1.createMessageStreams(Predef.Map(topic -> 1))
     try {

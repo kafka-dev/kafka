@@ -178,8 +178,13 @@ class ByteBufferMessageSet protected () extends MessageSet {
           return allDone()
         }
         val size = topIter.getInt()
-        if(topIter.remaining < size) {
+        logger.trace("Remaining bytes in iterator = " + topIter.remaining)
+        logger.trace("size of data = " + size)
+        if(size < 0 || topIter.remaining < size) {
           deepValidByteCount = currValidBytes
+          if (currValidBytes == 0 || size < 0)
+            throw new InvalidMessageSizeException("invalid message size:" + size + " only received bytes:" + topIter.remaining
+              + " at " + currValidBytes + " possible causes (1) a single message larger than the fetch size; (2) log corruption")
           return allDone()
         }
         else {

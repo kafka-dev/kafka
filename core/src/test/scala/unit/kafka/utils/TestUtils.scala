@@ -120,7 +120,7 @@ object TestUtils {
    * Create a test config for a consumer
    */
   def createConsumerProperties(zkConnect: String, groupId: String, consumerId: String,
-                               consumerTimeout: Long = 1000): Properties = {
+                               consumerTimeout: Long = -1): Properties = {
     val props = new Properties
     props.put("zk.connect", zkConnect)
     props.put("groupid", groupId)

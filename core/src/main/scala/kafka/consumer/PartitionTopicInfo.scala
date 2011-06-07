@@ -69,7 +69,14 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   def enqueue(messages: ByteBufferMessageSet, fetchOffset: Long): Int = {
     val size = messages.validBytes
     if(size > 0) {
-      val newOffset = fetchedOffset.addAndGet(size)
+      // update fetched offset to the compressed data chunk size, not the decompressed message set size
+      var newOffset: Long = 0L
+      if(messages.deepIterate) {
+        logger.trace("Compressed message set. Updating fetch offset with size of compressed message set")
+        newOffset = fetchedOffset.addAndGet(messages.sizeInBytes)
+      }
+      else
+        newOffset = fetchedOffset.addAndGet(size)
       if (logger.isDebugEnabled)
         logger.debug("updated fetch offset of " + this + " to " + newOffset)
       chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))

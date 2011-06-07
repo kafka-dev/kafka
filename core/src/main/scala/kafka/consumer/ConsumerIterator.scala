@@ -32,42 +32,53 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   
   private val logger = Logger.getLogger(classOf[ConsumerIterator])
   private var current: Iterator[Message] = null
+  private var currentDataChunk: FetchedDataChunk = null
+  private var setConsumedOffset: Boolean = false
   private var currentTopicInfo: PartitionTopicInfo = null
 
   override def next(): Message = {
     val message = super.next
-    currentTopicInfo.consumed(MessageSet.entrySize(message))
+    if(setConsumedOffset) {
+      currentTopicInfo.consumed(currentDataChunk.messages.sizeInBytes.toInt)
+      setConsumedOffset = false
+    }
     message
   }
 
   protected def makeNext(): Message = {
     // if we don't have an iterator, get one
     if(current == null || !current.hasNext) {
-      var found: FetchedDataChunk = null
+      logger.debug("Consumer timeout = " + consumerTimeoutMs)
       if (consumerTimeoutMs < 0)
-        found = channel.take
+        currentDataChunk = channel.take
       else {
-        found = channel.poll(consumerTimeoutMs, TimeUnit.MILLISECONDS)
-        if (found == null) {
+        currentDataChunk = channel.poll(consumerTimeoutMs, TimeUnit.MILLISECONDS)
+        if (currentDataChunk == null) {
           logger.debug("Consumer iterator timing out..")
           throw new ConsumerTimeoutException
         }
       }
-      if(found eq ZookeeperConsumerConnector.shutdownCommand) {
+      if(currentDataChunk eq ZookeeperConsumerConnector.shutdownCommand) {
         logger.debug("Received the shutdown command")
-    	  channel.offer(found)
+    	  channel.offer(currentDataChunk)
         return allDone
       } else {
-        currentTopicInfo = found.topicInfo
-        if (currentTopicInfo.getConsumeOffset != found.fetchOffset) {
+        currentTopicInfo = currentDataChunk.topicInfo
+        if (currentTopicInfo.getConsumeOffset != currentDataChunk.fetchOffset) {
           logger.error("consumed offset: " + currentTopicInfo.getConsumeOffset + " doesn't match fetch offset: " +
-            found.fetchOffset + " for " + currentTopicInfo + "; consumer may lose data")
-          currentTopicInfo.resetConsumeOffset(found.fetchOffset)
+            currentDataChunk.fetchOffset + " for " + currentTopicInfo + "; consumer may lose data")
+          currentTopicInfo.resetConsumeOffset(currentDataChunk.fetchOffset)
         }
-        current = found.messages.iterator
+        current = currentDataChunk.messages.iterator
       }
     }
-    current.next
+    val item = current.next
+    if(!current.hasNext) {
+      // the iterator in this data chunk is exhausted. Update the consumed offset now
+      setConsumedOffset = true
+    }
+
+    item
   }
   
 }
