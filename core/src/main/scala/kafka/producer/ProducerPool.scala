@@ -121,7 +121,10 @@ class ProducerPool[V](private val config: ProducerConfig,
             producer.multiSend(producerRequests.toArray)
           else
             producer.send(producerRequests(0).topic, producerRequests(0).partition, producerRequests(0).messages)
-          logger.debug("Sending message to broker " + bid)
+          if(config.compression)
+            logger.debug("Sending compressed messages to broker " + bid)
+          else
+            logger.debug("Sending message to broker " + bid)
         }else
           throw new UnavailableProducerException("Producer pool has not been initialized correctly. " +
             "Sync Producer for broker " + bid + " does not exist in the pool")
@@ -132,6 +135,10 @@ class ProducerPool[V](private val config: ProducerConfig,
           requestsForThisBid._1.foreach { req =>
             req.getData.foreach(d => producer.send(req.getTopic, d, req.getBidPid.partId))
           }
+          if(config.compression)
+            logger.debug("Sending compressed messages")
+          else
+            logger.debug("Sending message")
         }
         else
           throw new UnavailableProducerException("Producer pool has not been initialized correctly. " +

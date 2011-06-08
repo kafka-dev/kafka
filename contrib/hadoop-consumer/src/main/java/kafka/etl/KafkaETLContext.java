@@ -117,15 +117,15 @@ public class KafkaETLContext {
         
         boolean gotNext = get(key, value);
 
-        Iterator<ByteBufferMessageSet> iter = _response.iterator();
-
-        while ( !gotNext && _response != null && iter.hasNext()) {
-            ByteBufferMessageSet msgSet = iter.next();
-            if ( hasError(msgSet)) return false;
-            _messageIt =  (Iterator<Message>) msgSet.iterator();
-            gotNext = get(key, value);
+        if(_response != null) {
+            Iterator<ByteBufferMessageSet> iter = _response.iterator();
+            while ( !gotNext && iter.hasNext()) {
+                ByteBufferMessageSet msgSet = iter.next();
+                if ( hasError(msgSet)) return false;
+                _messageIt =  (Iterator<Message>) msgSet.iterator();
+                gotNext = get(key, value);
+            }
         }
-            
         return gotNext;
     }
     
@@ -197,19 +197,19 @@ public class KafkaETLContext {
         /* get smallest and largest offsets*/
         long[] range = new long[2];
 
-        long[] offsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
+        long[] startOffsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
                 OffsetRequest.EARLIEST_TIME(), 1);
-        if (offsets.length != 1)
+        if (startOffsets.length != 1)
             throw new IOException("input:" + _input + " Expect one smallest offset but get "
-                                            + offsets.length);
-        range[0] = offsets[0];
+                                            + startOffsets.length);
+        range[0] = startOffsets[0];
         
-        offsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(), 
+        long[] endOffsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
                                         OffsetRequest.LATEST_TIME(), 1);
-        if (offsets.length != 1)
+        if (endOffsets.length != 1)
             throw new IOException("input:" + _input + " Expect one latest offset but get " 
-                                            + offsets.length);
-        range[1] = offsets[0];
+                                            + endOffsets.length);
+        range[1] = endOffsets[0];
 
         /*adjust range based on input offsets*/
         if ( _request.isValidOffset()) {
@@ -224,6 +224,7 @@ public class KafkaETLContext {
                                             + ". Will ignore it.");
             }
         }
+        System.out.println("Using offset range [" + range[0] + ", " + range[1] + "]");
         return range;
     }
     

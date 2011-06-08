@@ -137,7 +137,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
     val consumerPackageAction = hadoopConsumer.consumerPackageAction
 
     class HadoopProducerProject(info: ProjectInfo) extends DefaultProject(info)
-      with CoreDependencies with HadoopDependencies {
+      with CoreDependencies {
       val producerPackageAction = packageAllAction
       override def ivyXML =
        <dependencies>
@@ -155,7 +155,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
     }
 
     class HadoopConsumerProject(info: ProjectInfo) extends DefaultProject(info)
-      with CoreDependencies with HadoopDependencies {
+      with CoreDependencies {
       val consumerPackageAction = packageAllAction
       override def ivyXML =
        <dependencies>
@@ -170,12 +170,6 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
       val jodaTime = "joda-time" % "joda-time" % "1.6"
       val httpclient = "commons-httpclient" % "commons-httpclient" % "3.1"
     }
-  }
-
-  trait HadoopDependencies {
-    val pig = "org.apache.pig" % "pig" % "0.8.0"
-    val hadoop = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
-    val logging    = "commons-logging" % "commons-logging" % "1.1"
   }
 
   trait TestDependencies {

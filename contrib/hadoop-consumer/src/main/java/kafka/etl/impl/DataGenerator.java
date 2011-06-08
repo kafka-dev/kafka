@@ -108,7 +108,7 @@ public class DataGenerator {
     protected void generateOffsets() throws Exception {
         JobConf conf = new JobConf();
         conf.set("hadoop.job.ugi", _props.getProperty("hadoop.job.ugi"));
-        
+        conf.setCompressMapOutput(false);
         Path outPath = new Path(_offsetsDir + Path.SEPARATOR + "1.dat");
         FileSystem fs = outPath.getFileSystem(conf);
         if (fs.exists(outPath)) fs.delete(outPath);
@@ -119,6 +119,7 @@ public class DataGenerator {
         System.out.println("Dump " + request.toString() + " to " + outPath.toUri().toString());
         byte[] bytes = request.toString().getBytes("UTF-8");
         KafkaETLKey dummyKey = new KafkaETLKey();
+        SequenceFile.setCompressionType(conf, SequenceFile.CompressionType.NONE);
         SequenceFile.Writer writer = SequenceFile.createWriter(fs, conf, outPath, 
                                         KafkaETLKey.class, BytesWritable.class);
         writer.append(dummyKey, new BytesWritable(bytes));
