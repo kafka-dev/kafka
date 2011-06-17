@@ -45,5 +45,6 @@ class FetchRequest(val topic: String,
   
   def sizeInBytes(): Int = 2 + topic.length + 4 + 8 + 4
 
-  override def toString(): String= "topic:" + topic + ", part:" + partition +" offset:" + offset + " maxSize:" + maxSize  
+  override def toString(): String= "FetchRequest(topic:" + topic + ", part:" + partition +" offset:" + offset +
+    " maxSize:" + maxSize + ")"
 }

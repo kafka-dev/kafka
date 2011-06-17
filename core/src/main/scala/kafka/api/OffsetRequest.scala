@@ -69,8 +69,8 @@ class OffsetRequest(val topic: String,
 
   def sizeInBytes(): Int = 2 + topic.length + 4 + 8 + 4
 
-  override def toString(): String= "topic:" + topic + ", part:" + partition + ", time:" + time +
-          ", maxNumOffsets:" + maxNumOffsets
+  override def toString(): String= "OffsetRequest(topic:" + topic + ", part:" + partition + ", time:" + time +
+          ", maxNumOffsets:" + maxNumOffsets + ")"
 }
 
 @nonthreadsafe
