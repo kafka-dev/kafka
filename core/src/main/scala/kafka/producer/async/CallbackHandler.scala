@@ -62,6 +62,12 @@ trait CallbackHandler[T] {
   def beforeSendingData(data: Seq[QueueItem[T]] = null): scala.collection.mutable.Seq[QueueItem[T]]
 
   /**
+   * Callback to process the last batch of data right before the producer send thread is shutdown
+   * @return the last batch of data that is sent to the EventHandler
+  */
+  def lastBatchBeforeClose: scala.collection.mutable.Seq[QueueItem[T]]
+
+  /**
    * Cleans up and shuts down the callback handler
    */
   def close

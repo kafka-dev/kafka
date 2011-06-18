@@ -70,6 +70,7 @@ private[javaapi] object Implicits {
   implicit def toScalaCbkHandler[T](cbkHandler: kafka.javaapi.producer.async.CallbackHandler[T])
       : kafka.producer.async.CallbackHandler[T] = {
     new kafka.producer.async.CallbackHandler[T] {
+      import collection.JavaConversions._
       override def init(props: java.util.Properties) { cbkHandler.init(props)}
       override def beforeEnqueue(data: QueueItem[T] = null.asInstanceOf[QueueItem[T]]): QueueItem[T] = {
         cbkHandler.beforeEnqueue(data)
@@ -78,12 +79,13 @@ private[javaapi] object Implicits {
         cbkHandler.afterEnqueue(data, added)
       }
       override def afterDequeuingExistingData(data: QueueItem[T] = null): scala.collection.mutable.Seq[QueueItem[T]] = {
-        import collection.JavaConversions._
         cbkHandler.afterDequeuingExistingData(data)
       }
       override def beforeSendingData(data: Seq[QueueItem[T]] = null): scala.collection.mutable.Seq[QueueItem[T]] = {
-        import collection.JavaConversions._
         asList(cbkHandler.beforeSendingData(asList(data)))
+      }
+      override def lastBatchBeforeClose: scala.collection.mutable.Seq[QueueItem[T]] = {
+        asBuffer(cbkHandler.lastBatchBeforeClose)
       }
       override def close { cbkHandler.close }
     }
@@ -92,6 +94,7 @@ private[javaapi] object Implicits {
   implicit def toJavaCbkHandler[T](cbkHandler: kafka.producer.async.CallbackHandler[T])
       : kafka.javaapi.producer.async.CallbackHandler[T] = {
     new kafka.javaapi.producer.async.CallbackHandler[T] {
+      import collection.JavaConversions._
       override def init(props: java.util.Properties) { cbkHandler.init(props)}
       override def beforeEnqueue(data: QueueItem[T] = null.asInstanceOf[QueueItem[T]]): QueueItem[T] = {
         cbkHandler.beforeEnqueue(data)
@@ -101,13 +104,14 @@ private[javaapi] object Implicits {
       }
       override def afterDequeuingExistingData(data: QueueItem[T] = null)
       : java.util.List[QueueItem[T]] = {
-        import collection.JavaConversions._
         asList(cbkHandler.afterDequeuingExistingData(data))
       }
       override def beforeSendingData(data: java.util.List[QueueItem[T]] = null)
       : java.util.List[QueueItem[T]] = {
-        import collection.JavaConversions._
         asBuffer(cbkHandler.beforeSendingData(asBuffer(data)))
+      }
+      override def lastBatchBeforeClose: java.util.List[QueueItem[T]] = {
+        asList(cbkHandler.lastBatchBeforeClose)
       }
       override def close { cbkHandler.close }
     }

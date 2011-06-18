@@ -92,6 +92,8 @@ private[async] class ProducerSendThread[T](val threadName: String,
         events = new ListBuffer[QueueItem[T]]
       }
     }
+    if(cbkHandler != null)
+      events = events ++ cbkHandler.lastBatchBeforeClose
     events
   }
 
