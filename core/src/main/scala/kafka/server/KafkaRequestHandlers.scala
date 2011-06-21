@@ -35,7 +35,8 @@ import java.io.IOException
 private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   
   private val logger = Logger.getLogger(classOf[KafkaRequestHandlers])
-  
+  private val requestLogger = Logger.getLogger("kafka.request.logger")
+
   def handlerFor(requestTypeId: Short, request: Receive): Handler.Handler = {
     requestTypeId match {
       case RequestKeys.Produce => handleProducerRequest _
@@ -49,9 +50,9 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   
   def handleProducerRequest(receive: Receive): Option[Send] = {
     val sTime = SystemTime.milliseconds
-    if(logger.isTraceEnabled)
-      logger.trace("Handling producer request")
     val request = ProducerRequest.readFrom(receive.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Producer request " + request.toString)
     val partition = request.getTranslatedPartition(logManager.chooseRandomPartition)
     try {
       logManager.getOrCreateLog(request.topic, partition).append(request.messages)
@@ -60,7 +61,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
     }
     catch {
       case e =>
-        logger.error("error processing ProduceRequst on " + request.topic + ":" + partition, e)
+        logger.error("error processing ProduceRequest on " + request.topic + ":" + partition, e)
         e match {
           case _: IOException =>
             logger.error("force shutdown due to " + e)
@@ -75,19 +76,21 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   }
   
   def handleMultiProducerRequest(receive: Receive): Option[Send] = {
-    if(logger.isTraceEnabled)
-      logger.trace("Handling multiproducer request")
     val request = MultiProducerRequest.readFrom(receive.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Multiproducer request ")
     for (produce <- request.produces) {
       val partition = produce.getTranslatedPartition(logManager.chooseRandomPartition)
       try {
         logManager.getOrCreateLog(produce.topic, partition).append(produce.messages)
+        if(requestLogger.isTraceEnabled)
+          requestLogger.trace(produce.toString)
         if(logger.isTraceEnabled)
           logger.trace(produce.messages.sizeInBytes + " bytes written to logs.")
       }
       catch {
         case e =>
-          logger.error("erorr processing MultiProduceRequst on " + produce.topic + ":" + partition, e)
+          logger.error("error processing MultiProduceRequest on " + produce.topic + ":" + partition, e)
           e match {
             case _: IOException =>
               logger.error("force shutdown due to ", e)
@@ -101,16 +104,17 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   }
 
   def handleFetchRequest(request: Receive): Option[Send] = {
-    if(logger.isTraceEnabled)
-      logger.trace("Handling fetch request")
     val fetchRequest = FetchRequest.readFrom(request.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Fetch request " + fetchRequest.toString)
     Some(readMessageSet(fetchRequest))
   }
   
   def handleMultiFetchRequest(request: Receive): Option[Send] = {
-    if(logger.isTraceEnabled)
-      logger.trace("Handling multifetch request")
     val multiFetchRequest = MultiFetchRequest.readFrom(request.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Multifetch request")
+    multiFetchRequest.fetches.foreach(req => requestLogger.trace(req.toString))
     var responses = multiFetchRequest.fetches.map(fetch =>
         readMessageSet(fetch)).toList
     
@@ -133,9 +137,9 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   }
 
   def handleOffsetRequest(request: Receive): Option[Send] = {
-    if(logger.isTraceEnabled)
-      logger.trace("Handling offset request")
     val offsetRequest = OffsetRequest.readFrom(request.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Offset request " + offsetRequest.toString)
     val log = logManager.getOrCreateLog(offsetRequest.topic, offsetRequest.partition)
     val offsets = log.getOffsetsBefore(offsetRequest)
     val response = new OffsetArraySend(offsets)

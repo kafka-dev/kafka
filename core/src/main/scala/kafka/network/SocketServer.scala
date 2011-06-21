@@ -26,6 +26,7 @@ import java.nio.channels._
 import kafka.utils._
 
 import org.apache.log4j.Logger
+import kafka.api.RequestKeys
 
 /**
  * An NIO socket server. The thread model is
@@ -181,7 +182,8 @@ private[kafka] class Processor(val handlerMapping: Handler.HandlerMapping,
                 val stats: SocketServerStats) extends AbstractServerThread {
   
   private val newConnections = new ConcurrentLinkedQueue[SocketChannel]();
-  
+  private val requestLogger = Logger.getLogger("kafka.request.logger")
+
   override def run() {
     startupComplete()
     while(isRunning) {
@@ -258,9 +260,22 @@ private[kafka] class Processor(val handlerMapping: Handler.HandlerMapping,
    * Handle a completed request producing an optional response
    */
   private def handle(key: SelectionKey, request: Receive): Option[Send] = {
-    if(logger.isTraceEnabled)
-      logger.trace("Handling request from " + channelFor(key).socket.getRemoteSocketAddress())
     val requestTypeId = request.buffer.getShort()
+    if(requestLogger.isTraceEnabled) {
+      requestTypeId match {
+        case RequestKeys.Produce =>
+          requestLogger.trace("Handling produce request from " + channelFor(key).socket.getRemoteSocketAddress())
+        case RequestKeys.Fetch =>
+          requestLogger.trace("Handling fetch request from " + channelFor(key).socket.getRemoteSocketAddress())
+        case RequestKeys.MultiFetch =>
+          requestLogger.trace("Handling multi-fetch request from " + channelFor(key).socket.getRemoteSocketAddress())
+        case RequestKeys.MultiProduce =>
+          requestLogger.trace("Handling multi-produce request from " + channelFor(key).socket.getRemoteSocketAddress())
+        case RequestKeys.Offsets =>
+          requestLogger.trace("Handling offset request from " + channelFor(key).socket.getRemoteSocketAddress())
+        case _ => throw new InvalidRequestException("No mapping found for handler id " + requestTypeId)
+      }
+    }
     val handler = handlerMapping(requestTypeId, request)
     if(handler == null)
       throw new InvalidRequestException("No handler found for request")
