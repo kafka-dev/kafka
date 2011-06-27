@@ -13,7 +13,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
     contrib.producerPackageAction, contrib.consumerPackageAction) describedAs releaseZipDescription
 
   class CoreKafkaProject(info: ProjectInfo) extends DefaultProject(info)
-     with CoreDependencies with TestDependencies {
+     with IdeaProject with CoreDependencies with TestDependencies {
    val corePackageAction = packageAllAction
 
   //The issue is going from log4j 1.2.14 to 1.2.15, the developers added some features which required
@@ -90,6 +90,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
   }
 
   class KafkaExamplesProject(info: ProjectInfo) extends DefaultProject(info)
+     with IdeaProject
      with CoreDependencies {
     val examplesPackageAction = packageAllAction
     val dependsOnCore = core
@@ -109,7 +110,8 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
   }
 
   class KafkaPerfProject(info: ProjectInfo) extends DefaultProject(info)
-     with CoreDependencies {
+      with IdeaProject
+      with CoreDependencies {
     val perfPackageAction = packageAllAction
     val dependsOnCore = core
   //The issue is going from log4j 1.2.14 to 1.2.15, the developers added some features which required
@@ -127,7 +129,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
     override def filterScalaJars = false
   }
 
-  class ContribProject(info: ProjectInfo) extends ParentProject(info) {
+  class ContribProject(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
     lazy val hadoopProducer = project("hadoop-producer", "hadoop producer",
                                       new HadoopProducerProject(_), core)
     lazy val hadoopConsumer = project("hadoop-consumer", "hadoop consumer",
@@ -137,6 +139,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
     val consumerPackageAction = hadoopConsumer.consumerPackageAction
 
     class HadoopProducerProject(info: ProjectInfo) extends DefaultProject(info)
+      with IdeaProject
       with CoreDependencies {
       val producerPackageAction = packageAllAction
       override def ivyXML =
@@ -155,6 +158,7 @@ class KafkaProject(info: ProjectInfo) extends ParentProject(info) with IdeaProje
     }
 
     class HadoopConsumerProject(info: ProjectInfo) extends DefaultProject(info)
+      with IdeaProject
       with CoreDependencies {
       val consumerPackageAction = packageAllAction
       override def ivyXML =
