@@ -74,10 +74,10 @@ offsets, err := broker.GetOffsets(-1, 1)
 
 ### Contact ###
 
-jeffreydamick at(@) gmail.com
+jeffreydamick (at) gmail (dot) com
 
 http://twitter.com/jeffreydamick
 
-Big thank you to NeuStar for sponsoring this work.
+Big thank you to [NeuStar](http://neustar.biz) for sponsoring this work.
 
 
