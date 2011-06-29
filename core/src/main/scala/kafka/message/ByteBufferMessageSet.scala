@@ -157,21 +157,17 @@ class ByteBufferMessageSet protected () extends MessageSet {
       }
     }
   }
-  
-  
+
+
   def deepIterator(): Iterator[Message] = {
-      ErrorMapping.maybeThrowException(errorCode)
-      new IteratorTemplate[Message] {
+    ErrorMapping.maybeThrowException(errorCode)
+    new IteratorTemplate[Message] {
       var topIter = buffer.slice()
       var currValidBytes = 0
       var innerIter:Iterator[Message] = null
-      
-      
-      def innerDone():Boolean = {
-        (innerIter==null || !innerIter.hasNext)
-      }
-      
-      
+
+      def innerDone():Boolean = (innerIter==null || !innerIter.hasNext)
+
       def makeNextOuter: Message = {
         if (topIter.remaining < 4) {
           deepValidByteCount = currValidBytes
@@ -194,25 +190,29 @@ class ByteBufferMessageSet protected () extends MessageSet {
           val newMessage = new Message(message)
           newMessage.isCompressed match {
             case true=> {
-                innerIter = CompressionUtils.decompress(newMessage).deepIterator
-                makeNext()
+              logger.debug("Message is compressed")
+              innerIter = CompressionUtils.decompress(newMessage).deepIterator
+              makeNext()
             }
             case false=> {
-                innerIter = null
-                currValidBytes += 4 + size
-                newMessage
+              logger.debug("Message is uncompressed")
+              innerIter = null
+              currValidBytes += 4 + size
+              newMessage
             }
           }
         }
       }
 
-     override def makeNext(): Message = 
-       innerDone match {
-        case true => makeNextOuter
-        case false => {
+      override def makeNext(): Message = {
+        logger.debug("makeNext() in deepIterator: innerDone = " + innerDone)
+        innerDone match {
+          case true => makeNextOuter
+          case false => {
             val message = innerIter.next
             currValidBytes += message.serializedSize
             message
+          }
         }
       }
     }

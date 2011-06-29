@@ -116,7 +116,7 @@ object ConsoleConsumer {
     })
     
     var stream: KafkaMessageStream = connector.createMessageStreams(Map(topic -> 1)).get(topic).get.get(0)
-    val iter = 
+    val iter =
       if(maxMessages >= 0)
         stream.slice(0, maxMessages)
       else
@@ -124,10 +124,13 @@ object ConsoleConsumer {
 
     val formatter: MessageFormatter = messageFormatterClass.newInstance().asInstanceOf[MessageFormatter]
     formatter.init(formatterArgs)
-    
-    for(message <- iter)
+
+    var messageCount: Int = 0
+    for(message <- iter) {
       formatter.writeTo(message, System.out)
-      
+      messageCount += 1
+    }
+    println("Received " + messageCount + " messages")
     System.out.flush()
     formatter.close()
     connector.shutdown()

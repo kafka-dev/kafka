@@ -39,7 +39,7 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   override def next(): Message = {
     val message = super.next
     if(setConsumedOffset) {
-      currentTopicInfo.consumed(currentDataChunk.messages.sizeInBytes.toInt)
+      currentTopicInfo.consumed(currentDataChunk.messages.validBytes)
       setConsumedOffset = false
     }
     message
@@ -48,13 +48,11 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   protected def makeNext(): Message = {
     // if we don't have an iterator, get one
     if(current == null || !current.hasNext) {
-      logger.debug("Consumer timeout = " + consumerTimeoutMs)
       if (consumerTimeoutMs < 0)
         currentDataChunk = channel.take
       else {
         currentDataChunk = channel.poll(consumerTimeoutMs, TimeUnit.MILLISECONDS)
         if (currentDataChunk == null) {
-          logger.debug("Consumer iterator timing out..")
           throw new ConsumerTimeoutException
         }
       }

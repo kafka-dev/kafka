@@ -92,5 +92,6 @@ private[consumer] class PartitionTopicInfo(val topic: String,
     chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))
   }
 
-  override def toString(): String = topic + ":" + partition.toString
+  override def toString(): String = topic + ":" + partition.toString + ": fetched offset = " + fetchedOffset.get +
+    ": consumed offset = " + consumedOffset.get
 }
