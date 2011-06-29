@@ -28,7 +28,6 @@ import kafka.api._
 import kafka.common.ErrorMapping
 import kafka.utils.{Utils, SystemTime}
 import java.io.IOException
-import javax.management.remote.rmi._RMIConnection_Stub
 
 /**
  * Logic to handle the various Kafka requests
