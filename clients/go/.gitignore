@@ -1,5 +1,10 @@
 _go_.6
 _obj
+6.out
+_gotest_.6
+_test
+_testmain.go
+_testmain.6
 tools/*/_obj
 tools/*/_go_.6
 tools/consumer/consumer
