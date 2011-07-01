@@ -11,7 +11,9 @@ Add the lib directory to the include_path and use an autoloader like the one in 
 ## Usage
 The examples directory contains an example of a Producer and a Consumer.
 
-Contact for questions
+## Contact for questions
+
+Lorenzo Alberton
 
 l.alberton at(@) quipo.it
 
