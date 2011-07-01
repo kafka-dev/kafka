@@ -37,4 +37,6 @@ have a look at the header file:  /src/producer.hpp
 
 ## Contact for questions
 
-Ben Gray  http://twitter.com/benjamg
+Ben Gray, MediaSift Ltd.
+
+http://twitter.com/benjamg
