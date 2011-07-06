@@ -11,10 +11,11 @@
 
 namespace kafkaconnect {
 
-producer::producer(boost::asio::io_service& io_service)
+producer::producer(boost::asio::io_service& io_service, const error_handler_function& error_handler)
 	: _connected(false)
 	, _resolver(io_service)
 	, _socket(io_service)
+	, _error_handler(error_handler)
 {
 }
 
@@ -65,10 +66,7 @@ void producer::handle_resolve(const boost::system::error_code& error_code, boost
 			)
 		);
 	}
-	else
-	{
-		// TODO: handle resolution error
-	}
+	else { fail_fast_error_handler(error_code); }
 }
 
 void producer::handle_connect(const boost::system::error_code& error_code, boost::asio::ip::tcp::resolver::iterator endpoints)
@@ -80,23 +78,20 @@ void producer::handle_connect(const boost::system::error_code& error_code, boost
 	}
 	else if (endpoints != boost::asio::ip::tcp::resolver::iterator())
 	{
-		// TODO: handle connection error
+		// TODO: handle connection error (we might not need this as we have others though?)
 
 		// The connection failed, but we have more potential endpoints so throw it back to handle resolve
 		_socket.close();
 		handle_resolve(boost::system::error_code(), endpoints);
 	}
-	else
-	{
-		// TODO: handle no more endpoints
-	}
+	else { fail_fast_error_handler(error_code); }
 }
 
 void producer::handle_write_request(const boost::system::error_code& error_code, boost::asio::streambuf* buffer)
 {
 	if (error_code)
 	{
-		// TODO: handle write error
+		fail_fast_error_handler(error_code);
 	}
 
 	delete buffer;
