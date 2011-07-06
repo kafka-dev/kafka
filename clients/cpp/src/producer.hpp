@@ -14,6 +14,7 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <stdint.h>
 
 #include "encoder.hpp"
@@ -25,7 +26,9 @@ const uint32_t use_random_partition = 0xFFFFFFFF;
 class producer
 {
 public:
-	producer(boost::asio::io_service& io_service);
+	typedef boost::function<void(const boost::system::error_code&)> error_handler_function;
+
+	producer(boost::asio::io_service& io_service, const error_handler_function& error_handler = error_handler_function());
 	~producer();
 
 	void connect(const std::string& hostname, const uint16_t port);
@@ -68,10 +71,27 @@ private:
 	bool _connected;
 	boost::asio::ip::tcp::resolver _resolver;
 	boost::asio::ip::tcp::socket _socket;
+	error_handler_function _error_handler;
 
 	void handle_resolve(const boost::system::error_code& error_code, boost::asio::ip::tcp::resolver::iterator endpoints);
 	void handle_connect(const boost::system::error_code& error_code, boost::asio::ip::tcp::resolver::iterator endpoints);
 	void handle_write_request(const boost::system::error_code& error_code, boost::asio::streambuf* buffer);
+
+	/* Fail Fast Error Handler Braindump
+	 *
+	 * If an error handler is not provided in the constructor then the default response is to throw
+	 * back the boost error_code from asio as a boost system_error exception.
+	 *
+	 * Most likely this will cause whatever thread you have processing boost io to terminate unless caught.
+	 * This is great on debug systems or anything where you use io polling to process any outstanding io,
+	 * however if your io thread is seperate and not monitored it is recommended to pass a handler to
+	 * the constructor.
+	 */
+	inline void fail_fast_error_handler(const boost::system::error_code& error_code)
+	{
+		if(_error_handler.empty()) { throw boost::system::system_error(error_code); }
+		else { _error_handler(error_code); }
+	}
 };
 
 }
