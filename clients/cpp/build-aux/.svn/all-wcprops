@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux
+END
+depcomp
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux/depcomp
+END
+missing
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux/missing
+END
+config.guess
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux/config.guess
+END
+config.sub
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux/config.sub
+END
+ltmain.sh
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux/ltmain.sh
+END
+install-sh
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/favorit_platform/!svn/ver/4057/cpp/kafka/build-aux/install-sh
+END
