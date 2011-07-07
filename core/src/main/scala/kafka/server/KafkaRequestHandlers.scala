@@ -51,8 +51,24 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   def handleProducerRequest(receive: Receive): Option[Send] = {
     val sTime = SystemTime.milliseconds
     val request = ProducerRequest.readFrom(receive.buffer)
+
     if(requestLogger.isTraceEnabled)
       requestLogger.trace("Producer request " + request.toString)
+    handleProducerRequest(request, "ProduceRequest")
+    if (logger.isDebugEnabled)
+      logger.debug("kafka produce time " + (SystemTime.milliseconds - sTime) + " ms")
+    None
+  }
+
+  def handleMultiProducerRequest(receive: Receive): Option[Send] = {
+    val request = MultiProducerRequest.readFrom(receive.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Multiproducer request ")
+    request.produces.map(handleProducerRequest(_, "MultiProducerRequest"))
+    None
+  }
+
+  private def handleProducerRequest(request: ProducerRequest, requestHandlerName: String) = {
     val partition = request.getTranslatedPartition(logManager.chooseRandomPartition)
     try {
       logManager.getOrCreateLog(request.topic, partition).append(request.messages)
@@ -61,7 +77,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
     }
     catch {
       case e =>
-        logger.error("error processing ProduceRequest on " + request.topic + ":" + partition, e)
+        logger.error("error processing " + requestHandlerName + " on " + request.topic + ":" + partition, e)
         e match {
           case _: IOException =>
             logger.error("force shutdown due to " + e)
@@ -69,36 +85,6 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
           case _ =>
         }
         throw e
-    }
-    if (logger.isDebugEnabled)
-      logger.debug("kafka produce time " + (SystemTime.milliseconds - sTime) + " ms")
-    None
-  }
-  
-  def handleMultiProducerRequest(receive: Receive): Option[Send] = {
-    val request = MultiProducerRequest.readFrom(receive.buffer)
-    if(requestLogger.isTraceEnabled)
-      requestLogger.trace("Multiproducer request ")
-    for (produce <- request.produces) {
-      val partition = produce.getTranslatedPartition(logManager.chooseRandomPartition)
-      try {
-        logManager.getOrCreateLog(produce.topic, partition).append(produce.messages)
-        if(requestLogger.isTraceEnabled)
-          requestLogger.trace(produce.toString)
-        if(logger.isTraceEnabled)
-          logger.trace(produce.messages.sizeInBytes + " bytes written to logs.")
-      }
-      catch {
-        case e =>
-          logger.error("error processing MultiProduceRequest on " + produce.topic + ":" + partition, e)
-          e match {
-            case _: IOException =>
-              logger.error("force shutdown due to ", e)
-              Runtime.getRuntime.halt(1)
-            case _ =>
-          }
-          throw e
-      }
     }
     None
   }

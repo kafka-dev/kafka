@@ -163,12 +163,12 @@ class SyncProducer(val config: SyncProducerConfig) {
     val beginTimeMs = SystemTime.milliseconds
     while(channel == null && !shutdown) {
       try {
-        logger.debug("Connecting to " + config.host + ":" + config.port + " for producing")
         channel = SocketChannel.open()
         channel.socket.setSendBufferSize(config.bufferSize)
         channel.configureBlocking(true)
         channel.socket.setSoTimeout(config.socketTimeoutMs)
         channel.connect(new InetSocketAddress(config.host, config.port))
+        logger.info("Connected to " + config.host + ":" + config.port + " for producing")
       }
       catch {
         case e: Exception => {

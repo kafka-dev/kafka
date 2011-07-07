@@ -19,5 +19,4 @@ package kafka.producer.async
 trait AsyncProducerStatsMBean {
   def getAsyncProducerQueueSize: Int
   def getAsyncProducerDroppedEvents: Int
-  def getAsyncProducerEventsPerSecond: Int
 }

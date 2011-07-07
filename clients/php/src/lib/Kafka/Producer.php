@@ -89,7 +89,7 @@ class Kafka_Producer
 	 *
 	 * @return boolean
 	 */
-	public function send(array $messages, $topic, $partition = 0) {
+	public function send(array $messages, $topic, $partition = 0xFFFFFFFF) {
 		$this->connect();
 		return fwrite($this->conn, Kafka_Encoder::encode_produce_request($topic, $partition, $messages));
 	}

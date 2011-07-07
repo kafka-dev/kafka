@@ -64,6 +64,12 @@ public interface CallbackHandler<T> {
     public java.util.List<QueueItem<T>> beforeSendingData(java.util.List<QueueItem<T>> data);
 
     /**
+     * Callback to process the last batch of data right before the producer send thread is shutdown
+     * @return the last batch of data that is sent to the EventHandler
+    */
+    public java.util.List<QueueItem<T>> lastBatchBeforeClose();
+
+    /**
      * Cleans up and shuts down the callback handler
     */
     public void close();

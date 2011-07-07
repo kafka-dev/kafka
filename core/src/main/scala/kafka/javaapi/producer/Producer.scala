@@ -72,6 +72,7 @@ class Producer[K,V](config: ProducerConfig,
                                override def close { eventHandler.close }
                              },
                              new kafka.producer.async.CallbackHandler[V] {
+                               import collection.JavaConversions._
                                override def init(props: Properties) { cbkHandler.init(props)}
                                override def beforeEnqueue(data: QueueItem[V] = null.asInstanceOf[QueueItem[V]]): QueueItem[V] = {
                                  cbkHandler.beforeEnqueue(data)
@@ -80,12 +81,13 @@ class Producer[K,V](config: ProducerConfig,
                                  cbkHandler.afterEnqueue(data, added)
                                }
                                override def afterDequeuingExistingData(data: QueueItem[V] = null): scala.collection.mutable.Seq[QueueItem[V]] = {
-                                 import collection.JavaConversions._
                                  cbkHandler.afterDequeuingExistingData(data)
                                }
                                override def beforeSendingData(data: Seq[QueueItem[V]] = null): scala.collection.mutable.Seq[QueueItem[V]] = {
-                                 import collection.JavaConversions._
                                  asList(cbkHandler.beforeSendingData(asList(data)))
+                               }
+                               override def lastBatchBeforeClose: scala.collection.mutable.Seq[QueueItem[V]] = {
+                                 asBuffer(cbkHandler.lastBatchBeforeClose)
                                }
                                override def close { cbkHandler.close }
                              }))

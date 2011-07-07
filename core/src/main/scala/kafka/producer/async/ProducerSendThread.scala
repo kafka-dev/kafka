@@ -44,8 +44,11 @@ private[async] class ProducerSendThread[T](val threadName: String,
       if(logger.isDebugEnabled) logger.debug("Remaining events = " + remainingEvents.size)
 
       // handle remaining events
-      if(remainingEvents.size > 0)
+      if(remainingEvents.size > 0) {
+        if(logger.isDebugEnabled)
+           logger.debug("Dispatching last batch of events to the event handler")
         tryToHandle(remainingEvents)
+      }
     }catch {
       case e: Exception => logger.error("Error in sending events: ", e)
     }finally {
@@ -58,8 +61,7 @@ private[async] class ProducerSendThread[T](val threadName: String,
   def shutdown = {
     running = false
     handler.close
-    if(logger.isDebugEnabled)
-      logger.debug("Shutdown thread complete")
+    logger.info("Shutdown thread complete")
   }
 
   private def processEvents(): Seq[QueueItem[T]] = {
@@ -92,6 +94,8 @@ private[async] class ProducerSendThread[T](val threadName: String,
         events = new ListBuffer[QueueItem[T]]
       }
     }
+    if(cbkHandler != null)
+      events = events ++ cbkHandler.lastBatchBeforeClose
     events
   }
 

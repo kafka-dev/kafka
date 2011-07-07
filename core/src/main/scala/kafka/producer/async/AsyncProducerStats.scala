@@ -20,28 +20,14 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{TimeUnit, ScheduledThreadPoolExecutor, ScheduledExecutorService, BlockingQueue}
 
 class AsyncProducerStats[T](queue: BlockingQueue[QueueItem[T]]) extends AsyncProducerStatsMBean {
-  val executor:ScheduledExecutorService = new ScheduledThreadPoolExecutor(1)
-  executor.scheduleAtFixedRate(new ThroughputTimerThread, 0L, 1L, TimeUnit.SECONDS)
-
   val droppedEvents = new AtomicInteger(0)
   val numEvents = new AtomicInteger(0)
-  val prevNumEvents = new AtomicInteger(0)
-  val numEventsPerSecond = new AtomicInteger(0)
 
   def getAsyncProducerQueueSize: Int = queue.size
 
   def getAsyncProducerDroppedEvents: Int = droppedEvents.get
 
-  def getAsyncProducerEventsPerSecond: Int = numEventsPerSecond.get
-
   def recordDroppedEvents = droppedEvents.getAndAdd(1)
 
   def recordEvent = numEvents.getAndAdd(1)
-
-  class ThroughputTimerThread extends Runnable {
-    def run = {
-      numEventsPerSecond.set(numEvents.get - prevNumEvents.get)
-      prevNumEvents.set(numEvents.get)
-    }
-  }
 }
