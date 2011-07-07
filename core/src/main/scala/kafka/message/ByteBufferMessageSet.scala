@@ -183,23 +183,23 @@ class ByteBufferMessageSet protected () extends MessageSet {
               + " at " + currValidBytes + " possible causes (1) a single message larger than the fetch size; (2) log corruption")
           return allDone()
         }
-        else {
-          val message = topIter.slice()
-          message.limit(size)
-          topIter.position(topIter.position + size)
-          val newMessage = new Message(message)
-          newMessage.isCompressed match {
-            case true=> {
+        val message = topIter.slice()
+        message.limit(size)
+        topIter.position(topIter.position + size)
+        val newMessage = new Message(message)
+        newMessage.isCompressed match {
+          case true=> {
+            if(logger.isDebugEnabled)
               logger.debug("Message is compressed")
-              innerIter = CompressionUtils.decompress(newMessage).deepIterator
-              makeNext()
-            }
-            case false=> {
+            innerIter = CompressionUtils.decompress(newMessage).deepIterator
+            makeNext()
+          }
+          case false=> {
+            if(logger.isDebugEnabled)
               logger.debug("Message is uncompressed")
-              innerIter = null
-              currValidBytes += 4 + size
-              newMessage
-            }
+            innerIter = null
+            currValidBytes += 4 + size
+            newMessage
           }
         }
       }

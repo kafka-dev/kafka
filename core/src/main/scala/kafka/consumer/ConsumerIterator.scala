@@ -39,7 +39,7 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   override def next(): Message = {
     val message = super.next
     if(setConsumedOffset) {
-      currentTopicInfo.consumed(currentDataChunk.messages.validBytes)
+      currentTopicInfo.consumed(currentDataChunk.messages.shallowValidBytes)
       setConsumedOffset = false
     }
     message
