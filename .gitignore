@@ -6,3 +6,5 @@ src_managed/
 project/boot/
 project/plugins/project/
 project/sbt_project_definition.iml
+.settings
+.idea
