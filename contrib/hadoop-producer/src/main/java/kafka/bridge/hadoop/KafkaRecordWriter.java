@@ -47,7 +47,7 @@ public class KafkaRecordWriter<W extends BytesWritable> extends RecordWriter<Nul
   protected void sendMsgList()
   {
     if (msgList.size() > 0) {
-      ByteBufferMessageSet msgSet = new ByteBufferMessageSet(true, msgList);
+      ByteBufferMessageSet msgSet = new ByteBufferMessageSet(false, msgList);
       producer.send(topic, msgSet);
       msgList.clear();
       totalSize = 0;

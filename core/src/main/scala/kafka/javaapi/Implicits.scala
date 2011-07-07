@@ -122,7 +122,4 @@ private[javaapi] object Implicits {
 
   implicit def toJavaMultiFetchResponse(response: kafka.api.MultiFetchResponse): kafka.javaapi.MultiFetchResponse =
     new kafka.javaapi.MultiFetchResponse(response.buffer, response.numSets)
-
-//  implicit def toAsyncProducerConfig(config: ProducerConfig): AsyncProducerConfig =
-//    new AsyncProducerConfig(config.props)
 }

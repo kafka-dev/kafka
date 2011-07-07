@@ -85,8 +85,6 @@ class ByteBufferMessageSet protected () extends MessageSet {
     }
   }
 
-  def getBuffer = buffer
-  
   def enableDeepIteration() = {
     deepIterate = true
   }

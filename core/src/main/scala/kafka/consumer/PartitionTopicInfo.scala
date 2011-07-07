@@ -72,10 +72,9 @@ private[consumer] class PartitionTopicInfo(val topic: String,
     val size = messages.shallowValidBytes
     if(size > 0) {
       // update fetched offset to the compressed data chunk size, not the decompressed message set size
-      var newOffset: Long = 0L
       if(logger.isTraceEnabled)
         logger.trace("Updating fetch offset = " + fetchedOffset.get + " with size = " + size)
-      newOffset = fetchedOffset.addAndGet(size)
+      val newOffset = fetchedOffset.addAndGet(size)
       if (logger.isDebugEnabled)
         logger.debug("updated fetch offset of " + this + " to " + newOffset)
       chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))

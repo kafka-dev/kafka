@@ -48,8 +48,6 @@ class ByteBufferMessageSet protected () extends MessageSet {
 
   def validBytes: Int = underlying.validBytes
 
-  def getBuffer = underlying.getBuffer
-
   def enableDeepIteration() = {
     underlying.enableDeepIteration
   }
