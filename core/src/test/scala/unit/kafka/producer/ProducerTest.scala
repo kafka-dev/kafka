@@ -129,7 +129,7 @@ class ProducerTest extends JUnitSuite {
     syncProducers.put(brokerId2, syncProducer2)
 
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
-    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false, null)
 
     producer.send(new ProducerData[String, String](topic, "test", Array("test1")))
     producer.close
@@ -163,7 +163,7 @@ class ProducerTest extends JUnitSuite {
 
     val producerPool = new ProducerPool[String](config, serializer, syncProducers,
       new ConcurrentHashMap[Int, AsyncProducer[String]]())
-    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false, null)
 
     producer.send(new ProducerData[String, String](topic, "t"))
     producer.close
@@ -380,7 +380,7 @@ class ProducerTest extends JUnitSuite {
     asyncProducers.put(brokerId1, asyncProducer1)
 
     val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
-    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false, null)
 
     producer.send(new ProducerData[String, String](topic, "test1", Array("test1")))
     producer.close
@@ -544,7 +544,7 @@ class ProducerTest extends JUnitSuite {
     syncProducers.put(brokerId2, syncProducer2)
 
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
-    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false, null)
 
     producer.send(new ProducerData[String, String]("test-topic1", "test", Array("test1")))
     Thread.sleep(100)
@@ -596,7 +596,7 @@ class ProducerTest extends JUnitSuite {
     syncProducers.put(2, syncProducer3)
 
     val producerPool = new ProducerPool(config, serializer, syncProducers, new ConcurrentHashMap[Int, AsyncProducer[String]]())
-    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false, null)
 
     val serverProps = TestUtils.createBrokerConfig(2, 9094)
     val serverConfig = new KafkaConfig(serverProps) {
@@ -648,7 +648,7 @@ class ProducerTest extends JUnitSuite {
     asyncProducers.put(brokerId1, asyncProducer1)
 
     val producerPool = new ProducerPool(config, serializer, new ConcurrentHashMap[Int, SyncProducer](), asyncProducers)
-    val producer = new Producer[String, String](config, partitioner, producerPool, false)
+    val producer = new Producer[String, String](config, partitioner, producerPool, false, null)
 
     producer.send(new ProducerData[String, String](topic, "test", Array("test1")))
     producer.close
