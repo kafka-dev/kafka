@@ -36,7 +36,7 @@ object ReplayLogProducer {
     consumerProps.put("groupid", GROUPID)
     consumerProps.put("zk.connect", config.zkConnect)
     consumerProps.put("consumer.timeout.ms", "10000")
-    consumerProps.put("autooffset.reset", OffsetRequest.SMALLEST_TIME_STRING)
+    consumerProps.put("autooffset.reset", OffsetRequest.SmallestTimeString)
     consumerProps.put("fetch.size", (1024*1024).toString)
     consumerProps.put("socket.buffer.size", (2 * 1024 * 1024).toString)
     val consumerConfig = new ConsumerConfig(consumerProps)

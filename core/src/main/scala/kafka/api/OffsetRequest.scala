@@ -23,10 +23,10 @@ import java.nio.channels.WritableByteChannel
 import kafka.common.ErrorMapping
 
 object OffsetRequest {
-  val SMALLEST_TIME_STRING = "smallest"
-  val LARGEST_TIME_STRING = "largest"
-  val LATEST_TIME = -1L
-  val EARLIEST_TIME = -2L
+  val SmallestTimeString = "smallest"
+  val LargestTimeString = "largest"
+  val LatestTime = -1L
+  val EarliestTime = -2L
 
   def readFrom(buffer: ByteBuffer): OffsetRequest = {
     val topic = Utils.readShortString(buffer, "UTF-8")
@@ -78,7 +78,7 @@ private[kafka] class OffsetArraySend(offsets: Array[Long]) extends Send {
   private var size: Long = offsets.foldLeft(4)((sum, _) => sum + 8)
   private val header = ByteBuffer.allocate(6)
   header.putInt(size.asInstanceOf[Int] + 2)
-  header.putShort(ErrorMapping.NO_ERROR.asInstanceOf[Short])
+  header.putShort(ErrorMapping.NoError.asInstanceOf[Short])
   header.rewind()
   private val contentBuffer = OffsetRequest.serializeOffsetArray(offsets)
 

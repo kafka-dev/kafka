@@ -36,7 +36,7 @@ class ByteBufferMessageSet protected () extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
   private var validByteCount = -1
   var buffer:ByteBuffer = null
-  var errorCode:Int = ErrorMapping.NO_ERROR 
+  var errorCode:Int = ErrorMapping.NoError
   private var shallowValidByteCount = -1
   private var deepValidByteCount = -1
   var deepIterate = false
@@ -49,7 +49,7 @@ class ByteBufferMessageSet protected () extends MessageSet {
     this.deepIterate = deepIterate
   }
   
-  def this(buffer: ByteBuffer) = this(buffer,ErrorMapping.NO_ERROR,false)
+  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, false)
 
   def this(compressionEnabled:Boolean, messages: Message*) {
     this()

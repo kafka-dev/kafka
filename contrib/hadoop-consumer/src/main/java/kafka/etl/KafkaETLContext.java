@@ -198,14 +198,14 @@ public class KafkaETLContext {
         long[] range = new long[2];
 
         long[] startOffsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
-                OffsetRequest.EARLIEST_TIME(), 1);
+                OffsetRequest.EarliestTime(), 1);
         if (startOffsets.length != 1)
             throw new IOException("input:" + _input + " Expect one smallest offset but get "
                                             + startOffsets.length);
         range[0] = startOffsets[0];
         
         long[] endOffsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
-                                        OffsetRequest.LATEST_TIME(), 1);
+                                        OffsetRequest.LatestTime(), 1);
         if (endOffsets.length != 1)
             throw new IOException("input:" + _input + " Expect one latest offset but get " 
                                             + endOffsets.length);
@@ -235,7 +235,7 @@ public class KafkaETLContext {
     protected boolean hasError(ByteBufferMessageSet messages)
             throws IOException {
         int errorCode = messages.errorCode();
-        if (errorCode == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE()) {
+        if (errorCode == ErrorMapping.OffsetOutOfRangeCode()) {
             /* offset cannot cross the maximum offset (guaranteed by Kafka protocol).
                Kafka server may delete old files from time to time */
             System.err.println("WARNING: current offset=" + _offset + ". It is out of range.");
@@ -246,12 +246,12 @@ public class KafkaETLContext {
             _offsetRange = getOffsetRange();
             _offset =  _offsetRange[0];
             return false;
-        } else if (errorCode == ErrorMapping.INVALID_MESSAGE_CODE()) {
+        } else if (errorCode == ErrorMapping.InvalidMessageCode()) {
             throw new IOException(_input + " current offset=" + _offset
                     + " : invalid offset.");
-        } else if (errorCode == ErrorMapping.WRONG_PARTITION_CODE()) {
+        } else if (errorCode == ErrorMapping.WrongPartitionCode()) {
             throw new IOException(_input + " : wrong partition");
-        } else if (errorCode != ErrorMapping.NO_ERROR()) {
+        } else if (errorCode != ErrorMapping.NoError()) {
             throw new IOException(_input + " current offset=" + _offset
                     + " error:" + errorCode);
         } else

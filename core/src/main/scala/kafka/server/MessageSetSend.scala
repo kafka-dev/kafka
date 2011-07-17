@@ -39,7 +39,7 @@ private[server] class MessageSetSend(val messages: MessageSet, val errorCode: In
   
   var complete: Boolean = false
 
-  def this(messages: MessageSet) = this(messages, ErrorMapping.NO_ERROR) 
+  def this(messages: MessageSet) = this(messages, ErrorMapping.NoError)
 
   def writeTo(channel: WritableByteChannel): Int = {
     expectIncomplete()

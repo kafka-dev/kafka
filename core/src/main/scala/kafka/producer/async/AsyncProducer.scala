@@ -28,8 +28,8 @@ import java.util.{Random, Properties}
 import kafka.producer.{ProducerConfig, SyncProducer}
 
 object AsyncProducer {
-  val shutdown = new Object
-  val random = new Random
+  val Shutdown = new Object
+  val Random = new Random
   val ProducerMBeanName = "kafka.producer.Producer:type=AsyncProducerStats"
 }
 
@@ -48,10 +48,10 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
     eventHandler.init(eventHandlerProps)
   if(cbkHandler != null)
     cbkHandler.init(cbkHandlerProps)
-  private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.random.nextInt, queue,
+  private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.Random.nextInt, queue,
     serializer, producer,
     if(eventHandler != null) eventHandler else new DefaultEventHandler[T](config.compression, cbkHandler),
-    cbkHandler, config.queueTime, config.batchSize, AsyncProducer.shutdown)
+    cbkHandler, config.queueTime, config.batchSize, AsyncProducer.Shutdown)
   sendThread.setDaemon(false)
 
   val asyncProducerStats = new AsyncProducerStats[T](queue)
@@ -110,7 +110,7 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
       cbkHandler.close
       logger.info("Closed the callback handler")
     }
-    queue.put(new QueueItem(AsyncProducer.shutdown.asInstanceOf[T], null, -1))
+    queue.put(new QueueItem(AsyncProducer.Shutdown.asInstanceOf[T], null, -1))
     sendThread.join(3000)
     sendThread.shutdown
     producer.close

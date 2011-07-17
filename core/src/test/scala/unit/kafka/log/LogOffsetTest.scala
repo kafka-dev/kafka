@@ -66,12 +66,12 @@ class LogOffsetTest extends JUnitSuite {
     assertFalse(messageSet.iterator.hasNext)
 
     {
-      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.LATEST_TIME, 10)
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.LatestTime, 10)
       assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
     }
 
     {
-      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.EARLIEST_TIME, 10)
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.EarliestTime, 10)
       assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
     }
 
@@ -99,13 +99,13 @@ class LogOffsetTest extends JUnitSuite {
 
     Thread.sleep(100)
 
-    val offsetRequest = new OffsetRequest(topic, part, OffsetRequest.LATEST_TIME, 10)
+    val offsetRequest = new OffsetRequest(topic, part, OffsetRequest.LatestTime, 10)
 
     val offsets = log.getOffsetsBefore(offsetRequest)
     assertTrue((Array(240L, 216L, 108L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-                                                          OffsetRequest.LATEST_TIME, 10)
+                                                          OffsetRequest.LatestTime, 10)
     assertTrue((Array(240L, 216L, 108L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
 
     // try to fetch using latest offset
@@ -127,7 +127,7 @@ class LogOffsetTest extends JUnitSuite {
     var offsetChanged = false
     for(i <- 1 to 14) {
       val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-        OffsetRequest.EARLIEST_TIME, 1)
+        OffsetRequest.EarliestTime, 1)
 
       if(consumerOffsets(0) == 1) {
         offsetChanged = true
@@ -178,13 +178,13 @@ class LogOffsetTest extends JUnitSuite {
     Thread.sleep(100)
 
     val offsetRequest = new OffsetRequest(topic, part,
-                                          OffsetRequest.EARLIEST_TIME, 10)
+                                          OffsetRequest.EarliestTime, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
 
     assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-                                                          OffsetRequest.EARLIEST_TIME, 10)
+                                                          OffsetRequest.EarliestTime, 10)
     assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
   }
 

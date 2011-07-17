@@ -31,22 +31,49 @@ object Message {
   val MagicLength = 1
   val AttributeOffset = MagicOffset + MagicLength
   val AttributeLength = 1
-  
+
+  /**
+   * Computes the CRC value based on the magic byte
+   * @param magic Specifies the magic byte value. Possible values are 0 and 1
+   *              0 for no compression
+   *              1 for compression
+  */
   def CrcOffset(magic:Byte): Int = magic match {
     case 0 => MagicOffset + MagicLength
     case _ => AttributeOffset + AttributeLength
   }
   
   val CrcLength = 4
+
+  /**
+   * Computes the offset to the message payload based on the magic byte
+   * @param magic Specifies the magic byte value. Possible values are 0 and 1
+   *              0 for no compression
+   *              1 for compression
+   */
   def PayloadOffset(magic:Byte): Int = CrcOffset(magic) + CrcLength
+
+  /**
+   * Computes the size of the message header based on the magic byte
+   * @param magic Specifies the magic byte value. Possible values are 0 and 1
+   *              0 for no compression
+   *              1 for compression
+   */
   def HeaderSize(magic:Byte): Int = PayloadOffset(magic)
+
+  /**
+   * Size of the header for magic byte 0. This is the minimum size of any message header
+   */
   val MinHeaderSize = HeaderSize(0);
-  // Attribute masks follow
-  val COMPRESSION_CODEC_MASK:Int = 0x03  // 2 bits to hold the compression codec. 0 is reserved to indicate no compression
+
+  /**
+   * Specifies the mask for the compression code. 2 bits to hold the compression codec.
+   * 0 is reserved to indicate no compression
+   */
+  val CompressionCodeMask:Int = 0x03  //
   
   
-  // Defaults follow
-  val NO_COMPRESSION:Int = 0
+  val NoCompression:Int = 0
 }
 
 /**
@@ -54,7 +81,7 @@ object Message {
  * 1 byte "magic" identifier to allow format changes
  * 1 byte "attributes" identifier to allow annotations on the message independent of the version (e.g. compression enabled, type of codec used)
  * 4 byte CRC32 of the payload
- * N - 8 byte payload
+ * N - 6 byte payload
  * 
  */
 class Message(val buffer: ByteBuffer) {
@@ -67,20 +94,22 @@ class Message(val buffer: ByteBuffer) {
     buffer.put(CurrentMagicValue)
     var attributes:Byte = 0
     if (compressionCodec >0) {
-      attributes =  (attributes | (Message.COMPRESSION_CODEC_MASK & compressionCodec)).toByte     
+      attributes =  (attributes | (Message.CompressionCodeMask & compressionCodec)).toByte
     }
     buffer.put(attributes)
     Utils.putUnsignedInt(buffer, checksum)
     buffer.put(bytes)
     buffer.rewind()
   }
-  def this(checksum:Long, bytes:Array[Byte]) = this(checksum, bytes, Message.NO_COMPRESSION)
+
+  def this(checksum:Long, bytes:Array[Byte]) = this(checksum, bytes, Message.NoCompression)
   
   def this(bytes: Array[Byte], compressionCodec:Int) = {
     //Note: we're not crc-ing the attributes header, so we're susceptible to bit-flipping there
     this(Utils.crc32(bytes), bytes, compressionCodec)
   }
-  def this(bytes:Array[Byte]) = this(bytes, Message.NO_COMPRESSION)
+
+  def this(bytes:Array[Byte]) = this(bytes, Message.NoCompression)
   
   def size: Int = buffer.limit
   
@@ -91,7 +120,7 @@ class Message(val buffer: ByteBuffer) {
   def attributes: Byte = buffer.get(AttributeOffset)
   
   def compressionCodec:Int = {
-    buffer.get(AttributeOffset) & COMPRESSION_CODEC_MASK;
+    buffer.get(AttributeOffset) & CompressionCodeMask;
   }
   
   def isCompressed:Boolean = magic match {

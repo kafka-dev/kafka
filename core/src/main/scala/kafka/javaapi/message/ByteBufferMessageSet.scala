@@ -24,7 +24,7 @@ class ByteBufferMessageSet protected () extends MessageSet {
   private val logger = Logger.getLogger(getClass())
   var underlying: kafka.message.ByteBufferMessageSet = null
   var buffer:ByteBuffer = null
-  var errorCode:Int = ErrorMapping.NO_ERROR
+  var errorCode:Int = ErrorMapping.NoError
   var deepIterate = false
 
   def this(buffer: ByteBuffer, errorCode: Int, deepIterate: Boolean) = {
@@ -35,7 +35,7 @@ class ByteBufferMessageSet protected () extends MessageSet {
     this.underlying = new kafka.message.ByteBufferMessageSet(this.buffer, this.errorCode, this.deepIterate)
   }
 
-  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NO_ERROR, false)
+  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, false)
 
   import scala.collection.JavaConversions._
   def this(compressionEnabled: Boolean = false, messages: java.util.List[Message]) {
