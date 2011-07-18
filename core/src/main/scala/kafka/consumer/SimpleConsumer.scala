@@ -40,6 +40,7 @@ class SimpleConsumer(val host: String,
   private val lock = new Object()
 
   private def connect(): SocketChannel = {
+    close
     val address = new InetSocketAddress(host, port)
 
     val channel = SocketChannel.open
