@@ -38,7 +38,7 @@ object Message {
    *              0 for no compression
    *              1 for compression
   */
-  def CrcOffset(magic:Byte): Int = magic match {
+  def CrcOffset(magic: Byte): Int = magic match {
     case 0 => MagicOffset + MagicLength
     case _ => AttributeOffset + AttributeLength
   }
@@ -51,7 +51,7 @@ object Message {
    *              0 for no compression
    *              1 for compression
    */
-  def PayloadOffset(magic:Byte): Int = CrcOffset(magic) + CrcLength
+  def PayloadOffset(magic: Byte): Int = CrcOffset(magic) + CrcLength
 
   /**
    * Computes the size of the message header based on the magic byte
@@ -59,7 +59,7 @@ object Message {
    *              0 for no compression
    *              1 for compression
    */
-  def HeaderSize(magic:Byte): Int = PayloadOffset(magic)
+  def HeaderSize(magic: Byte): Int = PayloadOffset(magic)
 
   /**
    * Size of the header for magic byte 0. This is the minimum size of any message header
@@ -70,7 +70,7 @@ object Message {
    * Specifies the mask for the compression code. 2 bits to hold the compression codec.
    * 0 is reserved to indicate no compression
    */
-  val CompressionCodeMask:Int = 0x03  //
+  val CompressionCodeMask: Int = 0x03  //
   
   
   val NoCompression:Int = 0
@@ -78,10 +78,24 @@ object Message {
 
 /**
  * A message. The format of an N byte message is the following:
- * 1 byte "magic" identifier to allow format changes
- * 1 byte "attributes" identifier to allow annotations on the message independent of the version (e.g. compression enabled, type of codec used)
- * 4 byte CRC32 of the payload
- * N - 6 byte payload
+ *
+ * If magic byte is 0
+ *
+ * 1. 1 byte "magic" identifier to allow format changes
+ *
+ * 2. 4 byte CRC32 of the payload
+ *
+ * 3. N - 5 byte payload
+ *
+ * If magic byte is 1
+ *
+ * 1. 1 byte "magic" identifier to allow format changes
+ *
+ * 2. 1 byte "attributes" identifier to allow annotations on the message independent of the version (e.g. compression enabled, type of codec used)
+ *
+ * 3. 4 byte CRC32 of the payload
+ *
+ * 4. N - 6 byte payload
  * 
  */
 class Message(val buffer: ByteBuffer) {
@@ -89,7 +103,7 @@ class Message(val buffer: ByteBuffer) {
   import kafka.message.Message._
     
   
-  private def this(checksum: Long, bytes: Array[Byte], compressionCodec:Int) = {
+  private def this(checksum: Long, bytes: Array[Byte], compressionCodec: Int) = {
     this(ByteBuffer.allocate(Message.HeaderSize(Message.CurrentMagicValue) + bytes.length))
     buffer.put(CurrentMagicValue)
     var attributes:Byte = 0
@@ -104,12 +118,12 @@ class Message(val buffer: ByteBuffer) {
 
   def this(checksum:Long, bytes:Array[Byte]) = this(checksum, bytes, Message.NoCompression)
   
-  def this(bytes: Array[Byte], compressionCodec:Int) = {
+  def this(bytes: Array[Byte], compressionCodec: Int) = {
     //Note: we're not crc-ing the attributes header, so we're susceptible to bit-flipping there
     this(Utils.crc32(bytes), bytes, compressionCodec)
   }
 
-  def this(bytes:Array[Byte]) = this(bytes, Message.NoCompression)
+  def this(bytes: Array[Byte]) = this(bytes, Message.NoCompression)
   
   def size: Int = buffer.limit
   

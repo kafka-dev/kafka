@@ -93,7 +93,7 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
         val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.getBuffer.rewind
         fetches += new FetchRequest(topic, 0, 0, 10000)
       }
 
@@ -156,7 +156,7 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
         set.enableDeepIteration
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.getBuffer.rewind
         fetches += new FetchRequest(topic, 0, 0, 10000)
       }
 
@@ -224,7 +224,7 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     producer.multiSend(produceList.toArray)
 
     for (messageSet <- messages.values)
-      messageSet.buffer.rewind
+      messageSet.getBuffer.rewind
       
     // wait a bit for produced message to be available
     Thread.sleep(200)
@@ -249,7 +249,7 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     producer.multiSend(produceList.toArray)
 
     for (messageSet <- messages.values)
-      messageSet.buffer.rewind
+      messageSet.getBuffer.rewind
 
     // wait a bit for produced message to be available
     Thread.sleep(200)

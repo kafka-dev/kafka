@@ -41,9 +41,9 @@ class ByteBufferMessageSet protected () extends MessageSet {
   def this(compressionEnabled: Boolean = false, messages: java.util.List[Message]) {
     this()
     this.underlying = new kafka.message.ByteBufferMessageSet(compressionEnabled, asBuffer(messages))
-    this.buffer = underlying.buffer
-    this.errorCode = underlying.errorCode
-    this.deepIterate = underlying.deepIterate
+    this.buffer = underlying.getBuffer
+    this.errorCode = underlying.getErrorCode
+    this.deepIterate = underlying.getDeepIterate
   }
 
   def validBytes: Int = underlying.validBytes

@@ -64,7 +64,7 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
     val topic = "test"
     val sent = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
-    sent.buffer.rewind
+    sent.getBuffer.rewind
     var fetched: ByteBufferMessageSet = null
     while(fetched == null || fetched.validBytes == 0)
       fetched = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
@@ -93,7 +93,7 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
         val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
-        set.buffer.rewind
+        set.getBuffer.rewind
         fetches += new FetchRequest(topic, 0, 0, 10000)
       }
 
@@ -139,7 +139,7 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
     producer.multiSend(produceList.toArray)
 
     for (messageSet <- messages.values)
-      messageSet.buffer.rewind
+      messageSet.getBuffer.rewind
 
     // wait a bit for produced message to be available
     Thread.sleep(200)
@@ -166,7 +166,7 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
     producer.multiSend(produceList.toArray)
 
     for (messageSet <- messages.values)
-      messageSet.buffer.rewind
+      messageSet.getBuffer.rewind
 
     // wait a bit for produced message to be available
     Thread.sleep(750)

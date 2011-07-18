@@ -60,7 +60,7 @@ class ServerShutdownTest extends JUnitSuite {
 
       // send some messages
       producer.send(topic, sent1)
-      sent1.buffer.rewind
+      sent1.getBuffer.rewind
 
       Thread.sleep(200)
       // do a clean shutdown
@@ -93,7 +93,7 @@ class ServerShutdownTest extends JUnitSuite {
 
       // send some more messages
       producer.send(topic, sent2)
-      sent2.buffer.rewind
+      sent2.getBuffer.rewind
 
       Thread.sleep(200)
 

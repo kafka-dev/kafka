@@ -67,7 +67,7 @@ class FetcherRunnable(val name: String,
         for((messages, info) <- response.zip(partitionTopicInfos)) {
           try {
             var done = false
-            if(messages.errorCode == ErrorMapping.OffsetOutOfRangeCode) {
+            if(messages.getErrorCode == ErrorMapping.OffsetOutOfRangeCode) {
               logger.info("offset " + info.getFetchOffset + " out of range")
               // see if we can fix this error
               val resetOffset = resetConsumerOffsets(info.topic, info.partition)

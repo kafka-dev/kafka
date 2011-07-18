@@ -29,7 +29,7 @@ private[javaapi] object Implicits {
 
   implicit def scalaMessageSetToJavaMessageSet(messageSet: kafka.message.ByteBufferMessageSet):
      kafka.javaapi.message.ByteBufferMessageSet = {
-    new kafka.javaapi.message.ByteBufferMessageSet(messageSet.buffer, messageSet.errorCode, messageSet.deepIterate)
+    new kafka.javaapi.message.ByteBufferMessageSet(messageSet.getBuffer, messageSet.getErrorCode, messageSet.getDeepIterate)
   }
 
   implicit def toJavaSyncProducer(producer: kafka.producer.SyncProducer): kafka.javaapi.producer.SyncProducer = {

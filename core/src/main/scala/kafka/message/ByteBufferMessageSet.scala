@@ -35,23 +35,22 @@ import kafka.common.{InvalidMessageSizeException, ErrorMapping}
 class ByteBufferMessageSet protected () extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
   private var validByteCount = -1
-  var buffer:ByteBuffer = null
-  var errorCode:Int = ErrorMapping.NoError
+  private var buffer: ByteBuffer = null
+  private var errorCode: Int = ErrorMapping.NoError
   private var shallowValidByteCount = -1
   private var deepValidByteCount = -1
-  var deepIterate = false
-  
-  
-  def this(buffer: ByteBuffer, errorCode: Int, deepIterate: Boolean = false) = {
+  private var deepIterate = true
+
+  def this(buffer: ByteBuffer, errorCode: Int, deepIterate: Boolean = true) = {
     this()
     this.buffer = buffer
     this.errorCode = errorCode
     this.deepIterate = deepIterate
   }
   
-  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, false)
+  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, true)
 
-  def this(compressionEnabled:Boolean, messages: Message*) {
+  def this(compressionEnabled: Boolean, messages: Message*) {
     this()
     if (compressionEnabled) {
       val message = CompressionUtils.compress(messages)
@@ -68,7 +67,7 @@ class ByteBufferMessageSet protected () extends MessageSet {
     }
   }
 
-  def this(compressionEnabled:Boolean, messages: Iterable[Message]) {
+  def this(compressionEnabled: Boolean, messages: Iterable[Message]) {
     this()
     if (compressionEnabled) {
       val message = CompressionUtils.compress(messages)
@@ -92,8 +91,14 @@ class ByteBufferMessageSet protected () extends MessageSet {
   def disableDeepIteration() = {
     deepIterate = false
   }
-  
-  def serialized():ByteBuffer = buffer
+
+  def getDeepIterate = deepIterate
+
+  def getBuffer = buffer
+
+  def getErrorCode = errorCode
+
+  def serialized(): ByteBuffer = buffer
 
   def validBytes: Int = deepIterate match {
     case true => deepValidBytes
