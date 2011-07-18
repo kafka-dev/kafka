@@ -256,18 +256,33 @@ private[kafka] class LogManager(val config: KafkaConfig,
   }
 
   private def flushAllLogs() = {
-    logger.debug("flushing the high watermark of all logs")
+    if (logger.isDebugEnabled)
+      logger.debug("flushing the high watermark of all logs")
+
     for (log <- getLogIterator)
     {
-      val timeSinceLastFlush = System.currentTimeMillis - log.getLastFlushedTime
-      var logFlushInterval = config.defaultFlushIntervalMs
-      if(logFlushIntervalMap.contains(log.getTopicName))
-        logFlushInterval = logFlushIntervalMap(log.getTopicName)
-      logger.debug(log.getTopicName + " flush interval  " + logFlushInterval +
-        " last flushed " + log.getLastFlushedTime + " timesincelastFlush: " + timeSinceLastFlush)
-      if(timeSinceLastFlush >= logFlushInterval)
-        log.flush
-    }
+      try{
+        val timeSinceLastFlush = System.currentTimeMillis - log.getLastFlushedTime
+        var logFlushInterval = config.defaultFlushIntervalMs
+        if(logFlushIntervalMap.contains(log.getTopicName))
+          logFlushInterval = logFlushIntervalMap(log.getTopicName)
+        if (logger.isDebugEnabled)
+          logger.debug(log.getTopicName + " flush interval  " + logFlushInterval +
+            " last flushed " + log.getLastFlushedTime + " timesincelastFlush: " + timeSinceLastFlush)
+        if(timeSinceLastFlush >= logFlushInterval)
+          log.flush
+      }
+      catch {
+        case e =>
+          logger.error("error flushing " + log.getTopicName, e)
+          e match {
+            case _: IOException =>
+              logger.error("force shutdown due to error in flushAllLogs" + e)
+              Runtime.getRuntime.halt(1)
+            case _ =>
+          }
+      }
+    }     
   }
 
 
