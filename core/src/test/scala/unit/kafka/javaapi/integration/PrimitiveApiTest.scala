@@ -88,7 +88,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
 
 //    send an empty messageset first
     val sent2 = new ByteBufferMessageSet(true, getMessageList(Seq.empty[Message]: _*))
-    sent2.enableDeepIteration
     producer.send(topic, sent2)
     Thread.sleep(200)
     sent2.buffer.rewind
@@ -99,7 +98,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     // send some messages
     val sent3 = new ByteBufferMessageSet(true, getMessageList(new Message("hello".getBytes()),
       new Message("there".getBytes())))
-    sent3.enableDeepIteration
     producer.send(topic, sent3)
 
     Thread.sleep(200)
@@ -207,7 +205,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       for(topic <- topics) {
         val set = new ByteBufferMessageSet(true, getMessageList(new Message(("a_" + topic).getBytes),
                                                                  new Message(("b_" + topic).getBytes)))
-        set.enableDeepIteration
         messages += topic -> set
         producer.send(topic, set)
         set.buffer.rewind
@@ -310,7 +307,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       for(topic <- topics) {
         val set = new ByteBufferMessageSet(true, getMessageList(new Message(("a_" + topic).getBytes),
                                                                  new Message(("b_" + topic).getBytes)))
-        set.enableDeepIteration
         messages += topic -> set
         producer.send(topic, set)
         set.buffer.rewind
@@ -373,7 +369,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     for(topic <- topics) {
       val set = new ByteBufferMessageSet(true, getMessageList(new Message(("a_" + topic).getBytes),
                                                                new Message(("b_" + topic).getBytes)))
-      set.enableDeepIteration
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)

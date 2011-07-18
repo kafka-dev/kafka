@@ -32,64 +32,50 @@ import kafka.common.{InvalidMessageSizeException, ErrorMapping}
  * Option 2: Give it a list of messages (scala/java) along with instructions relating to serialization format. Producers will use this method.
  * 
  */
-class ByteBufferMessageSet protected () extends MessageSet {
+class ByteBufferMessageSet(val buffer: ByteBuffer,
+                           val errorCode: Int = ErrorMapping.NoError,
+                           val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
   private var validByteCount = -1
-  private var buffer: ByteBuffer = null
-  private var errorCode: Int = ErrorMapping.NoError
   private var shallowValidByteCount = -1
   private var deepValidByteCount = -1
-  private var deepIterate = true
-
-  def this(buffer: ByteBuffer, errorCode: Int, deepIterate: Boolean = true) = {
-    this()
-    this.buffer = buffer
-    this.errorCode = errorCode
-    this.deepIterate = deepIterate
-  }
-  
-  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, true)
 
   def this(compressionEnabled: Boolean, messages: Message*) {
-    this()
-    if (compressionEnabled) {
-      val message = CompressionUtils.compress(messages)
-      buffer = ByteBuffer.allocate(message.serializedSize)
-      message.serializeTo(buffer)
-      buffer.rewind
-    }
-    else {
-      buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
-      for (message <- messages) {
-        message.serializeTo(buffer)
-      }
-      buffer.rewind
-    }
+    this(
+      compressionEnabled match {
+        case true =>
+          val message = CompressionUtils.compress(messages)
+          val buffer = ByteBuffer.allocate(message.serializedSize)
+          message.serializeTo(buffer)
+          buffer.rewind
+          buffer
+        case false =>
+          val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+          for (message <- messages) {
+            message.serializeTo(buffer)
+          }
+          buffer.rewind
+          buffer
+      }, ErrorMapping.NoError, true)
   }
 
   def this(compressionEnabled: Boolean, messages: Iterable[Message]) {
-    this()
-    if (compressionEnabled) {
-      val message = CompressionUtils.compress(messages)
-      buffer = ByteBuffer.allocate(message.serializedSize)
-      message.serializeTo(buffer)
-      buffer.rewind
-    }
-    else {
-      buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
-      for (message <- messages) {
-        message.serializeTo(buffer)
-      }
-      buffer.rewind
-    }
-  }
-
-  def enableDeepIteration() = {
-    deepIterate = true
-  }
-  
-  def disableDeepIteration() = {
-    deepIterate = false
+    this(
+      compressionEnabled match {
+        case true =>
+          val message = CompressionUtils.compress(messages)
+          val buffer = ByteBuffer.allocate(message.serializedSize)
+          message.serializeTo(buffer)
+          buffer.rewind
+          buffer
+        case false =>
+          val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+          for (message <- messages) {
+            message.serializeTo(buffer)
+          }
+          buffer.rewind
+          buffer
+      }, ErrorMapping.NoError, true)
   }
 
   def getDeepIterate = deepIterate

@@ -48,14 +48,6 @@ class ByteBufferMessageSet protected () extends MessageSet {
 
   def validBytes: Int = underlying.validBytes
 
-  def enableDeepIteration() = {
-    underlying.enableDeepIteration
-  }
-
-  def disableDeepIteration() = {
-    underlying.disableDeepIteration
-  }
-
   def serialized():ByteBuffer = underlying.serialized
 
   override def iterator: java.util.Iterator[Message] = new java.util.Iterator[Message] {

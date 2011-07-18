@@ -153,7 +153,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
         val set = new ByteBufferMessageSet(true, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
-        set.enableDeepIteration
         messages += topic -> set
         producer.send(topic, set)
         set.getBuffer.rewind
@@ -216,7 +215,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
       val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
-      set.enableDeepIteration
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)
@@ -241,7 +239,6 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
       val set = new ByteBufferMessageSet(true, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
-      set.enableDeepIteration
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)

@@ -35,8 +35,6 @@ class CompressionUtilTest extends TestCase {
 
     TestUtils.checkLength(decompressedMessages.iterator,2)
 
-    decompressedMessages.enableDeepIteration
-
     TestUtils.checkLength(decompressedMessages.elements,3)
 
     TestUtils.checkEquals(messages.iterator, decompressedMessages.elements)
