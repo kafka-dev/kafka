@@ -20,7 +20,6 @@ import junit.framework.TestCase
 import java.io.File
 import kafka.utils.TestUtils
 import kafka.utils.Utils
-import kafka.message.{ByteBufferMessageSet, Message}
 import kafka.server.{KafkaConfig, KafkaServer}
 import junit.framework.Assert._
 import java.util.{Random, Properties}
@@ -29,6 +28,7 @@ import collection.mutable.WrappedArray
 import kafka.consumer.SimpleConsumer
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet, Message}
 
 object LogOffsetTest {
   val random = new Random()  
@@ -94,7 +94,7 @@ class LogOffsetTest extends JUnitSuite {
 
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(false, message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
 
     Thread.sleep(100)
@@ -147,7 +147,7 @@ class LogOffsetTest extends JUnitSuite {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(false, message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
 
     val now = System.currentTimeMillis
@@ -172,7 +172,7 @@ class LogOffsetTest extends JUnitSuite {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(false, message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
 
     Thread.sleep(100)

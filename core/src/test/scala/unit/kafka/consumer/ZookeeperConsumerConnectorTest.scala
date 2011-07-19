@@ -25,7 +25,7 @@ import kafka.utils.Utils
 import kafka.utils.{TestZKUtils, TestUtils}
 import org.scalatest.junit.JUnit3Suite
 import org.apache.log4j.{Level, Logger}
-import kafka.message.{MessageSet, Message, ByteBufferMessageSet}
+import kafka.message._
 
 class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHarness with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
@@ -145,7 +145,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
 
     println("Sending messages for 1st consumer")
     // send some messages to each broker
-    val sentMessages1 = sendMessages(nMessages, "batch1", true)
+    val sentMessages1 = sendMessages(nMessages, "batch1", DefaultCompressionCodec)
     // create a consumer
     val consumerConfig1 = new ConsumerConfig(
       TestUtils.createConsumerProperties(zkConnect, group, consumer1))
@@ -163,7 +163,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     val zkConsumerConnector2 = new ZookeeperConsumerConnector(consumerConfig2, true)
     val topicMessageStreams2 = zkConsumerConnector2.createMessageStreams(Predef.Map(topic -> numNodes*numParts/2))
     // send some messages to each broker
-    val sentMessages2 = sendMessages(nMessages, "batch2", true)
+    val sentMessages2 = sendMessages(nMessages, "batch2", DefaultCompressionCodec)
     Thread.sleep(200)
     val receivedMessages2_1 = getMessages(nMessages, topicMessageStreams1)
     val receivedMessages2_2 = getMessages(nMessages, topicMessageStreams2)
@@ -178,7 +178,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     val topicMessageStreams3 = zkConsumerConnector3.createMessageStreams(new mutable.HashMap[String, Int]())
     // send some messages to each broker
     Thread.sleep(200)
-    val sentMessages3 = sendMessages(nMessages, "batch3", true)
+    val sentMessages3 = sendMessages(nMessages, "batch3", DefaultCompressionCodec)
     Thread.sleep(200)
     val receivedMessages3_1 = getMessages(nMessages, topicMessageStreams1)
     val receivedMessages3_2 = getMessages(nMessages, topicMessageStreams2)
@@ -203,7 +203,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     Thread.sleep(500)
 
     // send some messages to each broker
-    val sentMessages = sendMessages(configs.head, 200, "batch1", true)
+    val sentMessages = sendMessages(configs.head, 200, "batch1", DefaultCompressionCodec)
     // test consumer timeout logic
     val consumerConfig0 = new ConsumerConfig(
       TestUtils.createConsumerProperties(zkConnect, group, consumer0)) {
@@ -226,13 +226,13 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
-  def sendMessages(conf: KafkaConfig, messagesPerNode: Int, header: String, compression: Boolean): List[Message]= {
+  def sendMessages(conf: KafkaConfig, messagesPerNode: Int, header: String, compression: CompressionCodec): List[Message]= {
     var messages: List[Message] = Nil
     val producer = TestUtils.createProducer("localhost", conf.port)
     for (partition <- 0 until numParts) {
       val ms = 0.until(messagesPerNode).map(x =>
         new Message((header + conf.brokerId + "-" + partition + "-" + x).getBytes)).toArray
-      val mSet = new ByteBufferMessageSet(compression, ms: _*)
+      val mSet = new ByteBufferMessageSet(compressionCodec = compression, messages = ms: _*)
       for (message <- ms)
         messages ::= message
       producer.send(topic, partition, mSet)
@@ -241,7 +241,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     messages
   }
 
-  def sendMessages(messagesPerNode: Int, header: String, compression: Boolean=false): List[Message]= {
+  def sendMessages(messagesPerNode: Int, header: String, compression: CompressionCodec = NoCompressionCodec): List[Message]= {
     var messages: List[Message] = Nil
     for(conf <- configs) {
       messages ++= sendMessages(conf, messagesPerNode, header, compression)

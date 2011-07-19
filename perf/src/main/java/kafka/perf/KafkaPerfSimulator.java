@@ -9,10 +9,13 @@ import java.io.IOException;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.print.attribute.standard.Compression;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
+import kafka.message.CompressionCodec;
+import kafka.message.NoCompressionCodec;
 import kafka.perf.consumer.SimplePerfConsumer;
 import kafka.perf.jmx.BrokerJmxClient;
 import kafka.perf.producer.Producer;
@@ -32,7 +35,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     private static final String FETCH_SIZE = "fetchSize";
     private static final String BUFFER_SIZE = "bufferSize";
     private static final String XAXIS = "xaxis";
-    private static final String COMPRESSION = "compression";
+    private static final String COMPRESSION_CODEC = "compressionCodec";
     private static final String KAFKA_SERVER_LOG_DIR = "serverLogDir";
 
     /* Default values */
@@ -41,7 +44,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
     private static int numParts = 1;
     private static int numConsumers = 10;
     private static long timeToRunMs = 60000L * 1;
-    private static boolean compression = false;
+    private static int compressionCodec = NoCompressionCodec.codec();
 
     private static String kafkaServersURL = "";
     private final static int kafkaServerPort = 9092;
@@ -82,7 +85,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
 
             producers[i] = new Producer(topic,kafkaServerURL, kafkaServerPort, kafkaBufferSize, connectionTimeOut, reconnectInterval,
                     messageSize, InetAddress.getLocalHost().getHostAddress()+ producerName +i, batchSize,
-                    numParts, compression);
+                    numParts, compressionCodec);
         }
 
         // Start the threads
@@ -289,7 +292,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
         parser.accepts(TEST_TIME, "time to run tests").withOptionalArg().ofType(Integer.class);
         parser.accepts(MSG_SIZE, "message size").withOptionalArg().ofType(Integer.class);
         parser.accepts(FETCH_SIZE, "fetch size").withOptionalArg().ofType(Integer.class);
-        parser.accepts(COMPRESSION, "compression").withOptionalArg().ofType(Boolean.class);
+        parser.accepts(COMPRESSION_CODEC, "compression").withOptionalArg().ofType(Integer.class);
 
         parser.accepts(KAFKA_SERVER_LOG_DIR, "kafka server log directory").withOptionalArg().ofType(String.class);
         return parser;
@@ -303,7 +306,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
                 ||  options.hasArgument(XAXIS)))
             printUsage();
 
-        if(options.hasArgument(COMPRESSION) && !options.hasArgument(KAFKA_SERVER_LOG_DIR)) {
+        if(options.hasArgument(COMPRESSION_CODEC) && !options.hasArgument(KAFKA_SERVER_LOG_DIR)) {
             System.err.println("If compression is enabled, the value for serverLogDir cannot be empty");
             System.exit(1);
         }
@@ -336,8 +339,8 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
         if(options.hasArgument(FETCH_SIZE))
             fetchSize = ((Integer)options.valueOf(FETCH_SIZE)).intValue();
 
-        if(options.hasArgument(COMPRESSION))
-            compression = ((Boolean) options.valueOf(COMPRESSION)).booleanValue();
+        if(options.hasArgument(COMPRESSION_CODEC))
+            compressionCodec = ((Integer) options.valueOf(COMPRESSION_CODEC)).intValue();
 
         System.out.println("numTopic: " + numTopic);
     }
@@ -372,7 +375,7 @@ public class KafkaPerfSimulator implements KafkaSimulatorMXBean
         BrokerJmxClient brokerStats = new BrokerJmxClient(kafkaServersURL, 9999, timeToRunMs);
         KafkaPerfSimulator sim = new KafkaPerfSimulator();
         PerfTimer timer = new PerfTimer( brokerStats, sim, numConsumers, numProducer,numParts, numTopic, timeToRunMs,
-                reportFileName, compression);
+                reportFileName, compressionCodec);
         timer.start();
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
         ObjectName mbeanName = new ObjectName("kafka.perf:type=Simulator");

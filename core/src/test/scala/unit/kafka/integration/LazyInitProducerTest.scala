@@ -20,11 +20,11 @@ import scala.collection._
 import junit.framework.Assert._
 import kafka.common.OffsetOutOfRangeException
 import kafka.api.{ProducerRequest, FetchRequest}
-import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
 import org.scalatest.junit.JUnit3Suite
 import kafka.utils.{TestUtils, Utils}
+import kafka.message.{NoCompressionCodec, Message, ByteBufferMessageSet}
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -62,7 +62,8 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
   def testProduceAndFetch() {
     // send some messages
     val topic = "test"
-    val sent = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent = new ByteBufferMessageSet(NoCompressionCodec,
+                                        new Message("hello".getBytes()), new Message("there".getBytes()))
     producer.send(topic, sent)
     sent.getBuffer.rewind
     var fetched: ByteBufferMessageSet = null
@@ -90,7 +91,8 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(NoCompressionCodec,
+                                           new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
         set.getBuffer.rewind
@@ -131,7 +133,8 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(NoCompressionCodec,
+                                         new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)
@@ -155,7 +158,8 @@ class LazyInitProducerTest extends JUnit3Suite with ProducerConsumerTestHarness 
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(NoCompressionCodec,
+                                         new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)

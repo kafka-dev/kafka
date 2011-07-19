@@ -68,9 +68,9 @@ object ProducerShell {
         done = true
       } else {
         val lineBytes = line.trim.getBytes()
-        val messages = new ByteBufferMessageSet(false, new Message(lineBytes))
-        producer.send(topic, messages)
-        println("sent: " + line + " (" + messages.sizeInBytes + " bytes)")
+        val messageList = new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(lineBytes))
+        producer.send(topic, messageList)
+        println("Sent: %d (%ld) bytes)".format(line, messageList.sizeInBytes))
       }
     }
     producer.close()

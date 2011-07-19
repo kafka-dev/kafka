@@ -19,6 +19,7 @@ import kafka.message.Message;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.javaapi.producer.SyncProducer;
 
+import kafka.message.NoCompressionCodec;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -47,7 +48,7 @@ public class KafkaRecordWriter<W extends BytesWritable> extends RecordWriter<Nul
   protected void sendMsgList()
   {
     if (msgList.size() > 0) {
-      ByteBufferMessageSet msgSet = new ByteBufferMessageSet(false, msgList);
+      ByteBufferMessageSet msgSet = new ByteBufferMessageSet(kafka.message.NoCompressionCodec$.MODULE$, msgList);
       producer.send(topic, msgSet);
       msgList.clear();
       totalSize = 0;

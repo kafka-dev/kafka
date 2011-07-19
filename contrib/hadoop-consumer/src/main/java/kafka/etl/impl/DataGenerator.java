@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Map.Entry;
 import java.util.Properties;
+
+import kafka.message.NoCompressionCodec;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
@@ -96,7 +98,7 @@ public class DataGenerator {
 		}
 		// send events
 		System.out.println(" send " + list.size() + " " + _topic + " count events to " + _uri);
-		_producer.send(_topic, new ByteBufferMessageSet(false, list));
+		_producer.send(_topic, new ByteBufferMessageSet(kafka.message.NoCompressionCodec$.MODULE$, list));
 
 		// close the producer
 		_producer.close();

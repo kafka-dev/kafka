@@ -1,3 +1,19 @@
+/*
+ * Copyright 2010 LinkedIn
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package kafka.message
 
 import java.io.ByteArrayOutputStream
@@ -9,15 +25,12 @@ import java.nio.ByteBuffer
 import org.apache.log4j.Logger
 
 object CompressionUtils {
-  var DefaultCompressionCodec = 1;
-  //0 is reserved to indicate no compression
-  val GzipCompression = 1;
   private val logger = Logger.getLogger(getClass)
 
   def compress(messages: Iterable[Message]): Message = compress(messages, DefaultCompressionCodec)
 
-  def compress(messages: Iterable[Message], compressionCodec: Int):Message = compressionCodec match {
-    case GzipCompression =>
+  def compress(messages: Iterable[Message], compressionCodec: CompressionCodec):Message = compressionCodec match {
+    case DefaultCompressionCodec =>
       val outputStream:ByteArrayOutputStream = new ByteArrayOutputStream()
       val gzipOutput:GZIPOutputStream = new GZIPOutputStream(outputStream)
       if(logger.isDebugEnabled)
@@ -30,14 +43,47 @@ object CompressionUtils {
       gzipOutput.write(messageByteBuffer.array)
       gzipOutput.close();
       outputStream.close();
-      val oneCompressedMessage:Message = new Message(outputStream.toByteArray,compressionCodec)
+      val oneCompressedMessage:Message = new Message(outputStream.toByteArray, compressionCodec)
+      oneCompressedMessage
+    case GZIPCompressionCodec =>
+      val outputStream:ByteArrayOutputStream = new ByteArrayOutputStream()
+      val gzipOutput:GZIPOutputStream = new GZIPOutputStream(outputStream)
+      if(logger.isDebugEnabled)
+        logger.debug("Allocating message byte buffer of size = " + MessageSet.messageSetSize(messages))
+      val messageByteBuffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+      for (message <- messages) {
+        message.serializeTo(messageByteBuffer)
+      }
+      messageByteBuffer.rewind
+      gzipOutput.write(messageByteBuffer.array)
+      gzipOutput.close();
+      outputStream.close();
+      val oneCompressedMessage:Message = new Message(outputStream.toByteArray, compressionCodec)
       oneCompressedMessage
     case _ =>
       throw new kafka.common.UnknownCodecException("Unknown Codec: " + compressionCodec)
   }
 
   def decompress(message: Message): ByteBufferMessageSet = message.compressionCodec match {
-    case GzipCompression =>
+    case DefaultCompressionCodec =>
+      val outputStream:ByteArrayOutputStream = new ByteArrayOutputStream
+      val inputStream:InputStream = new ByteBufferBackedInputStream(message.payload)
+      val gzipIn:GZIPInputStream = new GZIPInputStream(inputStream)
+      val intermediateBuffer = new Array[Byte](1024)
+      var len=gzipIn.read(intermediateBuffer)
+      while (len >0) {
+        outputStream.write(intermediateBuffer,0,len)
+        len = gzipIn.read(intermediateBuffer)
+      }
+
+      gzipIn.close
+      outputStream.close
+      val outputBuffer = ByteBuffer.allocate(outputStream.size)
+      outputBuffer.put(outputStream.toByteArray)
+      outputBuffer.rewind
+      val outputByteArray = outputStream.toByteArray
+      new ByteBufferMessageSet(outputBuffer)
+    case GZIPCompressionCodec =>
       val outputStream:ByteArrayOutputStream = new ByteArrayOutputStream
       val inputStream:InputStream = new ByteBufferBackedInputStream(message.payload)
       val gzipIn:GZIPInputStream = new GZIPInputStream(inputStream)

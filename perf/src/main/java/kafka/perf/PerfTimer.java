@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 
+import kafka.message.NoCompressionCodec;
 import kafka.perf.jmx.BrokerJmxClient;
 
 public class PerfTimer extends Thread
@@ -13,13 +14,13 @@ public class PerfTimer extends Thread
     private final KafkaPerfSimulator perfSim;
     private final int numConsumers, numProducer,numParts, numTopic;
     private final String reportFile;
-    private final boolean compression;
+    private final int compression;
 
     public PerfTimer(BrokerJmxClient brokerStats,
                      KafkaPerfSimulator perfSim, int numConsumers,
                      int numProducer, int numParts, int numTopic,
                      long timeToRun,
-                     String fileName, boolean compression)
+                     String fileName, int compression)
     {
         super("PerfTimer");
         this.timeToRun = timeToRun;
@@ -95,7 +96,7 @@ public class PerfTimer extends Thread
         System.out.println(data);
         printMessageDataStats();
         printMBDataStats();
-        if(compression)
+        if(compression != NoCompressionCodec.codec())
             printCompressionRatio();
     }
 

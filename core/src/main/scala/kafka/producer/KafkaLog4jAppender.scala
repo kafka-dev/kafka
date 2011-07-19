@@ -22,7 +22,7 @@ import org.apache.log4j.{Logger, AppenderSkeleton}
 import kafka.utils.Utils
 import kafka.serializer.Encoder
 import java.util.{Properties, Date}
-import kafka.message.{Message, ByteBufferMessageSet}
+import kafka.message.{NoCompressionCodec, Message, ByteBufferMessageSet}
 
 class KafkaLog4jAppender extends AppenderSkeleton {
   var port:Int = 0
@@ -73,7 +73,7 @@ class KafkaLog4jAppender extends AppenderSkeleton {
             " for " + host + "," + port)
     }
     val message = encoder.toMessage(event)
-    producer.send(topic, new ByteBufferMessageSet(false, message))
+    producer.send(topic, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = message))
   }
 
   override def close = {

@@ -103,12 +103,12 @@ class Message(val buffer: ByteBuffer) {
   import kafka.message.Message._
     
   
-  private def this(checksum: Long, bytes: Array[Byte], compressionCodec: Int) = {
+  private def this(checksum: Long, bytes: Array[Byte], compressionCodec: CompressionCodec) = {
     this(ByteBuffer.allocate(Message.HeaderSize(Message.CurrentMagicValue) + bytes.length))
     buffer.put(CurrentMagicValue)
     var attributes:Byte = 0
-    if (compressionCodec >0) {
-      attributes =  (attributes | (Message.CompressionCodeMask & compressionCodec)).toByte
+    if (compressionCodec.codec > 0) {
+      attributes =  (attributes | (Message.CompressionCodeMask & compressionCodec.codec)).toByte
     }
     buffer.put(attributes)
     Utils.putUnsignedInt(buffer, checksum)
@@ -116,14 +116,14 @@ class Message(val buffer: ByteBuffer) {
     buffer.rewind()
   }
 
-  def this(checksum:Long, bytes:Array[Byte]) = this(checksum, bytes, Message.NoCompression)
+  def this(checksum:Long, bytes:Array[Byte]) = this(checksum, bytes, NoCompressionCodec)
   
-  def this(bytes: Array[Byte], compressionCodec: Int) = {
+  def this(bytes: Array[Byte], compressionCodec: CompressionCodec) = {
     //Note: we're not crc-ing the attributes header, so we're susceptible to bit-flipping there
     this(Utils.crc32(bytes), bytes, compressionCodec)
   }
 
-  def this(bytes: Array[Byte]) = this(bytes, Message.NoCompression)
+  def this(bytes: Array[Byte]) = this(bytes, NoCompressionCodec)
   
   def size: Int = buffer.limit
   
@@ -133,15 +133,9 @@ class Message(val buffer: ByteBuffer) {
   
   def attributes: Byte = buffer.get(AttributeOffset)
   
-  def compressionCodec:Int = {
-    buffer.get(AttributeOffset) & CompressionCodeMask;
-  }
-  
-  def isCompressed:Boolean = magic match {
-    case 0 => false
-    case _ => compressionCodec > 0
-  }
-  
+  def compressionCodec:CompressionCodec =
+    CompressionCodec.getCompressionCodec(buffer.get(AttributeOffset) & CompressionCodeMask)
+
   def checksum: Long = Utils.getUnsignedInt(buffer, CrcOffset(magic))
   
   def payload: ByteBuffer = {

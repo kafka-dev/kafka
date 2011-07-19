@@ -19,7 +19,6 @@ package kafka.integration
 import scala.collection._
 import junit.framework.Assert._
 import kafka.api.{ProducerRequest, FetchRequest}
-import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.common.{OffsetOutOfRangeException, InvalidPartitionException}
 import kafka.server.{KafkaRequestHandlers, KafkaConfig}
 import org.apache.log4j.{Level, Logger}
@@ -28,6 +27,7 @@ import java.util.Properties
 import kafka.producer.{ProducerData, Producer, ProducerConfig}
 import kafka.serializer.StringDecoder
 import kafka.utils.TestUtils
+import kafka.message.{DefaultCompressionCodec, NoCompressionCodec, Message, ByteBufferMessageSet}
 
 /**
  * End to end tests of the primitive apis against a local server
@@ -90,7 +90,8 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(NoCompressionCodec,
+                                           new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
         set.getBuffer.rewind
@@ -152,7 +153,8 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       val messages = new mutable.HashMap[String, ByteBufferMessageSet]
       val fetches = new mutable.ArrayBuffer[FetchRequest]
       for(topic <- topics) {
-        val set = new ByteBufferMessageSet(true, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+        val set = new ByteBufferMessageSet(DefaultCompressionCodec,
+                                           new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
         messages += topic -> set
         producer.send(topic, set)
         set.getBuffer.rewind
@@ -214,7 +216,8 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(false, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(NoCompressionCodec,
+                                         new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)
@@ -238,7 +241,8 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     val fetches = new mutable.ArrayBuffer[FetchRequest]
     var produceList: List[ProducerRequest] = Nil
     for(topic <- topics) {
-      val set = new ByteBufferMessageSet(true, new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
+      val set = new ByteBufferMessageSet(DefaultCompressionCodec,
+                                         new Message(("a_" + topic).getBytes), new Message(("b_" + topic).getBytes))
       messages += topic -> set
       produceList ::= new ProducerRequest(topic, 0, set)
       fetches += new FetchRequest(topic, 0, 0, 10000)

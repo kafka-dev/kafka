@@ -30,7 +30,7 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
   
   def createMessageSet(messages: Seq[Message]): FileMessageSet = {
     val set = new FileMessageSet(tempFile(), true)
-    set.append(new ByteBufferMessageSet(false, messages: _*))
+    set.append(new ByteBufferMessageSet(NoCompressionCodec, messages: _*))
     set.flush()
     set
   }

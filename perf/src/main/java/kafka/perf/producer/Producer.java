@@ -38,11 +38,11 @@ public class Producer extends Thread
   private String producerName;
   private int batchSize;
   private int numParts;
-  private final boolean compression;
+  private final int compression;
 
   public Producer(String topic, String kafkaServerURL, int kafkaServerPort,
                   int kafkaProducerBufferSize, int connectionTimeOut, int reconnectInterval,
-                  int messageSize, String name, int batchSize, int numParts, boolean compression)
+                  int messageSize, String name, int batchSize, int numParts, int compression)
   {
     super(name);
     Properties props = new Properties();
@@ -71,7 +71,7 @@ public class Producer extends Thread
         Message message = new Message(new byte[messageSize]);
         messageList.add(message);
       }
-      ByteBufferMessageSet set = new ByteBufferMessageSet(compression, messageList);
+      ByteBufferMessageSet set = new ByteBufferMessageSet(kafka.message.CompressionCodec$.MODULE$.getCompressionCodec(compression), messageList);
       producer.send(topic, random.nextInt(numParts), set);
       bytesSent.getAndAdd(batchSize * messageSize);
       messagesSent.getAndAdd(messageList.size());

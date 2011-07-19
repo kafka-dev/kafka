@@ -18,6 +18,7 @@ package kafka.producer
 
 import kafka.utils.Utils
 import java.util.Properties
+import kafka.message.{CompressionUtils, CompressionCodec}
 
 class SyncProducerConfig(val props: Properties) extends SyncProducerConfigShared {
   /** the broker to which the producer sends events */
@@ -45,10 +46,10 @@ trait SyncProducerConfigShared {
    * This parameter allows you to enable compression for all data generated *
    * by this producer. The default is false.
    */
-  val compression = Utils.getBoolean(props, "compression", false)
+  val compressionCodec = Utils.getCompressionCodec(props, "compression.codec")
 
   /** This parameter allows you to set whether compression should be turned *
    *  on for particular topics
    */
-  val topicCompression = Utils.getString(props, "topic.compression.list", null)
+  val compressedTopics = Utils.getString(props, "compressed.topics", null)
 }

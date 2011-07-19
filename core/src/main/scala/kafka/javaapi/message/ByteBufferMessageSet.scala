@@ -17,33 +17,39 @@ package kafka.javaapi.message
 
 import java.nio.ByteBuffer
 import kafka.common.ErrorMapping
-import kafka.message.Message
 import org.apache.log4j.Logger
+import kafka.message._
 
-class ByteBufferMessageSet protected () extends MessageSet {
+class ByteBufferMessageSet(val buffer: ByteBuffer,
+                           val errorCode: Int = ErrorMapping.NoError,
+                           val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())
-  var underlying: kafka.message.ByteBufferMessageSet = null
-  var buffer:ByteBuffer = null
-  var errorCode:Int = ErrorMapping.NoError
-  var deepIterate = false
+  val underlying: kafka.message.ByteBufferMessageSet = new kafka.message.ByteBufferMessageSet(buffer, errorCode, deepIterate)
+//  var buffer:ByteBuffer = null
+//  var errorCode:Int = ErrorMapping.NoError
+//  var deepIterate = false
 
-  def this(buffer: ByteBuffer, errorCode: Int, deepIterate: Boolean) = {
-    this()
-    this.buffer = buffer
-    this.errorCode = errorCode
-    this.deepIterate = deepIterate
-    this.underlying = new kafka.message.ByteBufferMessageSet(this.buffer, this.errorCode, this.deepIterate)
-  }
+  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, true)
 
-  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, false)
-
-  import scala.collection.JavaConversions._
-  def this(compressionEnabled: Boolean = false, messages: java.util.List[Message]) {
-    this()
-    this.underlying = new kafka.message.ByteBufferMessageSet(compressionEnabled, asBuffer(messages))
-    this.buffer = underlying.getBuffer
-    this.errorCode = underlying.getErrorCode
-    this.deepIterate = underlying.getDeepIterate
+  def this(compressionCodec: CompressionCodec, messages: java.util.List[Message]) {
+    this(compressionCodec match {
+      case NoCompressionCodec =>
+        val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+        val messageIterator = messages.iterator
+        while(messageIterator.hasNext) {
+          val message = messageIterator.next
+          message.serializeTo(buffer)
+        }
+        buffer.rewind
+        buffer
+      case _ =>
+        import scala.collection.JavaConversions._
+        val message = CompressionUtils.compress(asBuffer(messages), compressionCodec)
+        val buffer = ByteBuffer.allocate(message.serializedSize)
+        message.serializeTo(buffer)
+        buffer.rewind
+        buffer
+    }, ErrorMapping.NoError, true)
   }
 
   def validBytes: Int = underlying.validBytes

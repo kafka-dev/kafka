@@ -19,13 +19,13 @@ package kafka.javaapi.message
 import junit.framework.Assert._
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
-import kafka.message.Message
 import kafka.utils.TestUtils
+import kafka.message.{DefaultCompressionCodec, NoCompressionCodec, CompressionCodec, Message}
 
 trait BaseMessageSetTestCases extends JUnitSuite {
   
   val messages = Array(new Message("abcd".getBytes()), new Message("efgh".getBytes()))
-  def createMessageSet(messages: Seq[Message], compressed: Boolean=false): MessageSet
+  def createMessageSet(messages: Seq[Message], compressed: CompressionCodec = NoCompressionCodec): MessageSet
 
   @Test
   def testWrittenEqualsRead {
@@ -43,7 +43,7 @@ trait BaseMessageSetTestCases extends JUnitSuite {
 
   @Test
   def testIteratorIsConsistentWithCompression() {
-    val m = createMessageSet(messages, true)
+    val m = createMessageSet(messages, DefaultCompressionCodec)
     // two iterators over the same set should give the same results
     TestUtils.checkEquals(m.iterator, m.iterator)
   }
@@ -62,6 +62,6 @@ trait BaseMessageSetTestCases extends JUnitSuite {
   def testSizeInBytesWithCompression () {
     assertEquals("Empty message set should have 0 bytes.",
                  30L,           // overhead of the GZIP output stream
-                 createMessageSet(Array[Message](), true).sizeInBytes)
+                 createMessageSet(Array[Message](), DefaultCompressionCodec).sizeInBytes)
   }
 }

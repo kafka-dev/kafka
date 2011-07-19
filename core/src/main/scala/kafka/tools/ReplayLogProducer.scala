@@ -7,12 +7,12 @@ import java.util.concurrent.{Executors, CountDownLatch}
 import java.util.Properties
 import kafka.producer.async.DefaultEventHandler
 import kafka.serializer.{DefaultEncoder, StringEncoder}
-import kafka.message.{Message, MessageSet, FileMessageSet}
 import kafka.producer.{ProducerData, DefaultPartitioner, ProducerConfig, Producer}
 import kafka.consumer._
 import kafka.utils.{StringSerializer, Utils}
 import kafka.api.OffsetRequest
 import org.I0Itec.zkclient._
+import kafka.message.{CompressionCodec, Message, MessageSet, FileMessageSet}
 
 object ReplayLogProducer {
 
@@ -107,7 +107,11 @@ object ReplayLogProducer {
       .describedAs("size")
       .ofType(classOf[java.lang.Integer])
       .defaultsTo(5000)
-    val compressionOption = parser.accepts("compression", "If set, messages are sent compressed")
+    val compressionCodecOption = parser.accepts("compression-codec", "If set, messages are sent compressed")
+      .withRequiredArg
+      .describedAs("compression codec ")
+      .ofType(classOf[java.lang.Integer])
+      .defaultsTo(0)
 
     val options = parser.parse(args : _*)
     for(arg <- List(brokerInfoOpt, inputTopicOpt)) {
@@ -127,7 +131,7 @@ object ReplayLogProducer {
     val inputTopic = options.valueOf(inputTopicOpt)
     val outputTopic = options.valueOf(outputTopicOpt)
     val reportingInterval = options.valueOf(reportingIntervalOpt).intValue
-    val compression = options.has(compressionOption)
+    val compressionCodec = CompressionCodec.getCompressionCodec(options.valueOf(compressionCodecOption).intValue)
   }
 
   def tryCleanupZookeeper(zkUrl: String, groupId: String) {
@@ -157,7 +161,7 @@ object ReplayLogProducer {
       props.put("producer.type", "async")
 
     val producer = new Producer[Message, Message](new ProducerConfig(props), new DefaultEncoder,
-                                                  new DefaultEventHandler(config.compression, null),
+                                                  new DefaultEventHandler(config.compressionCodec, null),
                                                   null, new DefaultPartitioner)
 
     override def run() {

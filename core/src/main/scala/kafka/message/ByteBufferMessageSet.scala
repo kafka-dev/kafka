@@ -27,9 +27,12 @@ import kafka.common.{InvalidMessageSizeException, ErrorMapping}
 
 /**
  * A sequence of messages stored in a byte buffer
- * There are two ways to create a ByteBufferMessageSet 
- * Option 1: From a ByteBuffer which already contains the serialized message set. Consumers will use this method. 
- * Option 2: Give it a list of messages (scala/java) along with instructions relating to serialization format. Producers will use this method.
+ *
+ * There are two ways to create a ByteBufferMessageSet
+ *
+ * Option 1: From a ByteBuffer which already contains the serialized message set. Consumers will use this method.
+ *
+ * Option 2: Give it a list of messages along with instructions relating to serialization format. Producers will use this method.
  * 
  */
 class ByteBufferMessageSet(val buffer: ByteBuffer,
@@ -40,39 +43,39 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
   private var shallowValidByteCount = -1
   private var deepValidByteCount = -1
 
-  def this(compressionEnabled: Boolean, messages: Message*) {
+  def this(compressionCodec: CompressionCodec, messages: Message*) {
     this(
-      compressionEnabled match {
-        case true =>
-          val message = CompressionUtils.compress(messages)
-          val buffer = ByteBuffer.allocate(message.serializedSize)
-          message.serializeTo(buffer)
-          buffer.rewind
-          buffer
-        case false =>
+      compressionCodec match {
+        case NoCompressionCodec =>
           val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
           for (message <- messages) {
             message.serializeTo(buffer)
           }
+          buffer.rewind
+          buffer
+        case _ =>
+          val message = CompressionUtils.compress(messages, compressionCodec)
+          val buffer = ByteBuffer.allocate(message.serializedSize)
+          message.serializeTo(buffer)
           buffer.rewind
           buffer
       }, ErrorMapping.NoError, true)
   }
 
-  def this(compressionEnabled: Boolean, messages: Iterable[Message]) {
+  def this(compressionCodec: CompressionCodec, messages: Iterable[Message]) {
     this(
-      compressionEnabled match {
-        case true =>
-          val message = CompressionUtils.compress(messages)
-          val buffer = ByteBuffer.allocate(message.serializedSize)
-          message.serializeTo(buffer)
-          buffer.rewind
-          buffer
-        case false =>
+      compressionCodec match {
+        case NoCompressionCodec =>
           val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
           for (message <- messages) {
             message.serializeTo(buffer)
           }
+          buffer.rewind
+          buffer
+        case _ =>
+          val message = CompressionUtils.compress(messages, compressionCodec)
+          val buffer = ByteBuffer.allocate(message.serializedSize)
+          message.serializeTo(buffer)
           buffer.rewind
           buffer
       }, ErrorMapping.NoError, true)
@@ -176,20 +179,18 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
         message.limit(size)
         topIter.position(topIter.position + size)
         val newMessage = new Message(message)
-        newMessage.isCompressed match {
-          case true=> {
-            if(logger.isDebugEnabled)
-              logger.debug("Message is compressed")
-            innerIter = CompressionUtils.decompress(newMessage).deepIterator
-            makeNext()
-          }
-          case false=> {
+        newMessage.compressionCodec match {
+          case NoCompressionCodec =>
             if(logger.isDebugEnabled)
               logger.debug("Message is uncompressed")
             innerIter = null
             currValidBytes += 4 + size
             newMessage
-          }
+          case _ =>
+            if(logger.isDebugEnabled)
+              logger.debug("Message is compressed")
+            innerIter = CompressionUtils.decompress(newMessage).deepIterator
+            makeNext()
         }
       }
 

@@ -27,6 +27,7 @@ import javax.management._
 import java.util.Properties
 import scala.collection._
 import scala.collection.mutable
+import kafka.message.{NoCompressionCodec, CompressionCodec}
 
 /**
  * Helper functions!
@@ -574,6 +575,14 @@ object Utils {
     else if(prop.compareTo("") == 0)
       false
     else true
+  }
+
+  def getCompressionCodec(props: Properties, codec: String): CompressionCodec = {
+    val codecValueString = props.getProperty(codec)
+    if(codecValueString == null)
+      NoCompressionCodec
+    else
+      CompressionCodec.getCompressionCodec(codecValueString.toInt)
   }
 }
 

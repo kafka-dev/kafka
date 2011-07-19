@@ -18,7 +18,6 @@ package kafka.server
 import kafka.utils.TestUtils
 import java.io.File
 import kafka.utils.Utils
-import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.api.FetchRequest
 import kafka.integration.ProducerConsumerTestHarness
 import kafka.producer.{SyncProducer, SyncProducerConfig}
@@ -28,6 +27,7 @@ import org.scalatest.junit.JUnitSuite
 import junit.framework.{Assert, TestCase}
 import org.junit.{After, Before, Test}
 import junit.framework.Assert._
+import kafka.message.{NoCompressionCodec, Message, ByteBufferMessageSet}
 
 class ServerShutdownTest extends JUnitSuite {
   val port = 9999
@@ -41,8 +41,8 @@ class ServerShutdownTest extends JUnitSuite {
 
     val host = "localhost"
     val topic = "test"
-    val sent1 = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
-    val sent2 = new ByteBufferMessageSet(false, new Message("more".getBytes()), new Message("messages".getBytes()))
+    val sent1 = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
+    val sent2 = new ByteBufferMessageSet(NoCompressionCodec, new Message("more".getBytes()), new Message("messages".getBytes()))
 
     {
       val producer = new SyncProducer(getProducerConfig(host,

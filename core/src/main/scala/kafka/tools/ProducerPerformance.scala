@@ -16,7 +16,6 @@
 
 package kafka.tools
 
-import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.utils.Utils
 import java.util.concurrent.{CountDownLatch, Executors}
 import java.util.concurrent.atomic.AtomicLong
@@ -26,6 +25,7 @@ import kafka.serializer.StringEncoder
 import org.apache.log4j.Logger
 import joptsimple.{OptionSet, OptionParser}
 import java.util.{Random, Properties}
+import kafka.message.{CompressionCodec, Message, ByteBufferMessageSet}
 
 /**
  * Load test for the producer
@@ -102,7 +102,11 @@ object ProducerPerformance {
       .describedAs("size")
       .ofType(classOf[java.lang.Integer])
       .defaultsTo(5000)
-    val compressionOption = parser.accepts("compression", "If set, messages are sent compressed")
+    val compressionCodecOption = parser.accepts("compression-codec", "If set, messages are sent compressed")
+      .withRequiredArg
+      .describedAs("compression codec ")
+      .ofType(classOf[java.lang.Integer])
+      .defaultsTo(0)
 
     val options = parser.parse(args : _*)
     for(arg <- List(brokerInfoOpt, topicOpt, numMessagesOpt)) {
@@ -122,7 +126,7 @@ object ProducerPerformance {
     val numThreads = options.valueOf(numThreadsOpt).intValue
     val topic = options.valueOf(topicOpt)
     val reportingInterval = options.valueOf(reportingIntervalOpt).intValue
-    val compression = options.has(compressionOption)
+    val compressionCodec = CompressionCodec.getCompressionCodec(options.valueOf(compressionCodecOption).intValue)
   }
 
   private def getStringOfLength(len: Int) : String = {
@@ -145,15 +149,15 @@ object ProducerPerformance {
       props.put("zk.connect", brokerInfoList(1))
     else
       props.put("broker.list", brokerInfoList(1))
-    if(config.compression)
-      props.put("compression", "true")
+
+    props.put("compression.codec", config.compressionCodec.toString)
     props.put("producer.type","async")
     props.put("batch.size", config.batchSize.toString)
     props.put("reconnect.interval", Integer.MAX_VALUE.toString)
     props.put("buffer.size", (64*1024).toString)
 
     val producer = new Producer[String, String](new ProducerConfig(props), new StringEncoder,
-      new DefaultEventHandler(config.compression, null), null, new DefaultPartitioner)
+      new DefaultEventHandler(config.compressionCodec, null), null, new DefaultPartitioner)
 
     override def run {
       var bytesSent = 0L
@@ -211,13 +215,12 @@ object ProducerPerformance {
       props.put("zk.connect", brokerInfoList(1))
     else
       props.put("broker.list", brokerInfoList(1))
-    if(config.compression)
-      props.put("compression", "true")
+    props.put("compression", config.compressionCodec.toString)
     props.put("reconnect.interval", Integer.MAX_VALUE.toString)
     props.put("buffer.size", (64*1024).toString)
 
     val producer = new Producer[String, String](new ProducerConfig(props), new StringEncoder,
-      new DefaultEventHandler(config.compression, null), null, new DefaultPartitioner)
+      new DefaultEventHandler(config.compressionCodec, null), null, new DefaultPartitioner)
 
     override def run {
       var bytesSent = 0L

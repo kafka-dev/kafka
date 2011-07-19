@@ -20,7 +20,6 @@ import junit.framework.Assert._
 import kafka.zk.ZooKeeperTestHarness
 import kafka.integration.KafkaServerTestHarness
 import kafka.server.KafkaConfig
-import kafka.message.{Message}
 import scala.collection._
 import kafka.utils.Utils
 import kafka.utils.{TestZKUtils, TestUtils}
@@ -30,6 +29,7 @@ import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.consumer.{Consumer, ConsumerConfig, KafkaMessageStream, ConsumerTimeoutException}
 import javax.management.NotCompliantMBeanException
 import org.apache.log4j.{Level, Logger}
+import kafka.message.{NoCompressionCodec, DefaultCompressionCodec, CompressionCodec, Message}
 
 class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHarness with ZooKeeperTestHarness {
   private val logger = Logger.getLogger(getClass())
@@ -144,7 +144,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     zkConsumerConnector0.shutdown
 
     // send some messages to each broker
-    val sentMessages1 = sendMessages(nMessages, "batch1", true)
+    val sentMessages1 = sendMessages(nMessages, "batch1", DefaultCompressionCodec)
     // create a consumer
     val consumerConfig1 = new ConsumerConfig(
       TestUtils.createConsumerProperties(zkConnect, group, consumer1))
@@ -161,7 +161,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     val zkConsumerConnector2 = new ZookeeperConsumerConnector(consumerConfig2, true)
     val topicMessageStreams2 = zkConsumerConnector2.createMessageStreams(toJavaMap(Predef.Map(topic -> numNodes*numParts/2)))
     // send some messages to each broker
-    val sentMessages2 = sendMessages(nMessages, "batch2", true)
+    val sentMessages2 = sendMessages(nMessages, "batch2", DefaultCompressionCodec)
     Thread.sleep(200)
     val receivedMessages2_1 = getMessages(nMessages, topicMessageStreams1)
     val receivedMessages2_2 = getMessages(nMessages, topicMessageStreams2)
@@ -175,7 +175,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     val topicMessageStreams3 = zkConsumerConnector3.createMessageStreams(toJavaMap(new mutable.HashMap[String, Int]()))
     // send some messages to each broker
     Thread.sleep(200)
-    val sentMessages3 = sendMessages(nMessages, "batch3", true)
+    val sentMessages3 = sendMessages(nMessages, "batch3", DefaultCompressionCodec)
     Thread.sleep(200)
     val receivedMessages3_1 = getMessages(nMessages, topicMessageStreams1)
     val receivedMessages3_2 = getMessages(nMessages, topicMessageStreams2)
@@ -200,7 +200,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     Thread.sleep(500)
 
     // send some messages to each broker
-    val sentMessages = sendMessages(configs.head, 200, "batch1", true)
+    val sentMessages = sendMessages(configs.head, 200, "batch1", DefaultCompressionCodec)
     // test consumer timeout logic
     val consumerConfig0 = new ConsumerConfig(
       TestUtils.createConsumerProperties(zkConnect, group, consumer0)) {
@@ -223,13 +223,13 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     requestHandlerLogger.setLevel(Level.ERROR)
   }
 
-  def sendMessages(conf: KafkaConfig, messagesPerNode: Int, header: String, compressed: Boolean): List[Message]= {
+  def sendMessages(conf: KafkaConfig, messagesPerNode: Int, header: String, compressed: CompressionCodec): List[Message]= {
     var messages: List[Message] = Nil
     val producer = kafka.javaapi.Implicits.toJavaSyncProducer(TestUtils.createProducer("localhost", conf.port))
     for (partition <- 0 until numParts) {
       val ms = 0.until(messagesPerNode).map(x =>
         new Message((header + conf.brokerId + "-" + partition + "-" + x).getBytes)).toArray
-      val mSet = new ByteBufferMessageSet(compressed, getMessageList(ms: _*))
+      val mSet = new ByteBufferMessageSet(compressionCodec = compressed, messages = getMessageList(ms: _*))
       for (message <- ms)
         messages ::= message
       producer.send(topic, partition, mSet)
@@ -238,7 +238,7 @@ class ZookeeperConsumerConnectorTest extends JUnit3Suite with KafkaServerTestHar
     messages
   }
 
-  def sendMessages(messagesPerNode: Int, header: String, compressed: Boolean=false): List[Message]= {
+  def sendMessages(messagesPerNode: Int, header: String, compressed: CompressionCodec = NoCompressionCodec): List[Message]= {
     var messages: List[Message] = Nil
     for(conf <- configs) {
       messages ++= sendMessages(conf, messagesPerNode, header, compressed)

@@ -24,7 +24,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
 import kafka.utils.{Utils, TestUtils, Range}
 import kafka.common.OffsetOutOfRangeException
-import kafka.message.{MessageSet, ByteBufferMessageSet, Message}
+import kafka.message.{NoCompressionCodec, MessageSet, ByteBufferMessageSet, Message}
 
 class LogTest extends JUnitSuite {
   
@@ -67,7 +67,7 @@ class LogTest extends JUnitSuite {
     val log = new Log(logDir, 1024, 1000, false)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 10)
-      log.append(new ByteBufferMessageSet(false, message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
     val messages = log.read(0, 1024)
     var current = 0

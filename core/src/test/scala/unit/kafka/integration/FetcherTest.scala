@@ -81,7 +81,7 @@ class FetcherTest extends JUnit3Suite with KafkaServerTestHarness {
     for(conf <- configs) {
       val producer = TestUtils.createProducer("localhost", conf.port)
       val ms = 0.until(messagesPerNode).map(x => new Message((conf.brokerId * 5 + x).toString.getBytes)).toArray
-      val mSet = new ByteBufferMessageSet(false, ms: _*)
+      val mSet = new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = ms: _*)
       messages += conf.brokerId -> mSet
       producer.send(topic, mSet)
       producer.close()

@@ -138,7 +138,7 @@ object TestUtils {
    * @param payload The bytes of the message
    */
   def singleMessageSet(payload: Array[Byte]) = 
-    new ByteBufferMessageSet(false, new Message(payload))
+    new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(payload))
   
   /**
    * Generate an array of random bytes

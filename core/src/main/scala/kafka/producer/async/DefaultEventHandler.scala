@@ -16,7 +16,6 @@
 
 package kafka.producer.async
 
-import kafka.message.ByteBufferMessageSet
 import collection.mutable.HashMap
 import collection.mutable.Map
 import org.apache.log4j.Logger
@@ -24,8 +23,9 @@ import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
 import java.util.Properties
 import kafka.producer.{SyncProducerConfig, ProducerConfig, SyncProducer}
+import kafka.message.{CompressionCodec, ByteBufferMessageSet}
 
-private[kafka] class DefaultEventHandler[T](val compression: Boolean,
+private[kafka] class DefaultEventHandler[T](val compression: CompressionCodec,
                                             val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[DefaultEventHandler[T]])

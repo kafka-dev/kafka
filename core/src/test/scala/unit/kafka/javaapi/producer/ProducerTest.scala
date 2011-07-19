@@ -21,7 +21,6 @@ import org.apache.log4j.{Logger, Level}
 import kafka.server.{KafkaRequestHandlers, KafkaServer, KafkaConfig}
 import kafka.zk.EmbeddedZookeeper
 import kafka.utils.{TestZKUtils, TestUtils}
-import kafka.message.Message
 import org.junit.{After, Before, Test}
 import junit.framework.Assert
 import collection.mutable.HashMap
@@ -39,6 +38,7 @@ import kafka.javaapi.Implicits._
 import kafka.serializer.{StringEncoder, Encoder}
 import kafka.javaapi.consumer.SimpleConsumer
 import kafka.api.FetchRequest
+import kafka.message.{NoCompressionCodec, Message}
 
 class ProducerTest extends JUnitSuite {
   private val topic = "test-topic"
@@ -79,7 +79,7 @@ class ProducerTest extends JUnitSuite {
     producer1 = new SyncProducer(new SyncProducerConfig(props))
     val messages1 = new java.util.ArrayList[Message]
     messages1.add(new Message("test".getBytes()))
-    producer1.send("test-topic", new ByteBufferMessageSet(false, messages1))
+    producer1.send("test-topic", new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messages1))
 
     producer2 = new SyncProducer(new SyncProducerConfig(props) {
       override val port = port2
@@ -87,7 +87,7 @@ class ProducerTest extends JUnitSuite {
     val messages2 = new java.util.ArrayList[Message]
     messages2.add(new Message("test".getBytes()))
 
-    producer2.send("test-topic", new ByteBufferMessageSet(false, messages2))
+    producer2.send("test-topic", new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messages2))
 
     consumer1 = new SimpleConsumer("localhost", port1, 1000000, 64*1024)
     consumer2 = new SimpleConsumer("localhost", port2, 1000000, 64*1024)
@@ -127,9 +127,9 @@ class ProducerTest extends JUnitSuite {
     val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     // it should send to partition 0 (first partition) on second broker i.e broker2
-    val messages = new java.util.ArrayList[Message]
-    messages.add(new Message("test1".getBytes()))
-    syncProducer2.send(topic, 0, new ByteBufferMessageSet(false, messages))
+    val messageList = new java.util.ArrayList[Message]
+    messageList.add(new Message("test1".getBytes()))
+    syncProducer2.send(topic, 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messageList))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -169,9 +169,9 @@ class ProducerTest extends JUnitSuite {
     val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
     val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     // it should send to random partition on broker 1
-    val messages = new java.util.ArrayList[Message]
-    messages.add(new Message("t".getBytes()))
-    syncProducer1.send(topic, -1, new ByteBufferMessageSet(false, messages))
+    val messageList = new java.util.ArrayList[Message]
+    messageList.add(new Message("t".getBytes()))
+    syncProducer1.send(topic, -1, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messageList))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -214,9 +214,9 @@ class ProducerTest extends JUnitSuite {
     val syncProducers = new ConcurrentHashMap[Int, kafka.producer.SyncProducer]()
     val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
-    val messages = new java.util.ArrayList[Message]
-    messages.add(new Message("test1".getBytes()))
-    syncProducer1.send("test-topic", 0, new ByteBufferMessageSet(false, messages))
+    val messageList = new java.util.ArrayList[Message]
+    messageList.add(new Message("test1".getBytes()))
+    syncProducer1.send("test-topic", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messageList))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -465,9 +465,11 @@ class ProducerTest extends JUnitSuite {
     val syncProducer1 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     val syncProducer2 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     import scala.collection.JavaConversions._
-    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(false, asList(Array(new Message("test1".getBytes)))))
+    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                                  messages = asList(Array(new Message("test1".getBytes)))))
     EasyMock.expectLastCall
-    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(false, asList(Array(new Message("test1".getBytes)))))
+    syncProducer1.send("test-topic1", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                                  messages = asList(Array(new Message("test1".getBytes)))))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -487,7 +489,8 @@ class ProducerTest extends JUnitSuite {
 
     // now send again to this topic using a real producer, this time all brokers would have registered
     // their partitions in zookeeper
-    producer1.send("test-topic1", new ByteBufferMessageSet(false, asList(Array(new Message("test".getBytes())))))
+    producer1.send("test-topic1", new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                           messages = asList(Array(new Message("test".getBytes())))))
     Thread.sleep(100)
 
     // wait for zookeeper to register the new topic
@@ -517,7 +520,7 @@ class ProducerTest extends JUnitSuite {
     val syncProducer3 = EasyMock.createMock(classOf[kafka.producer.SyncProducer])
     val messages1 = new java.util.ArrayList[Message]
     messages1.add(new Message("test1".getBytes()))
-    syncProducer3.send("test-topic", 2, new ByteBufferMessageSet(false, messages1))
+    syncProducer3.send("test-topic", 2, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messages1))
     EasyMock.expectLastCall
     syncProducer1.close
     EasyMock.expectLastCall
@@ -547,9 +550,9 @@ class ProducerTest extends JUnitSuite {
     tempProps.put("host", "localhost")
     tempProps.put("port", "9094")
     val tempProducer = new kafka.producer.SyncProducer(new SyncProducerConfig(tempProps))
-    val messages = new java.util.ArrayList[Message]
-    messages.add(new Message("test".getBytes()))
-    tempProducer.send("test-topic", new ByteBufferMessageSet(false, messages))
+    val messageList = new java.util.ArrayList[Message]
+    messageList.add(new Message("test".getBytes()))
+    tempProducer.send("test-topic", new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = messageList))
 
     Thread.sleep(500)
 

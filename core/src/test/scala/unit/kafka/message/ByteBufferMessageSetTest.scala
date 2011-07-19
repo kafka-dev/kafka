@@ -23,12 +23,11 @@ import org.junit.Test
 class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
 
   override def createMessageSet(messages: Seq[Message]): ByteBufferMessageSet = 
-    new ByteBufferMessageSet(false, messages: _*)
+    new ByteBufferMessageSet(NoCompressionCodec, messages: _*)
   
   @Test
   def testValidBytes() {
-    val compressionEnabled = false
-    val messages = new ByteBufferMessageSet(compressionEnabled, new Message("hello".getBytes()), new Message("there".getBytes()))
+    val messages = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
     val buffer = ByteBuffer.allocate(messages.sizeInBytes.toInt + 2)
     buffer.put(messages.serialized)
     buffer.putShort(4)
@@ -38,13 +37,13 @@ class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
 
   @Test
   def testEquals() {
-    var messages = new ByteBufferMessageSet(true, new Message("hello".getBytes()), new Message("there".getBytes()))
-    var moreMessages = new ByteBufferMessageSet(true, new Message("hello".getBytes()), new Message("there".getBytes()))
+    var messages = new ByteBufferMessageSet(DefaultCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
+    var moreMessages = new ByteBufferMessageSet(DefaultCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
 
     assertTrue(messages.equals(moreMessages))
 
-    messages = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
-    moreMessages = new ByteBufferMessageSet(false, new Message("hello".getBytes()), new Message("there".getBytes()))
+    messages = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
+    moreMessages = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
 
     assertTrue(messages.equals(moreMessages))
   }

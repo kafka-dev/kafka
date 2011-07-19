@@ -16,7 +16,6 @@
 
 package kafka.producer
 
-import kafka.message.{Message, ByteBufferMessageSet}
 import junit.framework.{Assert, TestCase}
 import kafka.utils.SystemTime
 import kafka.utils.TestUtils
@@ -27,6 +26,7 @@ import org.junit.{After, Before, Test}
 import kafka.common.MessageSizeTooLargeException
 import java.util.Properties
 import kafka.api.ProducerRequest
+import kafka.message.{NoCompressionCodec, Message, ByteBufferMessageSet}
 
 class SyncProducerTest extends JUnitSuite {
   private var messageBytes =  new Array[Byte](2);
@@ -61,7 +61,7 @@ class SyncProducerTest extends JUnitSuite {
     //temporarily increase log4j level to avoid error in output
     simpleProducerLogger.setLevel(Level.FATAL)
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -73,7 +73,7 @@ class SyncProducerTest extends JUnitSuite {
 
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
 
@@ -96,7 +96,7 @@ class SyncProducerTest extends JUnitSuite {
     var failed = false
     val firstStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))
     }catch {
       case e: Exception => failed=true
     }
@@ -106,7 +106,7 @@ class SyncProducerTest extends JUnitSuite {
     Assert.assertTrue((firstEnd-firstStart) < 500)
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -115,7 +115,7 @@ class SyncProducerTest extends JUnitSuite {
     Assert.assertTrue((secondEnd-secondEnd) < 500)
 
     try {
-      producer.multiSend(Array(new ProducerRequest("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))))
+      producer.multiSend(Array(new ProducerRequest("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))))
     }catch {
       case e: Exception => failed=true
     }
@@ -136,7 +136,7 @@ class SyncProducerTest extends JUnitSuite {
     //temporarily increase log4j level to avoid error in output
     simpleProducerLogger.setLevel(Level.FATAL)
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -146,7 +146,7 @@ class SyncProducerTest extends JUnitSuite {
     Assert.assertTrue((firstEnd-firstStart) < 300)
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(messageBytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(messageBytes)))
     }catch {
       case e: Exception => failed = true
     }
@@ -169,7 +169,7 @@ class SyncProducerTest extends JUnitSuite {
     val bytes = new Array[Byte](101)
     var failed = false
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(false, new Message(bytes)))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(bytes)))
     }catch {
       case e: MessageSizeTooLargeException => failed = true
     }
