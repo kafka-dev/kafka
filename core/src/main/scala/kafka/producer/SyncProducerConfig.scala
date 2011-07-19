@@ -43,13 +43,21 @@ trait SyncProducerConfigShared {
   val maxMessageSize = Utils.getInt(props, "max.message.size", 1000000)
 
   /**
-   * This parameter allows you to enable compression for all data generated *
-   * by this producer. The default is false.
+   * This parameter allows you to specify the compression codec for all data generated *
+   * by this producer. The default is NoCompressionCodec
    */
   val compressionCodec = Utils.getCompressionCodec(props, "compression.codec")
 
   /** This parameter allows you to set whether compression should be turned *
    *  on for particular topics
+   *
+   *  If the compression codec is anything other than NoCompressionCodec,
+   *
+   *    Enable compression only for specified topics if any
+   *
+   *    If the list of compressed topics is empty, then enable the specified compression codec for all topics
+   *
+   *  If the compression codec is NoCompressionCodec, compression is disabled for all topics
    */
-  val compressedTopics = Utils.getString(props, "compressed.topics", null)
+  val compressedTopics = Utils.getCSVList(Utils.getString(props, "compressed.topics", null))
 }

@@ -156,8 +156,9 @@ object ProducerPerformance {
     props.put("reconnect.interval", Integer.MAX_VALUE.toString)
     props.put("buffer.size", (64*1024).toString)
 
-    val producer = new Producer[String, String](new ProducerConfig(props), new StringEncoder,
-      new DefaultEventHandler(config.compressionCodec, null), null, new DefaultPartitioner)
+    val producerConfig = new ProducerConfig(props)
+    val producer = new Producer[String, String](producerConfig, new StringEncoder,
+      new DefaultEventHandler(producerConfig, null), null, new DefaultPartitioner)
 
     override def run {
       var bytesSent = 0L
@@ -219,8 +220,9 @@ object ProducerPerformance {
     props.put("reconnect.interval", Integer.MAX_VALUE.toString)
     props.put("buffer.size", (64*1024).toString)
 
-    val producer = new Producer[String, String](new ProducerConfig(props), new StringEncoder,
-      new DefaultEventHandler(config.compressionCodec, null), null, new DefaultPartitioner)
+    val producerConfig = new ProducerConfig(props)
+    val producer = new Producer[String, String](producerConfig, new StringEncoder,
+      new DefaultEventHandler(producerConfig, null), null, new DefaultPartitioner)
 
     override def run {
       var bytesSent = 0L

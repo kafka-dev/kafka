@@ -533,6 +533,14 @@ object Utils {
     map
   }
 
+  def getCSVList(csvList: String): Seq[String] = {
+    if(csvList == null)
+      Seq.empty[String]
+    else {
+      csvList.split(",").filter(v => !v.equals(""))
+    }
+  }
+
   def getTopicRentionHours(retentionHours: String) : Map[String, Int] = {
     val exceptionMsg = "Malformed token for topic.log.retention.hours in server.properties: "
     val successMsg =  "The retention hour for "

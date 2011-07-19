@@ -160,8 +160,9 @@ object ReplayLogProducer {
     if(config.isAsync)
       props.put("producer.type", "async")
 
-    val producer = new Producer[Message, Message](new ProducerConfig(props), new DefaultEncoder,
-                                                  new DefaultEventHandler(config.compressionCodec, null),
+    val producerConfig = new ProducerConfig(props)
+    val producer = new Producer[Message, Message](producerConfig, new DefaultEncoder,
+                                                  new DefaultEventHandler(producerConfig, null),
                                                   null, new DefaultPartitioner)
 
     override def run() {

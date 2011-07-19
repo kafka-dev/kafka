@@ -22,10 +22,10 @@ import org.apache.log4j.Logger
 import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
 import java.util.Properties
-import kafka.producer.{SyncProducerConfig, ProducerConfig, SyncProducer}
-import kafka.message.{CompressionCodec, ByteBufferMessageSet}
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet}
+import kafka.producer.{SyncProducerConfigShared, SyncProducerConfig, SyncProducer}
 
-private[kafka] class DefaultEventHandler[T](val compression: CompressionCodec,
+private[kafka] class DefaultEventHandler[T](val config: SyncProducerConfigShared,
                                             val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[DefaultEventHandler[T]])
@@ -52,7 +52,20 @@ private[kafka] class DefaultEventHandler[T](val compression: CompressionCodec,
                         serializer: Encoder[T]): Map[(String, Int), ByteBufferMessageSet] = {
     import scala.collection.JavaConversions._
     val eventsPerTopicMap = eventsPerTopic.map(e => ((e._1._1, e._1._2) , e._2.map(l => serializer.toMessage(l))))
-    eventsPerTopicMap.map(e => ((e._1._1, e._1._2) , new ByteBufferMessageSet(compression, e._2: _*)))
+    val topicsAndPartitions = eventsPerTopic.map(e => e._1)
+    /** enforce the compressed.topics config here.
+     *  If the compression codec is anything other than NoCompressionCodec,
+     *    Enable compression only for specified topics if any
+     *    If the list of compressed topics is empty, then enable the specified compression codec for all topics
+     *  If the compression codec is NoCompressionCodec, compression is disabled for all topics
+     */
+    val messages = eventsPerTopicMap.map(e => {
+      if(config.compressedTopics.contains(e._1._1))
+        new ByteBufferMessageSet(config.compressionCodec, e._2: _*)
+      else
+        new ByteBufferMessageSet(NoCompressionCodec, e._2: _*)
+      })
+    topicsAndPartitions.zip(messages)
   }
 
   private def collate(events: Seq[QueueItem[T]]): Map[(String,Int), Seq[T]] = {

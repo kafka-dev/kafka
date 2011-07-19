@@ -37,7 +37,7 @@ class ProducerPool[V](private val config: ProducerConfig,
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
   private var eventHandler = inputEventHandler
   if(eventHandler == null)
-    eventHandler = new DefaultEventHandler(config.compressionCodec, cbkHandler)
+    eventHandler = new DefaultEventHandler(config, cbkHandler)
 
   if(serializer == null)
     throw new InvalidConfigException("serializer passed in is null!")
