@@ -84,7 +84,9 @@ object ConsoleConsumer {
                            .withRequiredArg
                            .describedAs("num_messages")
                            .ofType(classOf[java.lang.Integer])
-    
+    val skipMessageOnErrorOpt = parser.accepts("skip-message-on-error", "If there is an error when processing a message, " +
+    		"skip it instead of halt.")
+
     val options: OptionSet = tryParse(parser, args)
     checkRequiredArgs(parser, options, topicIdOpt, zkConnectOpt)
     
@@ -97,6 +99,7 @@ object ConsoleConsumer {
     props.put("autooffset.reset", if(options.has(resetBeginningOpt)) "smallest" else "largest")
     props.put("zk.connect", options.valueOf(zkConnectOpt))
     val config = new ConsumerConfig(props)
+    val skipMessageOnError = if (options.has(skipMessageOnErrorOpt)) true else false
     
     val topic = options.valueOf(topicIdOpt)
     val messageFormatterClass = Class.forName(options.valueOf(messageFormatterOpt))
@@ -124,11 +127,24 @@ object ConsoleConsumer {
 
     val formatter: MessageFormatter = messageFormatterClass.newInstance().asInstanceOf[MessageFormatter]
     formatter.init(formatterArgs)
-    
-    for(message <- iter)
-      formatter.writeTo(message, System.out)
+
+    try {
+      for(message <- iter) {
+        try {
+          formatter.writeTo(message, System.out)
+        } catch {
+          case e =>
+            if (skipMessageOnError)
+              logger.error("error processing message, skipping and resume consumption: " + e)
+            else
+              throw e
+        }
+      }
+    } catch {
+      case e => logger.error("error processing message, stop consuming: " + e)
+    }
       
-    System.out.flush()
+  System.out.flush()
     formatter.close()
     connector.shutdown()
   }
