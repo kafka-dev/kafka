@@ -75,8 +75,11 @@ private[async] class ProducerSendThread[T](val threadName: String,
         return events
 
       if(current != null && current.getData != null) {
-        if(cbkHandler != null)
-          events = events ++ cbkHandler.afterDequeuingExistingData(current)
+        if(cbkHandler != null) {
+          val addedEvents = cbkHandler.afterDequeuingExistingData(current)
+          logEvents("after dequeuing existing data", addedEvents)
+          events = events ++ addedEvents
+        }
         else
           events += current
       }
@@ -94,8 +97,11 @@ private[async] class ProducerSendThread[T](val threadName: String,
         events = new ListBuffer[QueueItem[T]]
       }
     }
-    if(cbkHandler != null)
-      events = events ++ cbkHandler.lastBatchBeforeClose
+    if(cbkHandler != null) {
+      val addedEvents = cbkHandler.lastBatchBeforeClose
+      logEvents("last batch before close", addedEvents)
+      events = events ++ addedEvents
+    }
     events
   }
 
@@ -105,6 +111,14 @@ private[async] class ProducerSendThread[T](val threadName: String,
       handler.handle(events, underlyingProducer, serializer)
     }catch {
       case e: Exception => logger.error("Error in handling batch of " + events.size + " events", e)
+    }
+  }
+
+  private def logEvents(tag: String, events: Iterable[QueueItem[T]]) {
+    if(logger.isTraceEnabled) {
+      logger.trace("events for " + tag + ":")
+      for (event <- events)
+        logger.trace(event.getData.toString)
     }
   }
 }
