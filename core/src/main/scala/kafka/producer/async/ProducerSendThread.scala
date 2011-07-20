@@ -98,7 +98,9 @@ private[async] class ProducerSendThread[T](val threadName: String,
     }
     if(cbkHandler != null) {
       logger.info("Invoking the callback handler before handling the last batch of %d events".format(events.size))
-      events = events ++ cbkHandler.lastBatchBeforeClose
+      val addedEvents = cbkHandler.lastBatchBeforeClose
+      logEvents("last batch before close", addedEvents)
+      events = events ++ addedEvents
     }
     events
   }
@@ -109,6 +111,14 @@ private[async] class ProducerSendThread[T](val threadName: String,
       handler.handle(events, underlyingProducer, serializer)
     }catch {
       case e: Exception => logger.error("Error in handling batch of " + events.size + " events", e)
+    }
+  }
+
+  private def logEvents(tag: String, events: Iterable[QueueItem[T]]) {
+    if(logger.isTraceEnabled) {
+      logger.trace("events for " + tag + ":")
+      for (event <- events)
+        logger.trace(event.getData.toString)
     }
   }
 }

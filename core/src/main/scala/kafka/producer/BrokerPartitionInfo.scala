@@ -19,11 +19,12 @@ import collection.mutable.Map
 import collection.SortedSet
 import kafka.cluster.{Broker, Partition}
 
-private[producer] trait BrokerPartitionInfo {
+trait BrokerPartitionInfo {
   /**
-   * Return a sequence of (brokerId, numPartitions) 
+   * Return a sequence of (brokerId, numPartitions).
    * @param topic the topic for which this information is to be returned
-   * @return a sequence of (brokerId, numPartitions) 
+   * @return a sequence of (brokerId, numPartitions). Returns a zero-length
+   * sequence if no brokers are available.
    */  
   def getBrokerPartitionInfo(topic: String = null): SortedSet[Partition]
 
