@@ -16,21 +16,21 @@
 
 package kafka.producer
 
-import async.{QueueItem, CallbackHandler, EventHandler}
+import async.{CallbackHandler, EventHandler}
 import org.apache.log4j.Logger
 import kafka.serializer.Encoder
 import kafka.utils._
-import kafka.common.InvalidConfigException
 import java.util.Properties
 import kafka.cluster.{Partition, Broker}
 import java.util.concurrent.atomic.AtomicBoolean
-import kafka.common.InvalidPartitionException
 import kafka.api.ProducerRequest
+import kafka.common.{NoBrokersForPartitionException, InvalidConfigException, InvalidPartitionException}
 
 class Producer[K,V](config: ProducerConfig,
                     partitioner: Partitioner[K],
                     producerPool: ProducerPool[V],
-                    populateProducerPool: Boolean = true) /* for testing purpose only. Applications should ideally */
+                    populateProducerPool: Boolean,
+                    private var brokerPartitionInfo: BrokerPartitionInfo) /* for testing purpose only. Applications should ideally */
                                                           /* use the other constructor*/
 {
   private val logger = Logger.getLogger(classOf[Producer[K, V]])
@@ -38,21 +38,21 @@ class Producer[K,V](config: ProducerConfig,
   if(!Utils.propertyExists(config.zkConnect) && !Utils.propertyExists(config.brokerPartitionInfo))
     throw new InvalidConfigException("At least one of zk.connect or broker.list must be specified")
   private val random = new java.util.Random
-  private var brokerPartitionInfo: BrokerPartitionInfo = null
   // check if zookeeper based auto partition discovery is enabled
-  private val zkEnabled = if(!Utils.propertyExists(config.zkConnect)) false else true
-  zkEnabled match {
-    case true =>
-      val zkProps = new Properties()
-      zkProps.put("zk.connect", config.zkConnect)
-      zkProps.put("zk.sessiontimeout.ms", config.zkSessionTimeoutMs.toString)
-      zkProps.put("zk.connectiontimeout.ms", config.zkConnectionTimeoutMs.toString)
-      zkProps.put("zk.synctime.ms", config.zkSyncTimeMs.toString)
-      brokerPartitionInfo = new ZKBrokerPartitionInfo(new ZKConfig(zkProps), producerCbk)
-    case false =>
-      brokerPartitionInfo = new ConfigBrokerPartitionInfo(config)
+  private val zkEnabled = Utils.propertyExists(config.zkConnect)
+  if(brokerPartitionInfo == null) {
+    zkEnabled match {
+      case true =>
+        val zkProps = new Properties()
+        zkProps.put("zk.connect", config.zkConnect)
+        zkProps.put("zk.sessiontimeout.ms", config.zkSessionTimeoutMs.toString)
+        zkProps.put("zk.connectiontimeout.ms", config.zkConnectionTimeoutMs.toString)
+        zkProps.put("zk.synctime.ms", config.zkSyncTimeMs.toString)
+        brokerPartitionInfo = new ZKBrokerPartitionInfo(new ZKConfig(zkProps), producerCbk)
+      case false =>
+        brokerPartitionInfo = new ConfigBrokerPartitionInfo(config)
+    }
   }
-
   // pool of producers, one per broker
   if(populateProducerPool) {
     val allBrokers = brokerPartitionInfo.getAllBrokerInfo
@@ -65,7 +65,7 @@ class Producer[K,V](config: ProducerConfig,
  * @param config Producer Configuration object
  */
   def this(config: ProducerConfig) =  this(config, Utils.getObject(config.partitionerClass),
-    new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
+    new ProducerPool[V](config, Utils.getObject(config.serializerClass)), true, null)
 
   /**
    * This constructor can be used to provide pre-instantiated objects for all config parameters
@@ -90,9 +90,8 @@ class Producer[K,V](config: ProducerConfig,
            eventHandler: EventHandler[V],
            cbkHandler: CallbackHandler[V],
            partitioner: Partitioner[K]) =
-    this(config, if(partitioner == null) new DefaultPartitioner else partitioner,
-         new ProducerPool[V](config, encoder, eventHandler, cbkHandler))
-
+    this(config, if(partitioner == null) new DefaultPartitioner[K] else partitioner,
+         new ProducerPool[V](config, encoder, eventHandler, cbkHandler), true, null)
   /**
    * Sends the data, partitioned by key to the topic using either the
    * synchronous or the asynchronous producer
@@ -105,6 +104,8 @@ class Producer[K,V](config: ProducerConfig,
       val numBrokerPartitions = brokerPartitionInfo.getBrokerPartitionInfo(pd.getTopic).toSeq
       logger.debug("Broker partitions registered for topic: " + pd.getTopic + " = " + numBrokerPartitions)
       val totalNumPartitions = numBrokerPartitions.length
+      if(totalNumPartitions == 0) throw new NoBrokersForPartitionException("Partition = " + pd.getKey)
+
       var brokerIdPartition: Partition = null
       var partition: Int = 0
       if(zkEnabled) {

@@ -29,7 +29,7 @@ class Producer[K,V](config: ProducerConfig,
                                                           /* use the other constructor*/
 {
 
-  private val underlying = new kafka.producer.Producer[K,V](config, partitioner, producerPool, populateProducerPool)
+  private val underlying = new kafka.producer.Producer[K,V](config, partitioner, producerPool, populateProducerPool, null)
 
   /**
    * This constructor can be used when all config parameters will be specified through the
