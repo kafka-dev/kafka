@@ -111,8 +111,8 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
       logger.info("Closed the callback handler")
     }
     queue.put(new QueueItem(AsyncProducer.shutdown.asInstanceOf[T], null, -1))
-    sendThread.join(3000)
     sendThread.shutdown
+    sendThread.awaitShutdown
     producer.close
     closed.set(true)
     logger.info("Closed AsyncProducer")

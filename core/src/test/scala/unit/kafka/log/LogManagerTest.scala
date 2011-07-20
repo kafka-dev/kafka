@@ -67,8 +67,11 @@ class LogManagerTest extends JUnitSuite {
       offset += set.sizeInBytes
     }
     log.flush
+    // Why this sleep is required ? File system takes some time to update the last modified time for a file.
+    // TODO: What is unknown is why 1 second or couple 100 milliseconds didn't work ?
+    Thread.sleep(2000)
     assertTrue("There should be more than one segment now.", log.numberOfSegments > 1)
-    time.currentMs += maxLogAge + 1100
+    time.currentMs += maxLogAge + 3000
     logManager.cleanupLogs()
     assertEquals("Now there should only be only one segment.", 1, log.numberOfSegments)
     assertEquals("Should get empty fetch off new log.", 0L, log.read(offset, 1024).sizeInBytes)
