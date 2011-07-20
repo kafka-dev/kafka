@@ -85,7 +85,8 @@ private[producer] class ZKBrokerPartitionInfo(config: ZKConfig, producerCbk: (In
   /**
    * Return a sequence of (brokerId, numPartitions)
    * @param topic the topic for which this information is to be returned
-   * @return a sequence of (brokerId, numPartitions)
+   * @return a sequence of (brokerId, numPartitions). Returns a zero-length
+   * sequence if no brokers are available.
    */
   def getBrokerPartitionInfo(topic: String): scala.collection.immutable.SortedSet[Partition] = {
     val brokerPartitions = topicBrokerPartitions.get(topic)
