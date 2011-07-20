@@ -43,8 +43,8 @@ class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestC
   @Test
   def testValidBytesWithCompression () {
     val messageList = new ByteBufferMessageSet(compressionCodec = DefaultCompressionCodec,
-                                            messages = getMessageList(new Message("hello".getBytes()),
-                                                                      new Message("there".getBytes())))
+                                               messages = getMessageList(new Message("hello".getBytes()),
+                                                                         new Message("there".getBytes())))
     val buffer = ByteBuffer.allocate(messageList.sizeInBytes.toInt + 2)
     buffer.put(messageList.buffer)
     buffer.putShort(4)

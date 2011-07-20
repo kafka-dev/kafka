@@ -19,8 +19,8 @@ package kafka.consumer
 import kafka.utils.IteratorTemplate
 import org.apache.log4j.Logger
 import java.util.concurrent.{TimeUnit, BlockingQueue}
-import kafka.message.{MessageSet, Message}
 import kafka.cluster.Partition
+import kafka.message.{MessageOffset, MessageSet, Message}
 
 /**
  * An iterator that blocks until a value can be read from the supplied queue.
@@ -31,7 +31,7 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
         extends IteratorTemplate[Message] {
   
   private val logger = Logger.getLogger(classOf[ConsumerIterator])
-  private var current: Iterator[Message] = null
+  private var current: Iterator[MessageOffset] = null
   private var currentDataChunk: FetchedDataChunk = null
   private var setConsumedOffset: Boolean = false
   private var currentTopicInfo: PartitionTopicInfo = null
@@ -76,7 +76,7 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
       setConsumedOffset = true
     }
 
-    item
+    item.message
   }
   
 }

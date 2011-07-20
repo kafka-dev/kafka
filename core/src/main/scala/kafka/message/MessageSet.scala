@@ -63,7 +63,7 @@ object MessageSet {
  * 4 byte size containing an integer N
  * N message bytes as described in the message class
  */
-abstract class MessageSet extends Iterable[Message] {
+abstract class MessageSet extends Iterable[MessageOffset] {
 
   /** Write the messages in this set to the given channel starting at the given offset byte. 
     * Less than the complete amount may be written, but no more than maxSize can be. The number
@@ -73,7 +73,7 @@ abstract class MessageSet extends Iterable[Message] {
   /**
    * Provides an iterator over the messages in this set
    */
-  def iterator: Iterator[Message]
+  def iterator: Iterator[MessageOffset]
   
   /**
    * Gives the total size of this message set in bytes
@@ -85,8 +85,8 @@ abstract class MessageSet extends Iterable[Message] {
    * match the payload for any message.
    */
   def validate(): Unit = {
-    for(message <- this)
-      if(!message.isValid)
+    for(messageAndOffset <- this)
+      if(!messageAndOffset.message.isValid)
         throw new InvalidMessageException
   }
   

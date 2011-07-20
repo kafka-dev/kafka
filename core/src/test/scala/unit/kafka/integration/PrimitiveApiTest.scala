@@ -56,9 +56,9 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     var fetched = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
     assertTrue(fetched.iterator.hasNext)
 
-    val fetchedMessage = fetched.iterator.next
+    val fetchedMessageAndOffset = fetched.iterator.next
     val stringDecoder = new StringDecoder
-    val fetchedStringMessage = stringDecoder.toEvent(fetchedMessage)
+    val fetchedStringMessage = stringDecoder.toEvent(fetchedMessageAndOffset.message)
     assertEquals("test-message", fetchedStringMessage)
   }
 
@@ -77,9 +77,9 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
     var fetched = consumer.fetch(new FetchRequest(topic, 0, 0, 10000))
     assertTrue(fetched.iterator.hasNext)
 
-    val fetchedMessage = fetched.iterator.next
+    val fetchedMessageAndOffset = fetched.iterator.next
     val stringDecoder = new StringDecoder
-    val fetchedStringMessage = stringDecoder.toEvent(fetchedMessage)
+    val fetchedStringMessage = stringDecoder.toEvent(fetchedMessageAndOffset.message)
     assertEquals("test-message", fetchedStringMessage)
   }
 
@@ -99,7 +99,7 @@ class PrimitiveApiTest extends JUnit3Suite with ProducerConsumerTestHarness with
       }
 
       // wait a bit for produced message to be available
-      Thread.sleep(200)
+      Thread.sleep(700)
       val response = consumer.multifetch(fetches: _*)
       for((topic, resp) <- topics.zip(response.toList))
     	  TestUtils.checkEquals(messages(topic).iterator, resp.iterator)

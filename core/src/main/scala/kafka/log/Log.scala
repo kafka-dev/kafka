@@ -198,8 +198,8 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
   def append(messages: MessageSet): Unit = {
     // validate the messages
     var numberOfMessages = 0
-    for(message <- messages) {
-      if(!message.isValid)
+    for(messageAndOffset <- messages) {
+      if(!messageAndOffset.message.isValid)
         throw new InvalidMessageException()
       numberOfMessages += 1;
     }

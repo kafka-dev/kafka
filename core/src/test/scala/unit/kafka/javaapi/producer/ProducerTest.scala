@@ -407,10 +407,10 @@ class ProducerTest extends JUnitSuite {
       // cross check if brokers got the messages
       val messageSet1 = consumer1.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
       Assert.assertTrue("Message set should have 1 message", messageSet1.hasNext)
-      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next.message)
       val messageSet2 = consumer2.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
       Assert.assertTrue("Message set should have 1 message", messageSet2.hasNext)
-      Assert.assertEquals(new Message("test1".getBytes), messageSet2.next)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet2.next.message)
     } catch {
       case e: Exception => fail("Not expected")
     }
@@ -440,9 +440,9 @@ class ProducerTest extends JUnitSuite {
       // cross check if brokers got the messages
       val messageSet1 = consumer1.fetch(new FetchRequest("new-topic", 0, 0, 10000)).iterator
       Assert.assertTrue("Message set should have 1 message", messageSet1.hasNext)
-      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next.message)
       Assert.assertTrue("Message set should have another message", messageSet1.hasNext)
-      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next)
+      Assert.assertEquals(new Message("test1".getBytes), messageSet1.next.message)
     } catch {
       case e: Exception => fail("Not expected")
     }

@@ -209,7 +209,7 @@ object TestUtils {
    *  Throw an exception if an iterable has different length than expected
    *  
    */
-  def checkLength(s1: Iterator[Message], expectedLength:Integer) {
+  def checkLength[T](s1: Iterator[T], expectedLength:Integer) {
     var n = 0
     while (s1.hasNext) {
       n+=1

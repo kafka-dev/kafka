@@ -56,13 +56,13 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
 
   def serialized():ByteBuffer = underlying.serialized
 
-  override def iterator: java.util.Iterator[Message] = new java.util.Iterator[Message] {
+  override def iterator: java.util.Iterator[MessageOffset] = new java.util.Iterator[MessageOffset] {
     val underlyingIterator = underlying.iterator
     override def hasNext(): Boolean = {
       underlyingIterator.hasNext
     }
 
-    override def next(): Message = {
+    override def next(): MessageOffset = {
       underlyingIterator.next
     }
 

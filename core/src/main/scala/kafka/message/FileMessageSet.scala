@@ -95,7 +95,8 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
    * Return a message set which is a view into this set starting from the given offset and with the given size limit.
    */
   def read(readOffset: Long, size: Long): MessageSet = {
-    new FileMessageSet(channel, this.offset + readOffset, scala.math.min(this.offset + readOffset + size, highWaterMark), false, new AtomicBoolean(false))
+    new FileMessageSet(channel, this.offset + readOffset, scala.math.min(this.offset + readOffset + size, highWaterMark),
+      false, new AtomicBoolean(false))
   }
   
   /**
@@ -107,11 +108,11 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
   /**
    * Get an iterator over the messages in the set
    */
-  override def iterator: Iterator[Message] = {
-    new IteratorTemplate[Message] {
+  override def iterator: Iterator[MessageOffset] = {
+    new IteratorTemplate[MessageOffset] {
       var location = offset
       
-      override def makeNext(): Message = {
+      override def makeNext(): MessageOffset = {
         // read the size of the item
         val sizeBuffer = ByteBuffer.allocate(4)
         channel.read(sizeBuffer, location)
@@ -132,7 +133,7 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
         
         // increment the location and return the item
         location += size + 4
-        new Message(buffer)
+        new MessageOffset(new Message(buffer), location)
       }
     }
   }

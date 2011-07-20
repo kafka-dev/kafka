@@ -13,6 +13,7 @@ import kafka.common.ErrorMapping;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
+import kafka.message.MessageOffset;
 import kafka.message.MessageSet;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapred.JobConf;
@@ -43,7 +44,7 @@ public class KafkaETLContext {
     protected long _count; /*current count*/
 
     protected MultiFetchResponse _response = null;  /*fetch response*/
-    protected Iterator<Message> _messageIt = null; /*message iterator*/
+    protected Iterator<MessageOffset> _messageIt = null; /*message iterator*/
     
     protected int _retry = 0;
     protected long _requestTime = 0; /*accumulative request time*/
@@ -122,7 +123,7 @@ public class KafkaETLContext {
             while ( !gotNext && iter.hasNext()) {
                 ByteBufferMessageSet msgSet = iter.next();
                 if ( hasError(msgSet)) return false;
-                _messageIt =  (Iterator<Message>) msgSet.iterator();
+                _messageIt =  (Iterator<MessageOffset>) msgSet.iterator();
                 gotNext = get(key, value);
             }
         }
@@ -171,17 +172,17 @@ public class KafkaETLContext {
     
     protected boolean get(KafkaETLKey key, BytesWritable value) throws IOException {
         if (_messageIt != null && _messageIt.hasNext()) {
-            Message msg = _messageIt.next();
+            MessageOffset msgAndOffset = _messageIt.next();
             
-            ByteBuffer buf = msg.payload();
+            ByteBuffer buf = msgAndOffset.message().payload();
             int origSize = buf.remaining();
             byte[] bytes = new byte[origSize];
             buf.get(bytes, buf.position(), origSize);
             value.set(bytes, 0, origSize);
             
-            key.set(_index, _offset, msg.checksum());
+            key.set(_index, _offset, msgAndOffset.message().checksum());
             
-            _offset += MessageSet.entrySize(msg);  //increase offset
+            _offset += msgAndOffset.offset();  //increase offset
             _count ++;  //increase count
             
             return true;

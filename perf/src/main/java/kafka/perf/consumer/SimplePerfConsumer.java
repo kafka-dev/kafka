@@ -27,6 +27,7 @@ import kafka.javaapi.MultiFetchResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
+import kafka.message.MessageOffset;
 
 public class SimplePerfConsumer extends Thread
 {
@@ -77,7 +78,7 @@ public class SimplePerfConsumer extends Thread
         offset+= messages.validBytes();
         bytesRec.getAndAdd(messages.sizeInBytes());
 
-        Iterator<Message> it =  messages.iterator();
+        Iterator<MessageOffset> it =  messages.iterator();
         while(it.hasNext())
         {
           it.next();

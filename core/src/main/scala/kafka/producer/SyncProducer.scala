@@ -56,8 +56,8 @@ class SyncProducer(val config: SyncProducerConfig) {
           val request = MultiProducerRequest.readFrom(buffer)
           for (produce <- request.produces) {
             try {
-              for (message <- produce.messages)
-                if (!message.isValid)
+              for (messageAndOffset <- produce.messages)
+                if (!messageAndOffset.message.isValid)
                   logger.trace("topic " + produce.topic + " is invalid")
             }
             catch {
@@ -135,8 +135,8 @@ class SyncProducer(val config: SyncProducerConfig) {
   }
 
   private def verifyMessageSize(messages: ByteBufferMessageSet) {
-    for (message <- messages)
-      if (message.payloadSize > config.maxMessageSize)
+    for (messageAndOffset <- messages)
+      if (messageAndOffset.message.payloadSize > config.maxMessageSize)
         throw new MessageSizeTooLargeException
   }
 

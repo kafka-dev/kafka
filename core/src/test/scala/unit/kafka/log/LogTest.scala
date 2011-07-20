@@ -72,7 +72,7 @@ class LogTest extends JUnitSuite {
     val messages = log.read(0, 1024)
     var current = 0
     for(curr <- messages) {
-      assertEquals("Read message should equal written", message, curr)
+      assertEquals("Read message should equal written", message, curr.message)
       current += 1
     }
     assertEquals(10, current)
@@ -113,12 +113,11 @@ class LogTest extends JUnitSuite {
     var reads = 0
     var current = 0
     var offset = 0L
+    var readOffset = 0L
     while(current < numMessages) {
-      val messages = log.read(offset, 1024*1024)
-      for(message <- messages) {
-        current += 1
-        offset += MessageSet.entrySize(message)
-      }
+      val messages = log.read(readOffset, 1024*1024)
+      readOffset += messages.last.offset
+      current += messages.size
       if(reads > 2*numMessages)
         fail("Too many read attempts.")
       reads += 1
