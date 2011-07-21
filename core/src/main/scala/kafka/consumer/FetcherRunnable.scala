@@ -62,7 +62,7 @@ class FetcherRunnable(val name: String,
 
         val response = simpleConsumer.multifetch(fetches : _*)
 
-        var read = 0
+        var read = 0L
 
         for((messages, info) <- response.zip(partitionTopicInfos)) {
           try {

@@ -52,7 +52,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     }, ErrorMapping.NoError, true)
   }
 
-  def validBytes: Int = underlying.validBytes
+  def validBytes: Long = underlying.validBytes
 
   def serialized():ByteBuffer = underlying.serialized
 

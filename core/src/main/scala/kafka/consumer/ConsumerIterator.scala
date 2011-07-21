@@ -33,15 +33,13 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   private val logger = Logger.getLogger(classOf[ConsumerIterator])
   private var current: Iterator[MessageOffset] = null
   private var currentDataChunk: FetchedDataChunk = null
-  private var setConsumedOffset: Boolean = false
   private var currentTopicInfo: PartitionTopicInfo = null
+  private var consumedOffset: Long = Long.MaxValue
 
   override def next(): Message = {
     val message = super.next
-    if(setConsumedOffset) {
-      currentTopicInfo.consumed(currentDataChunk.messages.shallowValidBytes)
-      setConsumedOffset = false
-    }
+    currentTopicInfo.resetConsumeOffset(consumedOffset)
+    logger.info("Setting consumed offset to %d".format(consumedOffset))
     message
   }
 
@@ -71,11 +69,7 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
       }
     }
     val item = current.next
-    if(!current.hasNext) {
-      // the iterator in this data chunk is exhausted. Update the consumed offset now
-      setConsumedOffset = true
-    }
-
+    consumedOffset = item.offset
     item.message
   }
   

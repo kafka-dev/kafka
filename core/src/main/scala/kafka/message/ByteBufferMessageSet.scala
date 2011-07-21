@@ -37,9 +37,9 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
                            val errorCode: Int = ErrorMapping.NoError,
                            val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
-  private var validByteCount = -1
-  private var shallowValidByteCount = -1
-  private var deepValidByteCount = -1
+  private var validByteCount = -1L
+  private var shallowValidByteCount = -1L
+  private var deepValidByteCount = -1L
 
   def this(compressionCodec: CompressionCodec, messages: Message*) {
     this(
@@ -87,12 +87,12 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
 
   def serialized(): ByteBuffer = buffer
 
-  def validBytes: Int = deepIterate match {
+  def validBytes: Long = deepIterate match {
     case true => deepValidBytes
     case false => shallowValidBytes
   }
   
-  def shallowValidBytes: Int = {
+  def shallowValidBytes: Long = {
     if(shallowValidByteCount < 0) {
       val iter = shallowIterator
       while(iter.hasNext)
@@ -101,7 +101,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     shallowValidByteCount
   }
   
-  def deepValidBytes: Int = {
+  def deepValidBytes: Long = {
     if (deepValidByteCount < 0) {
       val iter = deepIterator
       while (iter.hasNext)
@@ -154,8 +154,9 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     ErrorMapping.maybeThrowException(errorCode)
     new IteratorTemplate[MessageOffset] {
       var topIter = buffer.slice()
-      var currValidBytes = 0
+      var currValidBytes = 0L
       var innerIter:Iterator[MessageOffset] = null
+      var lastMessageSize = 0L
 
       def innerDone():Boolean = (innerIter==null || !innerIter.hasNext)
 
@@ -165,6 +166,8 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
           return allDone()
         }
         val size = topIter.getInt()
+        lastMessageSize = size
+
         if(logger.isTraceEnabled) {
           logger.trace("Remaining bytes in iterator = " + topIter.remaining)
           logger.trace("size of data = " + size)
@@ -203,9 +206,8 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
           case true => makeNextOuter
           case false => {
             val messageAndOffset = innerIter.next
-            //TODO: Alternatively check if messageAndOffset.offset can be used
-//            currValidBytes += messageAndOffset.message.serializedSize
-            currValidBytes += messageAndOffset.offset
+            if(!innerIter.hasNext)
+              currValidBytes += 4 + lastMessageSize
             new MessageOffset(messageAndOffset.message, currValidBytes)
           }
         }

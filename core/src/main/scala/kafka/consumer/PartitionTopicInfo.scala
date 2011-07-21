@@ -56,7 +56,7 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   /**
    * Record the given number of bytes as having been consumed
    */
-  def consumed(messageSize: Int): Unit = {
+  def consumed(messageSize: Long): Unit = {
     if(logger.isTraceEnabled)
       logger.trace("Current consumed offset = " + consumedOffset.get)
     val newOffset = consumedOffset.addAndGet(messageSize)
@@ -68,7 +68,7 @@ private[consumer] class PartitionTopicInfo(val topic: String,
    * Enqueue a message set for processing
    * @return the number of valid bytes
    */
-  def enqueue(messages: ByteBufferMessageSet, fetchOffset: Long): Int = {
+  def enqueue(messages: ByteBufferMessageSet, fetchOffset: Long): Long = {
     val size = messages.shallowValidBytes
     if(size > 0) {
       // update fetched offset to the compressed data chunk size, not the decompressed message set size
