@@ -21,15 +21,14 @@ import org.apache.log4j.Logger
 import kafka.message._
 
 class ByteBufferMessageSet(val buffer: ByteBuffer,
+                           val initialOffset: Long = 0L,
                            val errorCode: Int = ErrorMapping.NoError,
                            val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())
-  val underlying: kafka.message.ByteBufferMessageSet = new kafka.message.ByteBufferMessageSet(buffer, errorCode, deepIterate)
-//  var buffer:ByteBuffer = null
-//  var errorCode:Int = ErrorMapping.NoError
-//  var deepIterate = false
-
-  def this(buffer: ByteBuffer) = this(buffer, ErrorMapping.NoError, true)
+  val underlying: kafka.message.ByteBufferMessageSet = new kafka.message.ByteBufferMessageSet(buffer,
+                                                                                              initialOffset,
+                                                                                              errorCode, deepIterate)
+  def this(buffer: ByteBuffer) = this(buffer, 0L, ErrorMapping.NoError, true)
 
   def this(compressionCodec: CompressionCodec, messages: java.util.List[Message]) {
     this(compressionCodec match {
@@ -49,7 +48,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
         message.serializeTo(buffer)
         buffer.rewind
         buffer
-    }, ErrorMapping.NoError, true)
+    }, 0L, ErrorMapping.NoError, true)
   }
 
   def validBytes: Long = underlying.validBytes
@@ -77,13 +76,13 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     other match {
       case that: ByteBufferMessageSet =>
         (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) &&
-                                             deepIterate == that.deepIterate
+                                             deepIterate == that.deepIterate && initialOffset == that.initialOffset
       case _ => false
     }
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode + deepIterate.hashCode
+  override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode + deepIterate.hashCode + initialOffset.hashCode
 
 }

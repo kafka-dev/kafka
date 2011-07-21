@@ -29,7 +29,8 @@ private[javaapi] object Implicits {
 
   implicit def scalaMessageSetToJavaMessageSet(messageSet: kafka.message.ByteBufferMessageSet):
      kafka.javaapi.message.ByteBufferMessageSet = {
-    new kafka.javaapi.message.ByteBufferMessageSet(messageSet.getBuffer, messageSet.getErrorCode, messageSet.getDeepIterate)
+    new kafka.javaapi.message.ByteBufferMessageSet(messageSet.getBuffer, messageSet.initialOffset,
+                                                   messageSet.getErrorCode, messageSet.getDeepIterate)
   }
 
   implicit def toJavaSyncProducer(producer: kafka.producer.SyncProducer): kafka.javaapi.producer.SyncProducer = {
@@ -121,5 +122,5 @@ private[javaapi] object Implicits {
     response.underlying
 
   implicit def toJavaMultiFetchResponse(response: kafka.api.MultiFetchResponse): kafka.javaapi.MultiFetchResponse =
-    new kafka.javaapi.MultiFetchResponse(response.buffer, response.numSets)
+    new kafka.javaapi.MultiFetchResponse(response.buffer, response.numSets, response.offsets)
 }

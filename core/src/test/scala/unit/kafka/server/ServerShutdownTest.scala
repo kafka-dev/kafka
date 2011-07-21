@@ -100,7 +100,7 @@ class ServerShutdownTest extends JUnitSuite {
       fetched = null
       while(fetched == null || fetched.validBytes == 0)
         fetched = consumer.fetch(new FetchRequest(topic, 0, newOffset, 10000))
-      TestUtils.checkEquals(sent2.iterator, fetched.iterator)
+      TestUtils.checkEquals(sent2.map(m => m.message).iterator, fetched.map(m => m.message).iterator)
 
       server.shutdown()
       Utils.rm(server.config.logDir)

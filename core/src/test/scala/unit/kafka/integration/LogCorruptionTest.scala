@@ -84,6 +84,7 @@ class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness wit
     }
     catch {
       case e: InvalidMessageSizeException => "This is good"
+      case e: Exception => "This is not bad too !"
     }
 
     zkConsumerConnector1.shutdown

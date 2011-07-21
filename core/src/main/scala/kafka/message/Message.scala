@@ -133,8 +133,14 @@ class Message(val buffer: ByteBuffer) {
   
   def attributes: Byte = buffer.get(AttributeOffset)
   
-  def compressionCodec:CompressionCodec =
-    CompressionCodec.getCompressionCodec(buffer.get(AttributeOffset) & CompressionCodeMask)
+  def compressionCodec:CompressionCodec = {
+    magic match {
+      case 0 => NoCompressionCodec
+      case 1 => CompressionCodec.getCompressionCodec(buffer.get(AttributeOffset) & CompressionCodeMask)
+      case _ => throw new RuntimeException("Invalid magic byte " + magic)
+    }
+
+  }
 
   def checksum: Long = Utils.getUnsignedInt(buffer, CrcOffset(magic))
   

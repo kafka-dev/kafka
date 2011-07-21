@@ -17,11 +17,11 @@
 package kafka.api
 
 import java.nio._
-import scala.collection.mutable
+import collection.mutable
 import kafka.utils.IteratorTemplate
 import kafka.message._
 
-class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int) extends Iterable[ByteBufferMessageSet] {
+class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int, val offsets: Array[Long]) extends Iterable[ByteBufferMessageSet] {
   private val messageSets = new mutable.ListBuffer[ByteBufferMessageSet]
   
   for(i <- 0 until numSets) {
@@ -31,7 +31,7 @@ class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int) extends Itera
     val payloadSize = size - 2
     copy.limit(payloadSize)
     buffer.position(buffer.position + payloadSize)
-    messageSets += new ByteBufferMessageSet(copy, errorCode, true)
+    messageSets += new ByteBufferMessageSet(copy, offsets(i), errorCode, true)
   }
  
   def iterator : Iterator[ByteBufferMessageSet] = {

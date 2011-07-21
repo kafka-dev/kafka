@@ -48,7 +48,7 @@ class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestC
     val buffer = ByteBuffer.allocate(messageList.sizeInBytes.toInt + 2)
     buffer.put(messageList.buffer)
     buffer.putShort(4)
-    val messageListPlus = new ByteBufferMessageSet(buffer, 0, true)
+    val messageListPlus = new ByteBufferMessageSet(buffer, 0, 0, true)
     assertEquals("Adding invalid bytes shouldn't change byte count", messageList.validBytes, messageListPlus.validBytes)
   }
 

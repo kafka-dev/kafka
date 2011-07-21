@@ -50,7 +50,7 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   def resetFetchOffset(newFetchOffset: Long) = {
     fetchedOffset.set(newFetchOffset)
     if (logger.isDebugEnabled)
-      logger.debug("reset fetch offset of " + this + " to " + newFetchOffset)    
+      logger.debug("reset fetch offset of ( %s ) to %d".format(this, newFetchOffset))
   }
 
   /**
@@ -61,7 +61,7 @@ private[consumer] class PartitionTopicInfo(val topic: String,
       logger.trace("Current consumed offset = " + consumedOffset.get)
     val newOffset = consumedOffset.addAndGet(messageSize)
     if (logger.isDebugEnabled)
-      logger.debug("updated consume offset of " + this + " to " + newOffset)
+      logger.debug("updated consume offset of ( %s ) to %d".format(this, newOffset))
   }
 
   /**
@@ -76,7 +76,7 @@ private[consumer] class PartitionTopicInfo(val topic: String,
         logger.trace("Updating fetch offset = " + fetchedOffset.get + " with size = " + size)
       val newOffset = fetchedOffset.addAndGet(size)
       if (logger.isDebugEnabled)
-        logger.debug("updated fetch offset of " + this + " to " + newOffset)
+        logger.debug("updated fetch offset of ( %s ) to %d".format(this, newOffset))
       chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))
     }
     size

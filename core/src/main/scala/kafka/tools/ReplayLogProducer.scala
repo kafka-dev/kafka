@@ -157,6 +157,9 @@ object ReplayLogProducer {
       props.put("broker.list", brokerInfoList(1))
     props.put("reconnect.interval", Integer.MAX_VALUE.toString)
     props.put("buffer.size", (64*1024).toString)
+    props.put("compression.codec", config.compressionCodec.codec.toString)
+    props.put("batch.size", config.batchSize.toString)
+
     if(config.isAsync)
       props.put("producer.type", "async")
 

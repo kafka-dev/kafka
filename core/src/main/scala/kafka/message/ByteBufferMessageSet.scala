@@ -34,6 +34,7 @@ import kafka.utils.IteratorTemplate
  * 
  */
 class ByteBufferMessageSet(val buffer: ByteBuffer,
+                           val initialOffset: Long = 0L,
                            val errorCode: Int = ErrorMapping.NoError,
                            val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
@@ -57,7 +58,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
           message.serializeTo(buffer)
           buffer.rewind
           buffer
-      }, ErrorMapping.NoError, true)
+      }, 0L, ErrorMapping.NoError, true)
   }
 
   def this(compressionCodec: CompressionCodec, messages: Iterable[Message]) {
@@ -76,7 +77,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
           message.serializeTo(buffer)
           buffer.rewind
           buffer
-      }, ErrorMapping.NoError, true)
+      }, 0L, ErrorMapping.NoError, true)
   }
 
   def getDeepIterate = deepIterate
@@ -154,7 +155,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     ErrorMapping.maybeThrowException(errorCode)
     new IteratorTemplate[MessageOffset] {
       var topIter = buffer.slice()
-      var currValidBytes = 0L
+      var currValidBytes = initialOffset
       var innerIter:Iterator[MessageOffset] = null
       var lastMessageSize = 0L
 
@@ -232,12 +233,12 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     other match {
       case that: ByteBufferMessageSet =>
         (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) &&
-                deepIterate == that.deepIterate
+                deepIterate == that.deepIterate && initialOffset == that.initialOffset
       case _ => false
     }
   }
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 + (17 * errorCode) + buffer.hashCode + deepIterate.hashCode
+  override def hashCode: Int = 31 + (17 * errorCode) + buffer.hashCode + deepIterate.hashCode + initialOffset.hashCode
 }
