@@ -14,7 +14,7 @@ $base_dir/../../bin/kafka-server-start.sh $base_dir/config/server.properties 2>&
 
 sleep 4
 echo "start producing $num_messages messages ..."
-$base_dir/../../bin/kafka-run-class.sh kafka.tools.ProducerPerformance --brokerinfo broker.list=0:localhost:9092 --topic test01 --messages $num_messages --message-size $message_size --batch-size 200 --threads 1 --reporting-interval 100000 num_messages --async --delay-btw-batch-ms 10 
+$base_dir/../../bin/kafka-run-class.sh kafka.tools.ProducerPerformance --brokerinfo broker.list=0:localhost:9092 --topic test01 --messages $num_messages --message-size $message_size --batch-size 200 --threads 1 --reporting-interval 100000 num_messages --async --delay-btw-batch-ms 10 --compression-codec 1 
 
 echo "wait for data to be persisted" 
 cur_offset="-1"
@@ -32,8 +32,8 @@ done
 
 sleep 2
 actual_size=`$base_dir/../../bin/kafka-run-class.sh kafka.tools.GetOffsetShell --server kafka://localhost:9092 --topic test01 --partition 0 --time -1 --offsets 1 | tail -1`
-msg_full_size=`expr $message_size + 10`
-expected_size=`expr $num_messages \* $msg_full_size`
+num_batches=`expr $num_messages \/ $message_size`
+expected_size=`expr $num_batches \* 262`
 
 if [ $actual_size != $expected_size ]
 then

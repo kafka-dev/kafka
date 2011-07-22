@@ -50,15 +50,8 @@ object ReplayLogProducer {
     for (thread <- threadList)
       thread.start
 
-    // attach shutdown handler to catch control-c
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      override def run() = {
-        consumerConnector.shutdown
-        threadList.foreach(_.shutdown)
-        logger.info("consumer threads shutted down")
-      }
-    })
-
+    threadList.foreach(_.shutdown)
+    consumerConnector.shutdown
   }
 
   class Config(args: Array[String]) {
@@ -178,8 +171,14 @@ object ReplayLogProducer {
           else
             stream
         for (message <- iter) {
-          producer.send(new ProducerData[Message, Message](config.outputTopic, message))
-          messageCount += 1
+          try {
+            producer.send(new ProducerData[Message, Message](config.outputTopic, message))
+            if (config.delayedMSBtwSend > 0 && (messageCount + 1) % config.batchSize == 0)
+              Thread.sleep(config.delayedMSBtwSend)
+            messageCount += 1
+          }catch {
+            case ie: Exception => logger.error("Skipping this message", ie)
+          }
         }
       }catch {
         case e: ConsumerTimeoutException => logger.error("consumer thread timing out", e)

@@ -35,14 +35,20 @@ object CompressionUtils {
       val gzipOutput:GZIPOutputStream = new GZIPOutputStream(outputStream)
       if(logger.isDebugEnabled)
         logger.debug("Allocating message byte buffer of size = " + MessageSet.messageSetSize(messages))
+
       val messageByteBuffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
-      for (message <- messages) {
-        message.serializeTo(messageByteBuffer)
-      }
+      messages.foreach(m => m.serializeTo(messageByteBuffer))
       messageByteBuffer.rewind
-      gzipOutput.write(messageByteBuffer.array)
-      gzipOutput.close();
-      outputStream.close();
+
+      try {
+        gzipOutput.write(messageByteBuffer.array)
+      } catch {
+        case e: IOException => logger.error("Error while writing to the GZIP output stream", e)
+      } finally {
+        gzipOutput.close();
+        outputStream.close();
+      }
+
       val oneCompressedMessage:Message = new Message(outputStream.toByteArray, compressionCodec)
       oneCompressedMessage
     case GZIPCompressionCodec =>
@@ -50,14 +56,20 @@ object CompressionUtils {
       val gzipOutput:GZIPOutputStream = new GZIPOutputStream(outputStream)
       if(logger.isDebugEnabled)
         logger.debug("Allocating message byte buffer of size = " + MessageSet.messageSetSize(messages))
+
       val messageByteBuffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
-      for (message <- messages) {
-        message.serializeTo(messageByteBuffer)
-      }
+      messages.foreach(m => m.serializeTo(messageByteBuffer))
       messageByteBuffer.rewind
-      gzipOutput.write(messageByteBuffer.array)
-      gzipOutput.close();
-      outputStream.close();
+
+      try {
+        gzipOutput.write(messageByteBuffer.array)
+      } catch {
+        case e: IOException => logger.error("Error while writing to the GZIP output stream", e)
+      } finally {
+        gzipOutput.close();
+        outputStream.close();
+      }
+
       val oneCompressedMessage:Message = new Message(outputStream.toByteArray, compressionCodec)
       oneCompressedMessage
     case _ =>
@@ -70,10 +82,9 @@ object CompressionUtils {
       val inputStream:InputStream = new ByteBufferBackedInputStream(message.payload)
       val gzipIn:GZIPInputStream = new GZIPInputStream(inputStream)
       val intermediateBuffer = new Array[Byte](1024)
-      var len=gzipIn.read(intermediateBuffer)
-      while (len >0) {
-        outputStream.write(intermediateBuffer,0,len)
-        len = gzipIn.read(intermediateBuffer)
+
+      Stream.continually(gzipIn.read(intermediateBuffer)).takeWhile(_ > 0).foreach { dataRead =>
+        outputStream.write(intermediateBuffer, 0, dataRead)
       }
 
       gzipIn.close
@@ -88,10 +99,9 @@ object CompressionUtils {
       val inputStream:InputStream = new ByteBufferBackedInputStream(message.payload)
       val gzipIn:GZIPInputStream = new GZIPInputStream(inputStream)
       val intermediateBuffer = new Array[Byte](1024)
-      var len=gzipIn.read(intermediateBuffer)
-      while (len >0) {
-        outputStream.write(intermediateBuffer,0,len)
-        len = gzipIn.read(intermediateBuffer)
+
+      Stream.continually(gzipIn.read(intermediateBuffer)).takeWhile(_ > 0).foreach { dataRead =>
+        outputStream.write(intermediateBuffer, 0, dataRead)
       }
 
       gzipIn.close

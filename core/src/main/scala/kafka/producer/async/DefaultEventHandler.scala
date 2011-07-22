@@ -43,8 +43,8 @@ private[kafka] class DefaultEventHandler[T](val config: SyncProducerConfigShared
     if(messagesPerTopic.size > 0) {
       val requests = messagesPerTopic.map(f => new ProducerRequest(f._1._1, f._1._2, f._2)).toArray
       syncProducer.multiSend(requests)
-      if(logger.isDebugEnabled)
-        logger.debug("kafka producer sent messages for topics " + messagesPerTopic)
+      if(logger.isTraceEnabled)
+        logger.trace("kafka producer sent messages for topics " + messagesPerTopic)
     }
   }
 
@@ -60,11 +60,32 @@ private[kafka] class DefaultEventHandler[T](val config: SyncProducerConfigShared
      *  If the compression codec is NoCompressionCodec, compression is disabled for all topics
      */
     val messages = eventsPerTopicMap.map(e => {
-      if(config.compressedTopics.contains(e._1._1))
-        new ByteBufferMessageSet(config.compressionCodec, e._2: _*)
-      else
-        new ByteBufferMessageSet(NoCompressionCodec, e._2: _*)
-      })
+      config.compressionCodec match {
+        case NoCompressionCodec =>
+          if(logger.isDebugEnabled)
+            logger.debug("Sending %d messages with no compression".format(e._2.size))
+          new ByteBufferMessageSet(NoCompressionCodec, e._2: _*)
+        case _ =>
+          config.compressedTopics.size match {
+            case 0 =>
+              if(logger.isDebugEnabled)
+                logger.debug("Sending %d messages with compression %d".format(e._2.size, config.compressionCodec.codec))
+              new ByteBufferMessageSet(config.compressionCodec, e._2: _*)
+            case _ =>
+              if(config.compressedTopics.contains(e._1._1)) {
+                if(logger.isDebugEnabled)
+                  logger.debug("Sending %d messages with compression %d".format(e._2.size, config.compressionCodec.codec))
+                new ByteBufferMessageSet(config.compressionCodec, e._2: _*)
+              }
+              else {
+                if(logger.isDebugEnabled)
+                  logger.debug("Sending %d messages with no compression as %s is not in compressed.topics - %s"
+                    .format(e._2.size, e._1._1, config.compressedTopics.toString))
+                new ByteBufferMessageSet(NoCompressionCodec, e._2: _*)
+              }
+          }
+      }
+    })
     topicsAndPartitions.zip(messages)
   }
 

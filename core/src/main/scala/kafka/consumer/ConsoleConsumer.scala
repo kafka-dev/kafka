@@ -130,7 +130,7 @@ object ConsoleConsumer {
       formatter.writeTo(message, System.out)
       messageCount += 1
     }
-    println("Received " + messageCount + " messages")
+    logger.info("Received " + messageCount + " messages")
     System.out.flush()
     formatter.close()
     connector.shutdown()
@@ -150,7 +150,7 @@ object ConsoleConsumer {
   def checkRequiredArgs(parser: OptionParser, options: OptionSet, required: OptionSpec[_]*) {
     for(arg <- required) {
     	if(!options.has(arg)) {
-        System.err.println("Missing required argument \"" + arg + "\"") 
+        logger.error("Missing required argument \"" + arg + "\"")
     		parser.printHelpOn(System.err)
         System.exit(1)
       }
@@ -160,7 +160,7 @@ object ConsoleConsumer {
   def tryParseFormatterArgs(args: Iterable[String]): Properties = {
     val splits = args.map(_ split "=").filterNot(_ == null).filterNot(_.length == 0)
     if(!splits.forall(_.length == 2)) {
-      System.err.println("Invalid parser arguments: " + args.mkString(" "))
+      logger.error("Invalid parser arguments: " + args.mkString(" "))
       System.exit(1)
     }
     val props = new Properties

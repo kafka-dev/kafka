@@ -150,11 +150,13 @@ object ProducerPerformance {
     else
       props.put("broker.list", brokerInfoList(1))
 
-    props.put("compression.codec", config.compressionCodec.toString)
+    props.put("compression.codec", config.compressionCodec.codec.toString)
     props.put("producer.type","async")
     props.put("batch.size", config.batchSize.toString)
     props.put("reconnect.interval", Integer.MAX_VALUE.toString)
     props.put("buffer.size", (64*1024).toString)
+
+    logger.info("Producer properties = " + props.toString)
 
     val producerConfig = new ProducerConfig(props)
     val producer = new Producer[String, String](producerConfig, new StringEncoder,

@@ -21,11 +21,14 @@ import java.nio.channels._
 import java.util.zip.CRC32
 import java.util.UUID
 import kafka.utils._
+import kafka.common.UnknownMagicByteException
 
 /**
  * Message byte offsets
  */
 object Message {
+  val MagicVersion1: Byte = 0
+  val MagicVersion2: Byte = 1
   val CurrentMagicValue: Byte = 1
   val MagicOffset = 0
   val MagicLength = 1
@@ -39,8 +42,9 @@ object Message {
    *              1 for compression
   */
   def CrcOffset(magic: Byte): Int = magic match {
-    case 0 => MagicOffset + MagicLength
-    case _ => AttributeOffset + AttributeLength
+    case MagicVersion1 => MagicOffset + MagicLength
+    case MagicVersion2 => AttributeOffset + AttributeLength
+    case _ => throw new UnknownMagicByteException("Magic byte value of %d is unknown".format(magic))
   }
   
   val CrcLength = 4
@@ -153,9 +157,9 @@ class Message(val buffer: ByteBuffer) {
     payload
   }
   
-  def isValid: Boolean = 
+  def isValid: Boolean =
     checksum == Utils.crc32(buffer.array, buffer.position + buffer.arrayOffset + PayloadOffset(magic), payloadSize)
-     
+
   def serializedSize: Int = 4 /* int size*/ + buffer.limit
    
   def serializeTo(serBuffer:ByteBuffer) = {
@@ -164,12 +168,12 @@ class Message(val buffer: ByteBuffer) {
   }
 
   override def toString(): String = 
-    "message(magic = " + magic + ", attributes = " + attributes + ", crc = " + checksum + 
-    ", payload = " + payload + ")"
+    "message(magic = %d, attributes = %d, crc = %d, payload = %s)".format(magic, attributes, checksum, payload)
   
   override def equals(any: Any): Boolean = {
     any match {
-      case that: Message => size == that.size && attributes == that.attributes && checksum == that.checksum && payload == that.payload && magic == that.magic
+      case that: Message => size == that.size && attributes == that.attributes && checksum == that.checksum &&
+        payload == that.payload && magic == that.magic
       case _ => false
     }
   }

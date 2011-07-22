@@ -39,7 +39,8 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   override def next(): Message = {
     val message = super.next
     currentTopicInfo.resetConsumeOffset(consumedOffset)
-    logger.info("Setting consumed offset to %d".format(consumedOffset))
+    if(logger.isTraceEnabled)
+      logger.trace("Setting consumed offset to %d".format(consumedOffset))
     message
   }
 
@@ -55,7 +56,8 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
         }
       }
       if(currentDataChunk eq ZookeeperConsumerConnector.shutdownCommand) {
-        logger.debug("Received the shutdown command")
+        if(logger.isDebugEnabled)
+          logger.debug("Received the shutdown command")
     	  channel.offer(currentDataChunk)
         return allDone
       } else {
