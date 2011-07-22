@@ -30,10 +30,7 @@ object MessageSet {
   /**
    * The size of a message set containing the given messages
    */
-  def messageSetSize(messages: Seq[Message]): Int = 
-    messages.foldLeft(0)(_ + entrySize(_))
-  
-  def messageSetSize(messages: Iterable[Message]): Int = 
+  def messageSetSize(messages: Iterable[Message]): Int =
     messages.foldLeft(0)(_ + entrySize(_))
 
   /**

@@ -18,7 +18,6 @@ class CompressionUtilTest extends TestCase {
     TestUtils.checkLength(decompressedMessages.iterator,3)
 
     TestUtils.checkEquals(messages.iterator, decompressedMessages.iterator)
-    TestUtils.checkEquals(messages.iterator, decompressedMessages.deepIterator)
   }
 
   def testComplexCompressDecompress() {

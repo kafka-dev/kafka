@@ -61,25 +61,6 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
       }, 0L, ErrorMapping.NoError, true)
   }
 
-  def this(compressionCodec: CompressionCodec, messages: Iterable[Message]) {
-    this(
-      compressionCodec match {
-        case NoCompressionCodec =>
-          val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
-          for (message <- messages) {
-            message.serializeTo(buffer)
-          }
-          buffer.rewind
-          buffer
-        case _ =>
-          val message = CompressionUtils.compress(messages, compressionCodec)
-          val buffer = ByteBuffer.allocate(message.serializedSize)
-          message.serializeTo(buffer)
-          buffer.rewind
-          buffer
-      }, 0L, ErrorMapping.NoError, true)
-  }
-
   def getDeepIterate = deepIterate
 
   def getBuffer = buffer
@@ -120,7 +101,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     case false => shallowIterator
   }
   
-  def shallowIterator(): Iterator[MessageOffset] = {
+  private def shallowIterator(): Iterator[MessageOffset] = {
     ErrorMapping.maybeThrowException(errorCode)
     new IteratorTemplate[MessageOffset] {
       var iter = buffer.slice()
@@ -151,7 +132,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
   }
 
 
-  def deepIterator(): Iterator[MessageOffset] = {
+  private def deepIterator(): Iterator[MessageOffset] = {
     ErrorMapping.maybeThrowException(errorCode)
     new IteratorTemplate[MessageOffset] {
       var topIter = buffer.slice()
