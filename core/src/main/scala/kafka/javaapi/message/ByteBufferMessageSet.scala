@@ -20,10 +20,10 @@ import kafka.common.ErrorMapping
 import org.apache.log4j.Logger
 import kafka.message._
 
-class ByteBufferMessageSet(val buffer: ByteBuffer,
-                           val initialOffset: Long = 0L,
-                           val errorCode: Int = ErrorMapping.NoError,
-                           val deepIterate: Boolean = true) extends MessageSet {
+class ByteBufferMessageSet(private val buffer: ByteBuffer,
+                           private val initialOffset: Long = 0L,
+                           private val errorCode: Int = ErrorMapping.NoError,
+                           private val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())
   val underlying: kafka.message.ByteBufferMessageSet = new kafka.message.ByteBufferMessageSet(buffer,
                                                                                               initialOffset,
@@ -54,6 +54,14 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
   def validBytes: Long = underlying.validBytes
 
   def serialized():ByteBuffer = underlying.serialized
+
+  def getInitialOffset = initialOffset
+
+  def getDeepIterate = deepIterate
+
+  def getBuffer = buffer
+
+  def getErrorCode = errorCode
 
   override def iterator: java.util.Iterator[MessageOffset] = new java.util.Iterator[MessageOffset] {
     val underlyingIterator = underlying.iterator

@@ -33,10 +33,10 @@ import kafka.utils.IteratorTemplate
  * Option 2: Give it a list of messages along with instructions relating to serialization format. Producers will use this method.
  * 
  */
-class ByteBufferMessageSet(val buffer: ByteBuffer,
-                           val initialOffset: Long = 0L,
-                           val errorCode: Int = ErrorMapping.NoError,
-                           val deepIterate: Boolean = true) extends MessageSet {
+class ByteBufferMessageSet(private val buffer: ByteBuffer,
+                           private val initialOffset: Long = 0L,
+                           private val errorCode: Int = ErrorMapping.NoError,
+                           private val deepIterate: Boolean = true) extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
   private var validByteCount = -1L
   private var shallowValidByteCount = -1L
@@ -60,6 +60,8 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
           buffer
       }, 0L, ErrorMapping.NoError, true)
   }
+
+  def getInitialOffset = initialOffset
 
   def getDeepIterate = deepIterate
 
@@ -105,7 +107,7 @@ class ByteBufferMessageSet(val buffer: ByteBuffer,
     ErrorMapping.maybeThrowException(errorCode)
     new IteratorTemplate[MessageOffset] {
       var iter = buffer.slice()
-      var currValidBytes = 0
+      var currValidBytes = 0L
       
       override def makeNext(): MessageOffset = {
         // read the size of the item

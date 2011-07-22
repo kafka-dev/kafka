@@ -34,10 +34,12 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
   private var current: Iterator[MessageOffset] = null
   private var currentDataChunk: FetchedDataChunk = null
   private var currentTopicInfo: PartitionTopicInfo = null
-  private var consumedOffset: Long = Long.MaxValue
+  private var consumedOffset: Long = -1L
 
   override def next(): Message = {
     val message = super.next
+    if(consumedOffset < 0)
+      throw new IllegalStateException("Offset returned by the message set is invalid %d".format(consumedOffset))
     currentTopicInfo.resetConsumeOffset(consumedOffset)
     if(logger.isTraceEnabled)
       logger.trace("Setting consumed offset to %d".format(consumedOffset))
@@ -63,8 +65,8 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
       } else {
         currentTopicInfo = currentDataChunk.topicInfo
         if (currentTopicInfo.getConsumeOffset != currentDataChunk.fetchOffset) {
-          logger.error("consumed offset: " + currentTopicInfo.getConsumeOffset + " doesn't match fetch offset: " +
-            currentDataChunk.fetchOffset + " for " + currentTopicInfo + "; consumer may lose data")
+          logger.error("consumed offset: %d doesn't match fetch offset: %d for %s;\n Consumer may lose data"
+                        .format(currentTopicInfo.getConsumeOffset, currentDataChunk.fetchOffset, currentTopicInfo))
           currentTopicInfo.resetConsumeOffset(currentDataChunk.fetchOffset)
         }
         current = currentDataChunk.messages.iterator

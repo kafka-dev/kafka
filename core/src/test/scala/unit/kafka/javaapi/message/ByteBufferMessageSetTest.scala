@@ -34,7 +34,7 @@ class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestC
                                                messages = getMessageList(new Message("hello".getBytes()),
                                                                       new Message("there".getBytes())))
     val buffer = ByteBuffer.allocate(messageList.sizeInBytes.toInt + 2)
-    buffer.put(messageList.buffer)
+    buffer.put(messageList.getBuffer)
     buffer.putShort(4)
     val messageListPlus = new ByteBufferMessageSet(buffer)
     assertEquals("Adding invalid bytes shouldn't change byte count", messageList.validBytes, messageListPlus.validBytes)
@@ -46,7 +46,7 @@ class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestC
                                                messages = getMessageList(new Message("hello".getBytes()),
                                                                          new Message("there".getBytes())))
     val buffer = ByteBuffer.allocate(messageList.sizeInBytes.toInt + 2)
-    buffer.put(messageList.buffer)
+    buffer.put(messageList.getBuffer)
     buffer.putShort(4)
     val messageListPlus = new ByteBufferMessageSet(buffer, 0, 0, true)
     assertEquals("Adding invalid bytes shouldn't change byte count", messageList.validBytes, messageListPlus.validBytes)

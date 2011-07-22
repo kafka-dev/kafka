@@ -54,17 +54,6 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   }
 
   /**
-   * Record the given number of bytes as having been consumed
-   */
-  def consumed(messageSize: Long): Unit = {
-    if(logger.isTraceEnabled)
-      logger.trace("Current consumed offset = " + consumedOffset.get)
-    val newOffset = consumedOffset.addAndGet(messageSize)
-    if (logger.isDebugEnabled)
-      logger.debug("updated consume offset of ( %s ) to %d".format(this, newOffset))
-  }
-
-  /**
    * Enqueue a message set for processing
    * @return the number of valid bytes
    */
