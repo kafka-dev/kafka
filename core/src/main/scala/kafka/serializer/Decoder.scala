@@ -28,10 +28,9 @@ class DefaultDecoder extends Decoder[Message] {
 
 class StringDecoder extends Decoder[String] {
   def toEvent(message: Message):String = {
-    val messagePayload = message.payload.slice
-    val dataLength = messagePayload.array.length - messagePayload.arrayOffset
-    val messageDataArray = new Array[Byte](dataLength)
-    messagePayload.get(messageDataArray, 0, dataLength)
-    new String(messageDataArray)
+    val buf = message.payload
+    val arr = new Array[Byte](buf.remaining)
+    buf.get(arr)
+    new String(arr)
   }
 }
