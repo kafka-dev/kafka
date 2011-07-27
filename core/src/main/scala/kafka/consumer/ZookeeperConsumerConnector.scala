@@ -490,7 +490,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
            *  The first few consumers pick up an extra partition, if any.
            */
           if (nParts <= 0)
-            logger.warn("No broker partions consumed by consumer thread " + consumerThreadId + " for topic " + topic)
+            logger.warn("No broker partitions consumed by consumer thread " + consumerThreadId + " for topic " + topic)
           else {
             for (i <- startPart until startPart + nParts) {
               val partition = curPartitions(i)
