@@ -19,6 +19,8 @@ package kafka.consumer
 import java.util.Properties
 import kafka.utils.{ZKConfig, Utils}
 import kafka.api.OffsetRequest
+import kafka.common.InvalidConfigException
+import org.apache.log4j.Logger
 
 object ConsumerConfig {
   val SOCKET_TIMEOUT = 30 * 1000
@@ -31,11 +33,19 @@ object ConsumerConfig {
   val MAX_QUEUED_CHUNKS = 100
   val AUTO_OFFSET_RESET = OffsetRequest.SMALLEST_TIME_STRING
   val CONSUMER_TIMEOUT_MS = -1
-  val EMBEDDED_CONSUMER_TOPICS = ""
+  val MIRROR_TOPICS_WHITELIST = ""
+  val MIRROR_TOPICS_BLACKLIST = ""
+
+  val MIRROR_TOPICS_WHITELIST_PROP = "mirror.topics.whitelist"
+  val MIRROR_TOPICS_WHITELIST_PROP_OLD = "embeddedconsumer.topics"
+  val MIRROR_TOPICS_BLACKLIST_PROP = "mirror.topics.blacklist"
 }
 
 class ConsumerConfig(props: Properties) extends ZKConfig(props) {
   import ConsumerConfig._
+
+  private val logger = Logger.getLogger(getClass)
+  checkProps()
 
   /** a string that uniquely identifies a set of consumers within the same consumer group */
   val groupId = Utils.getString(props, "groupid")
@@ -79,7 +89,36 @@ class ConsumerConfig(props: Properties) extends ZKConfig(props) {
   /** throw a timeout exception to the consumer if no message is available for consumption after the specified interval */
   val consumerTimeoutMs = Utils.getInt(props, "consumer.timeout.ms", CONSUMER_TIMEOUT_MS)
 
-  /* embed a consumer in the broker. e.g., topic1:1,topic2:1 */
-  val embeddedConsumerTopicMap = Utils.getConsumerTopicMap(Utils.getString(props, "embeddedconsumer.topics",
-    EMBEDDED_CONSUMER_TOPICS))
+  /** Whitelist of topics for this mirror's embedded consumer to consume. At
+   *  most one of whitelist/blacklist may be specified.
+   *  e.g., topic1:1,topic2:1 */
+  val mirrorTopicsWhitelistMap = Utils.getConsumerTopicMap(Utils.getString(
+    props, MIRROR_TOPICS_WHITELIST,
+    Utils.getString(
+      props, MIRROR_TOPICS_WHITELIST_PROP_OLD, MIRROR_TOPICS_WHITELIST)))
+
+  /** Topics to skip mirroring. At most one of whitelist/blacklist may be
+   *  specified */
+  val mirrorTopicsBlackList = Utils.getString(
+    props, MIRROR_TOPICS_BLACKLIST_PROP, MIRROR_TOPICS_BLACKLIST)
+
+  private[this] def checkProps() = {
+
+    if (props.containsKey(MIRROR_TOPICS_WHITELIST_PROP_OLD)) {
+      logger.warn("The %s option is planned for deprecation. Use %s.".format(
+      MIRROR_TOPICS_WHITELIST_PROP_OLD, MIRROR_TOPICS_WHITELIST_PROP))
+
+      if (props.containsKey(MIRROR_TOPICS_WHITELIST_PROP))
+        logger.warn("Both %s and %s specified: using %s".format(
+          MIRROR_TOPICS_WHITELIST_PROP_OLD,
+          MIRROR_TOPICS_WHITELIST_PROP, MIRROR_TOPICS_WHITELIST_PROP))
+    }
+
+    val hasWhitelist = props.containsKey(MIRROR_TOPICS_WHITELIST_PROP) ||
+      props.containsKey(MIRROR_TOPICS_WHITELIST_PROP_OLD)
+
+    if (hasWhitelist && props.containsKey(MIRROR_TOPICS_BLACKLIST_PROP))
+      throw new InvalidConfigException("The embedded consumer's mirror topics configuration can only contain one of blacklist or whitelist")
+  }
 }
+

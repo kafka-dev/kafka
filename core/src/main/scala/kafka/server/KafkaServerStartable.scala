@@ -17,10 +17,10 @@
 package kafka.server
 
 import org.apache.log4j.Logger
-import kafka.consumer.{Consumer, ConsumerConnector, ConsumerConfig}
 import kafka.utils.{SystemTime, Utils}
 import kafka.message.ByteBufferMessageSet
 import kafka.api.RequestKeys
+import kafka.consumer._
 
 class KafkaServerStartable(val serverConfig: KafkaConfig, val consumerConfig: ConsumerConfig) {
   private var server : KafkaServer = null
@@ -54,41 +54,87 @@ class KafkaServerStartable(val serverConfig: KafkaConfig, val consumerConfig: Co
 }
 
 class EmbeddedConsumer(private val consumerConfig: ConsumerConfig,
-                       private val kafkaServer: KafkaServer) {
-  private val logger = Logger.getLogger(getClass())
-  private val consumerConnector: ConsumerConnector = Consumer.create(consumerConfig)
-  private val topicMessageStreams = consumerConnector.createMessageStreams(consumerConfig.embeddedConsumerTopicMap)
+                       private val kafkaServer: KafkaServer) extends TopicEventHandler[String] {
+  private val logger = Logger.getLogger(getClass)
 
-  def startup() = {
-    var threadList = List[Thread]()
-    for ((topic, streamList) <- topicMessageStreams)
-      for (i <- 0 until streamList.length)
-        threadList ::= Utils.newThread("kafka-embedded-consumer-" + topic + "-" + i, new Runnable() {
-          def run() {
-            logger.info("starting consumer thread " + i + " for topic " + topic)
-            val logManager = kafkaServer.getLogManager
-            val stats = kafkaServer.getStats
-            try {
-              for (message <- streamList(i)) {
-                val partition = logManager.chooseRandomPartition(topic)
-                val start = SystemTime.nanoseconds
-                logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(message))
-                stats.recordRequest(RequestKeys.Produce, SystemTime.nanoseconds - start)
-              }
-            }
-            catch {
-              case e =>
-                logger.fatal(e + Utils.stackTrace(e))
-                logger.fatal(topic + " stream " + i + " unexpectedly exited")
-            }
-          }
-        }, false)
+  def handleTopicEvent(addedTopics: Seq[String],
+                       deletedTopics: Seq[String], allTopics: Seq[String]) {
+    logger.info("topic event: new topics")
+    for (topic <- addedTopics) {
+      logger.info("\t%s".format(topic))
+    }
+    for (topic <- deletedTopics) {
+      logger.info("\t%s".format(topic))
+    }
 
-    for (thread <- threadList)
-      thread.start
+    consumerConnector.shutdown()
+
+    consumerConnector = Consumer.create(consumerConfig)
+
+    startNewConsumerThreads()
   }
 
-  def shutdown() = {
+  private var consumerConnector: ConsumerConnector = null
+  private val topicEventWatcher =
+    new ZookeeperTopicEventWatcher(consumerConfig, Some(this))
+
+  private def makeTopicMap() = {
+    if (consumerConfig.mirrorTopicsWhitelistMap.nonEmpty) {
+      consumerConfig.mirrorTopicsWhitelistMap
+    }
+    else {
+      val allTopics = topicEventWatcher.topics
+      val blackListTopics = consumerConfig.mirrorTopicsBlackList.split(",").toList.map(_.trim)
+      val whiteListTopics = allTopics filterNot (blackListTopics contains)
+      if (whiteListTopics.nonEmpty)
+        Utils.getConsumerTopicMap(whiteListTopics.mkString("", ":1,", ":1"))
+      else
+        Utils.getConsumerTopicMap("")
+    }
+  }
+
+  private def startNewConsumerThreads() {
+    val topicMap = makeTopicMap()
+    if (topicMap.size > 0) {
+      if (consumerConnector != null) {
+        consumerConnector.shutdown()
+      }
+      consumerConnector = Consumer.create(consumerConfig)
+      val topicMessageStreams =  consumerConnector.createMessageStreams(makeTopicMap())
+      var threadList = List[Thread]()
+      for ((topic, streamList) <- topicMessageStreams)
+        for (i <- 0 until streamList.length)
+          threadList ::= Utils.newThread("kafka-embedded-consumer-" + topic + "-" + i, new Runnable() {
+            def run() {
+              logger.info("starting consumer thread " + i + " for topic " + topic)
+              val logManager = kafkaServer.getLogManager()
+              val stats = kafkaServer.getStats()
+              try {
+                for (message <- streamList(i)) {
+                  val partition = logManager.chooseRandomPartition(topic)
+                  val start = SystemTime.nanoseconds
+                  logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(message))
+                  stats.recordRequest(RequestKeys.Produce, SystemTime.nanoseconds - start)
+                }
+              }
+              catch {
+                case e =>
+                  logger.fatal(e + Utils.stackTrace(e))
+                  logger.fatal(topic + " stream " + i + " unexpectedly exited")
+              }
+            }
+          }, false)
+
+      for (thread <- threadList)
+        thread.start()
+    }
+  }
+
+  def startup() {
+    startNewConsumerThreads()
+  }
+
+  def shutdown() {
     consumerConnector.shutdown
   }
 }
