@@ -23,9 +23,9 @@ import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
 import java.util.Properties
 import kafka.message.{NoCompressionCodec, ByteBufferMessageSet}
-import kafka.producer.{SyncProducerConfigShared, SyncProducerConfig, SyncProducer}
+import kafka.producer.{ProducerConfig, SyncProducerConfigShared, SyncProducerConfig, SyncProducer}
 
-private[kafka] class DefaultEventHandler[T](val config: SyncProducerConfigShared,
+private[kafka] class DefaultEventHandler[T](val config: ProducerConfig,
                                             val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[DefaultEventHandler[T]])

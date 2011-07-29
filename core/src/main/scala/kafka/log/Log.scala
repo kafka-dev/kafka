@@ -329,7 +329,9 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
         startIndex = 0
       case _ =>
           var isFound = false
-          println("Offset time array = " + offsetTimeArray.foreach(o => println(o._1 + ", " + o._2)))
+          if(logger.isDebugEnabled) {
+            logger.debug("Offset time array = " + offsetTimeArray.foreach(o => "%d, %d".format(o._1, o._2)))
+          }
           startIndex = offsetTimeArray.length - 1
           while (startIndex >= 0 && !isFound) {
             if (offsetTimeArray(startIndex)._2 <= request.time)

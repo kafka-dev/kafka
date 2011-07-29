@@ -34,6 +34,14 @@ object Message {
   val MagicLength = 1
   val AttributeOffset = MagicOffset + MagicLength
   val AttributeLength = 1
+  /**
+   * Specifies the mask for the compression code. 2 bits to hold the compression codec.
+   * 0 is reserved to indicate no compression
+   */
+  val CompressionCodeMask: Int = 0x03  //
+
+
+  val NoCompression:Int = 0
 
   /**
    * Computes the CRC value based on the magic byte
@@ -41,7 +49,7 @@ object Message {
    *              0 for no compression
    *              1 for compression
   */
-  def CrcOffset(magic: Byte): Int = magic match {
+  def crcOffset(magic: Byte): Int = magic match {
     case MagicVersion1 => MagicOffset + MagicLength
     case MagicVersion2 => AttributeOffset + AttributeLength
     case _ => throw new UnknownMagicByteException("Magic byte value of %d is unknown".format(magic))
@@ -55,7 +63,7 @@ object Message {
    *              0 for no compression
    *              1 for compression
    */
-  def PayloadOffset(magic: Byte): Int = CrcOffset(magic) + CrcLength
+  def payloadOffset(magic: Byte): Int = crcOffset(magic) + CrcLength
 
   /**
    * Computes the size of the message header based on the magic byte
@@ -63,21 +71,12 @@ object Message {
    *              0 for no compression
    *              1 for compression
    */
-  def HeaderSize(magic: Byte): Int = PayloadOffset(magic)
+  def headerSize(magic: Byte): Int = payloadOffset(magic)
 
   /**
    * Size of the header for magic byte 0. This is the minimum size of any message header
    */
-  val MinHeaderSize = HeaderSize(0);
-
-  /**
-   * Specifies the mask for the compression code. 2 bits to hold the compression codec.
-   * 0 is reserved to indicate no compression
-   */
-  val CompressionCodeMask: Int = 0x03  //
-  
-  
-  val NoCompression:Int = 0
+  val MinHeaderSize = headerSize(0);
 }
 
 /**
@@ -108,7 +107,7 @@ class Message(val buffer: ByteBuffer) {
     
   
   private def this(checksum: Long, bytes: Array[Byte], compressionCodec: CompressionCodec) = {
-    this(ByteBuffer.allocate(Message.HeaderSize(Message.CurrentMagicValue) + bytes.length))
+    this(ByteBuffer.allocate(Message.headerSize(Message.CurrentMagicValue) + bytes.length))
     buffer.put(CurrentMagicValue)
     var attributes:Byte = 0
     if (compressionCodec.codec > 0) {
@@ -131,7 +130,7 @@ class Message(val buffer: ByteBuffer) {
   
   def size: Int = buffer.limit
   
-  def payloadSize: Int = size - HeaderSize(magic)
+  def payloadSize: Int = size - headerSize(magic)
   
   def magic: Byte = buffer.get(MagicOffset)
   
@@ -146,11 +145,11 @@ class Message(val buffer: ByteBuffer) {
 
   }
 
-  def checksum: Long = Utils.getUnsignedInt(buffer, CrcOffset(magic))
+  def checksum: Long = Utils.getUnsignedInt(buffer, crcOffset(magic))
   
   def payload: ByteBuffer = {
     var payload = buffer.duplicate
-    payload.position(HeaderSize(magic))
+    payload.position(headerSize(magic))
     payload = payload.slice()
     payload.limit(payloadSize)
     payload.rewind()
@@ -158,7 +157,7 @@ class Message(val buffer: ByteBuffer) {
   }
   
   def isValid: Boolean =
-    checksum == Utils.crc32(buffer.array, buffer.position + buffer.arrayOffset + PayloadOffset(magic), payloadSize)
+    checksum == Utils.crc32(buffer.array, buffer.position + buffer.arrayOffset + payloadOffset(magic), payloadSize)
 
   def serializedSize: Int = 4 /* int size*/ + buffer.limit
    

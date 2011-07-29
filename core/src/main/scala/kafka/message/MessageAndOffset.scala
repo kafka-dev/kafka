@@ -19,4 +19,4 @@ package kafka.message
 /**
  * Represents message and offset of the next message. This is used in the MessageSet to iterate over it
  */
-case class MessageOffset(val message: Message, val offset: Long)
+case class MessageAndOffset(val message: Message, val offset: Long)
