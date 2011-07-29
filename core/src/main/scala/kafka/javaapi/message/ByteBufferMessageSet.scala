@@ -67,13 +67,13 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
 
   def getErrorCode = errorCode
 
-  override def iterator: java.util.Iterator[MessageOffset] = new java.util.Iterator[MessageOffset] {
+  override def iterator: java.util.Iterator[MessageAndOffset] = new java.util.Iterator[MessageAndOffset] {
     val underlyingIterator = underlying.iterator
     override def hasNext(): Boolean = {
       underlyingIterator.hasNext
     }
 
-    override def next(): MessageOffset = {
+    override def next(): MessageAndOffset = {
       underlyingIterator.next
     }
 

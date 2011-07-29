@@ -82,11 +82,13 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
   
   def shallowValidBytes: Long = {
     if(shallowValidByteCount < 0) {
-      val iter = shallowIterator
-      while(iter.hasNext)
-        iter.next()
+      val iter = deepIterator
+      while(iter.hasNext) {
+        val messageAndOffset = iter.next
+        shallowValidByteCount = messageAndOffset.offset
+      }
     }
-    shallowValidByteCount
+    shallowValidByteCount - initialOffset
   }
   
   def deepValidBytes: Long = {
@@ -102,23 +104,29 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
   def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long =
     channel.write(buffer.duplicate)
   
-  override def iterator: Iterator[MessageOffset] = deepIterate match {
+  override def iterator: Iterator[MessageAndOffset] = deepIterate match {
     case true => deepIterator
     case false => shallowIterator
   }
-  
-  private def shallowIterator(): Iterator[MessageOffset] = {
+
+  /**
+   * Applications won't require to use this API for shallow iteration
+   * of compressed message sets. But unit tests might want it. So we
+   * cannot get rid of this API all together.
+   */
+  private def shallowIterator(): Iterator[MessageAndOffset] = {
     ErrorMapping.maybeThrowException(errorCode)
-    new IteratorTemplate[MessageOffset] {
+    new IteratorTemplate[MessageAndOffset] {
       var iter = buffer.slice()
-      var currValidBytes = 0L
-      
-      override def makeNext(): MessageOffset = {
+      var currValidBytes = initialOffset
+
+      override def makeNext(): MessageAndOffset = {
         // read the size of the item
         if(iter.remaining < 4) {
           shallowValidByteCount = currValidBytes
           return allDone()
         }
+
         val size = iter.getInt()
         if(size < 0 || iter.remaining < size) {
           shallowValidByteCount = currValidBytes
@@ -128,27 +136,29 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
                 .format(size, iter.remaining, currValidBytes))
           return allDone()
         }
+
         currValidBytes += 4 + size
         val message = iter.slice()
         message.limit(size)
+
         iter.position(iter.position + size)
-        new MessageOffset(new Message(message), currValidBytes)
+        new MessageAndOffset(new Message(message), currValidBytes)
       }
     }
   }
 
 
-  private def deepIterator(): Iterator[MessageOffset] = {
+  private def deepIterator(): Iterator[MessageAndOffset] = {
     ErrorMapping.maybeThrowException(errorCode)
-    new IteratorTemplate[MessageOffset] {
+    new IteratorTemplate[MessageAndOffset] {
       var topIter = buffer.slice()
       var currValidBytes = initialOffset
-      var innerIter:Iterator[MessageOffset] = null
+      var innerIter:Iterator[MessageAndOffset] = null
       var lastMessageSize = 0L
 
       def innerDone():Boolean = (innerIter==null || !innerIter.hasNext)
 
-      def makeNextOuter: MessageOffset = {
+      def makeNextOuter: MessageAndOffset = {
         if (topIter.remaining < 4) {
           deepValidByteCount = currValidBytes
           return allDone()
@@ -178,7 +188,7 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
               logger.debug("Message is uncompressed. Valid byte count = %d".format(currValidBytes))
             innerIter = null
             currValidBytes += 4 + size
-            new MessageOffset(newMessage, currValidBytes)
+            new MessageAndOffset(newMessage, currValidBytes)
           case _ =>
             if(logger.isDebugEnabled)
               logger.debug("Message is compressed. Valid byte count = %d".format(currValidBytes))
@@ -187,7 +197,7 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
         }
       }
 
-      override def makeNext(): MessageOffset = {
+      override def makeNext(): MessageAndOffset = {
         if(logger.isDebugEnabled)
           logger.debug("makeNext() in deepIterator: innerDone = " + innerDone)
         innerDone match {
@@ -196,7 +206,7 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
             val messageAndOffset = innerIter.next
             if(!innerIter.hasNext)
               currValidBytes += 4 + lastMessageSize
-            new MessageOffset(messageAndOffset.message, currValidBytes)
+            new MessageAndOffset(messageAndOffset.message, currValidBytes)
           }
         }
       }

@@ -13,7 +13,7 @@ import kafka.common.ErrorMapping;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
-import kafka.message.MessageOffset;
+import kafka.message.MessageAndOffset;
 import kafka.message.MessageSet;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapred.JobConf;
@@ -44,7 +44,7 @@ public class KafkaETLContext {
     protected long _count; /*current count*/
 
     protected MultiFetchResponse _response = null;  /*fetch response*/
-    protected Iterator<MessageOffset> _messageIt = null; /*message iterator*/
+    protected Iterator<MessageAndOffset> _messageIt = null; /*message iterator*/
     
     protected int _retry = 0;
     protected long _requestTime = 0; /*accumulative request time*/
@@ -123,7 +123,7 @@ public class KafkaETLContext {
             while ( !gotNext && iter.hasNext()) {
                 ByteBufferMessageSet msgSet = iter.next();
                 if ( hasError(msgSet)) return false;
-                _messageIt =  (Iterator<MessageOffset>) msgSet.iterator();
+                _messageIt =  (Iterator<MessageAndOffset>) msgSet.iterator();
                 gotNext = get(key, value);
             }
         }
@@ -172,7 +172,7 @@ public class KafkaETLContext {
     
     protected boolean get(KafkaETLKey key, BytesWritable value) throws IOException {
         if (_messageIt != null && _messageIt.hasNext()) {
-            MessageOffset msgAndOffset = _messageIt.next();
+            MessageAndOffset msgAndOffset = _messageIt.next();
             
             ByteBuffer buf = msgAndOffset.message().payload();
             int origSize = buf.remaining();

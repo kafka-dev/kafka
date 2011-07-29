@@ -21,7 +21,7 @@ import java.util.List;
 import kafka.javaapi.MultiFetchResponse;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
-import kafka.message.MessageOffset;
+import kafka.message.MessageAndOffset;
 import scala.collection.Iterator;
 
 import kafka.api.FetchRequest;
@@ -32,7 +32,7 @@ public class SimpleConsumerDemo
 {
   private static void printMessages(ByteBufferMessageSet messageSet)
   {
-    for (MessageOffset messageAndOffset : messageSet) {
+    for (MessageAndOffset messageAndOffset : messageSet) {
       System.out.println(ExampleUtils.getMessage(messageAndOffset.message()));
     }
   }

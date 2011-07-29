@@ -17,7 +17,7 @@
 package kafka.javaapi.message
 
 import java.nio.channels.WritableByteChannel
-import kafka.message.{MessageOffset, InvalidMessageException, Message}
+import kafka.message.{MessageAndOffset, InvalidMessageException, Message}
 
 /**
  * A set of messages. A message set has a fixed serialized form, though the container
@@ -26,12 +26,12 @@ import kafka.message.{MessageOffset, InvalidMessageException, Message}
  * 4 byte size containing an integer N
  * N message bytes as described in the message class
  */
-abstract class MessageSet extends java.lang.Iterable[MessageOffset] {
+abstract class MessageSet extends java.lang.Iterable[MessageAndOffset] {
 
   /**
    * Provides an iterator over the messages in this set
    */
-  def iterator: java.util.Iterator[MessageOffset]
+  def iterator: java.util.Iterator[MessageAndOffset]
 
   /**
    * Gives the total size of this message set in bytes

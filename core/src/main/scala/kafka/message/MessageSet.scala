@@ -60,7 +60,7 @@ object MessageSet {
  * 4 byte size containing an integer N
  * N message bytes as described in the message class
  */
-abstract class MessageSet extends Iterable[MessageOffset] {
+abstract class MessageSet extends Iterable[MessageAndOffset] {
 
   /** Write the messages in this set to the given channel starting at the given offset byte. 
     * Less than the complete amount may be written, but no more than maxSize can be. The number
@@ -70,7 +70,7 @@ abstract class MessageSet extends Iterable[MessageOffset] {
   /**
    * Provides an iterator over the messages in this set
    */
-  def iterator: Iterator[MessageOffset]
+  def iterator: Iterator[MessageAndOffset]
   
   /**
    * Gives the total size of this message set in bytes

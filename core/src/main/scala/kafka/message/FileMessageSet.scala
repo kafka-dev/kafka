@@ -34,10 +34,10 @@ import kafka.utils._
  */
 @nonthreadsafe
 class FileMessageSet private[kafka](private[message] val channel: FileChannel,
-                                      private[message] val offset: Long,
-                                      private[message] val limit: Long,
-                                      val mutable: Boolean,
-                                      val needRecover: AtomicBoolean) extends MessageSet {
+                                    private[message] val offset: Long,
+                                    private[message] val limit: Long,
+                                    val mutable: Boolean,
+                                    val needRecover: AtomicBoolean) extends MessageSet {
   
   private val setSize = new AtomicLong()
   private val setHighWaterMark = new AtomicLong()
@@ -108,11 +108,11 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
   /**
    * Get an iterator over the messages in the set
    */
-  override def iterator: Iterator[MessageOffset] = {
-    new IteratorTemplate[MessageOffset] {
+  override def iterator: Iterator[MessageAndOffset] = {
+    new IteratorTemplate[MessageAndOffset] {
       var location = offset
       
-      override def makeNext(): MessageOffset = {
+      override def makeNext(): MessageAndOffset = {
         // read the size of the item
         val sizeBuffer = ByteBuffer.allocate(4)
         channel.read(sizeBuffer, location)
@@ -133,7 +133,7 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
         
         // increment the location and return the item
         location += size + 4
-        new MessageOffset(new Message(buffer), location)
+        new MessageAndOffset(new Message(buffer), location)
       }
     }
   }
