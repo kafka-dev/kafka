@@ -61,6 +61,10 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
       }, 0L, ErrorMapping.NoError, true)
   }
 
+  def this(messages: Message*) {
+    this(NoCompressionCodec, messages: _*)
+  }
+
   def getInitialOffset = initialOffset
 
   def getDeepIterate = deepIterate

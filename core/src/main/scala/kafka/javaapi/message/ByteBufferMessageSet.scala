@@ -51,6 +51,10 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
     }, 0L, ErrorMapping.NoError, true)
   }
 
+  def this(messages: java.util.List[Message]) {
+    this(NoCompressionCodec, messages)
+  }
+
   def validBytes: Long = underlying.validBytes
 
   def serialized():ByteBuffer = underlying.serialized
