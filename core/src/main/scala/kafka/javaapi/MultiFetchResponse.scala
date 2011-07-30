@@ -20,13 +20,13 @@ import kafka.utils.IteratorTemplate
 import java.nio.ByteBuffer
 import message.ByteBufferMessageSet
 
-class MultiFetchResponse(buffer: ByteBuffer, numSets: Int) extends java.lang.Iterable[ByteBufferMessageSet] {
+class MultiFetchResponse(buffer: ByteBuffer, numSets: Int, offsets: Array[Long]) extends java.lang.Iterable[ByteBufferMessageSet] {
   val underlyingBuffer = ByteBuffer.wrap(buffer.array)
     // this has the side effect of setting the initial position of buffer correctly
   val errorCode = underlyingBuffer.getShort
 
   import Implicits._
-  val underlying = new kafka.api.MultiFetchResponse(underlyingBuffer, numSets)
+  val underlying = new kafka.api.MultiFetchResponse(underlyingBuffer, numSets, offsets)
 
   override def toString() = underlying.toString
 

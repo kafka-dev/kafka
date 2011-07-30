@@ -20,33 +20,62 @@ import java.nio._
 import junit.framework.TestCase
 import junit.framework.Assert._
 import org.junit.Test
-import kafka.message.Message
+import kafka.message.{DefaultCompressionCodec, CompressionCodec, NoCompressionCodec, Message}
 
 class ByteBufferMessageSetTest extends kafka.javaapi.message.BaseMessageSetTestCases {
 
-  override def createMessageSet(messages: Seq[Message]): ByteBufferMessageSet = 
-    new ByteBufferMessageSet(getMessageList(messages: _*))
+  override def createMessageSet(messages: Seq[Message],
+                                compressed: CompressionCodec = NoCompressionCodec): ByteBufferMessageSet =
+    new ByteBufferMessageSet(compressed, getMessageList(messages: _*))
   
   @Test
   def testValidBytes() {
-    val messages = new ByteBufferMessageSet(getMessageList(new Message("hello".getBytes()),
-      new Message("there".getBytes())))
-    val buffer = ByteBuffer.allocate(messages.sizeInBytes.toInt + 2)
-    buffer.put(messages.buffer)
+    val messageList = new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                               messages = getMessageList(new Message("hello".getBytes()),
+                                                                      new Message("there".getBytes())))
+    val buffer = ByteBuffer.allocate(messageList.sizeInBytes.toInt + 2)
+    buffer.put(messageList.getBuffer)
     buffer.putShort(4)
-    val messagesPlus = new ByteBufferMessageSet(buffer)
-    assertEquals("Adding invalid bytes shouldn't change byte count", messages.validBytes, messagesPlus.validBytes)
+    val messageListPlus = new ByteBufferMessageSet(buffer)
+    assertEquals("Adding invalid bytes shouldn't change byte count", messageList.validBytes, messageListPlus.validBytes)
+  }
+
+  @Test
+  def testValidBytesWithCompression () {
+    val messageList = new ByteBufferMessageSet(compressionCodec = DefaultCompressionCodec,
+                                               messages = getMessageList(new Message("hello".getBytes()),
+                                                                         new Message("there".getBytes())))
+    val buffer = ByteBuffer.allocate(messageList.sizeInBytes.toInt + 2)
+    buffer.put(messageList.getBuffer)
+    buffer.putShort(4)
+    val messageListPlus = new ByteBufferMessageSet(buffer, 0, 0)
+    assertEquals("Adding invalid bytes shouldn't change byte count", messageList.validBytes, messageListPlus.validBytes)
   }
 
   @Test
   def testEquals() {
-    val messages = new ByteBufferMessageSet(getMessageList(new Message("hello".getBytes()),
-      new Message("there".getBytes())))
-    val moreMessages = new ByteBufferMessageSet(getMessageList(new Message("hello".getBytes()),
-      new Message("there".getBytes())))
+    val messageList = new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                            messages = getMessageList(new Message("hello".getBytes()),
+                                                                      new Message("there".getBytes())))
+    val moreMessages = new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                messages = getMessageList(new Message("hello".getBytes()),
+                                                                          new Message("there".getBytes())))
 
-    assertEquals(messages, moreMessages)
-    assertTrue(messages.equals(moreMessages))
+    assertEquals(messageList, moreMessages)
+    assertTrue(messageList.equals(moreMessages))
+  }
+
+  @Test
+  def testEqualsWithCompression () {
+    val messageList = new ByteBufferMessageSet(compressionCodec = DefaultCompressionCodec,
+                                            messages = getMessageList(new Message("hello".getBytes()),
+                                                                      new Message("there".getBytes())))
+    val moreMessages = new ByteBufferMessageSet(compressionCodec = DefaultCompressionCodec,
+                                                messages = getMessageList(new Message("hello".getBytes()),
+                                                                          new Message("there".getBytes())))
+
+    assertEquals(messageList, moreMessages)
+    assertTrue(messageList.equals(moreMessages))
   }
 
   private def getMessageList(messages: Message*): java.util.List[Message] = {

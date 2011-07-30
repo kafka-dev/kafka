@@ -16,9 +16,8 @@
 
 package kafka.consumer
 
-import java.util.concurrent.atomic._
-import kafka.message._
+import kafka.message.ByteBufferMessageSet
 
-private[consumer] class FetchedDataChunk(val messages: MessageSet,
+private[consumer] class FetchedDataChunk(val messages: ByteBufferMessageSet,
                                          val topicInfo: PartitionTopicInfo,
                                          val fetchOffset: Long)

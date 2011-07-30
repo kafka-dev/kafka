@@ -13,6 +13,7 @@ import kafka.common.ErrorMapping;
 import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.Message;
+import kafka.message.MessageAndOffset;
 import kafka.message.MessageSet;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.mapred.JobConf;
@@ -43,7 +44,7 @@ public class KafkaETLContext {
     protected long _count; /*current count*/
 
     protected MultiFetchResponse _response = null;  /*fetch response*/
-    protected Iterator<Message> _messageIt = null; /*message iterator*/
+    protected Iterator<MessageAndOffset> _messageIt = null; /*message iterator*/
     
     protected int _retry = 0;
     protected long _requestTime = 0; /*accumulative request time*/
@@ -122,7 +123,7 @@ public class KafkaETLContext {
             while ( !gotNext && iter.hasNext()) {
                 ByteBufferMessageSet msgSet = iter.next();
                 if ( hasError(msgSet)) return false;
-                _messageIt =  (Iterator<Message>) msgSet.iterator();
+                _messageIt =  (Iterator<MessageAndOffset>) msgSet.iterator();
                 gotNext = get(key, value);
             }
         }
@@ -171,17 +172,17 @@ public class KafkaETLContext {
     
     protected boolean get(KafkaETLKey key, BytesWritable value) throws IOException {
         if (_messageIt != null && _messageIt.hasNext()) {
-            Message msg = _messageIt.next();
+            MessageAndOffset msgAndOffset = _messageIt.next();
             
-            ByteBuffer buf = msg.payload();
+            ByteBuffer buf = msgAndOffset.message().payload();
             int origSize = buf.remaining();
             byte[] bytes = new byte[origSize];
             buf.get(bytes, buf.position(), origSize);
             value.set(bytes, 0, origSize);
             
-            key.set(_index, _offset, msg.checksum());
+            key.set(_index, _offset, msgAndOffset.message().checksum());
             
-            _offset += MessageSet.entrySize(msg);  //increase offset
+            _offset += msgAndOffset.offset();  //increase offset
             _count ++;  //increase count
             
             return true;
@@ -198,14 +199,14 @@ public class KafkaETLContext {
         long[] range = new long[2];
 
         long[] startOffsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
-                OffsetRequest.EARLIEST_TIME(), 1);
+                OffsetRequest.EarliestTime(), 1);
         if (startOffsets.length != 1)
             throw new IOException("input:" + _input + " Expect one smallest offset but get "
                                             + startOffsets.length);
         range[0] = startOffsets[0];
         
         long[] endOffsets = _consumer.getOffsetsBefore(_request.getTopic(), _request.getPartition(),
-                                        OffsetRequest.LATEST_TIME(), 1);
+                                        OffsetRequest.LatestTime(), 1);
         if (endOffsets.length != 1)
             throw new IOException("input:" + _input + " Expect one latest offset but get " 
                                             + endOffsets.length);
@@ -234,8 +235,8 @@ public class KafkaETLContext {
      */
     protected boolean hasError(ByteBufferMessageSet messages)
             throws IOException {
-        int errorCode = messages.errorCode();
-        if (errorCode == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE()) {
+        int errorCode = messages.getErrorCode();
+        if (errorCode == ErrorMapping.OffsetOutOfRangeCode()) {
             /* offset cannot cross the maximum offset (guaranteed by Kafka protocol).
                Kafka server may delete old files from time to time */
             System.err.println("WARNING: current offset=" + _offset + ". It is out of range.");
@@ -246,12 +247,12 @@ public class KafkaETLContext {
             _offsetRange = getOffsetRange();
             _offset =  _offsetRange[0];
             return false;
-        } else if (errorCode == ErrorMapping.INVALID_MESSAGE_CODE()) {
+        } else if (errorCode == ErrorMapping.InvalidMessageCode()) {
             throw new IOException(_input + " current offset=" + _offset
                     + " : invalid offset.");
-        } else if (errorCode == ErrorMapping.WRONG_PARTITION_CODE()) {
+        } else if (errorCode == ErrorMapping.WrongPartitionCode()) {
             throw new IOException(_input + " : wrong partition");
-        } else if (errorCode != ErrorMapping.NO_ERROR()) {
+        } else if (errorCode != ErrorMapping.NoError()) {
             throw new IOException(_input + " current offset=" + _offset
                     + " error:" + errorCode);
         } else

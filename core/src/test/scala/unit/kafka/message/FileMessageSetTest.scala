@@ -30,7 +30,7 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
   
   def createMessageSet(messages: Seq[Message]): FileMessageSet = {
     val set = new FileMessageSet(tempFile(), true)
-    set.append(new ByteBufferMessageSet(messages: _*))
+    set.append(new ByteBufferMessageSet(NoCompressionCodec, messages: _*))
     set.flush()
     set
   }
@@ -44,14 +44,14 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
   
   @Test
   def testIterationOverPartialAndTruncation() {
-    testPartialWrite(0)
-	  testPartialWrite(2)
-    testPartialWrite(4)
-    testPartialWrite(5)
-    testPartialWrite(6)
+    testPartialWrite(0, messageSet)
+	  testPartialWrite(2, messageSet)
+    testPartialWrite(4, messageSet)
+    testPartialWrite(5, messageSet)
+    testPartialWrite(6, messageSet)
   }
   
-  def testPartialWrite(size: Int) {
+  def testPartialWrite(size: Int, messageSet: FileMessageSet) {
     val buffer = ByteBuffer.allocate(size)
     val originalPosition = messageSet.channel.position
     for(i <- 0 until size)
@@ -59,17 +59,17 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
     buffer.rewind()
     messageSet.channel.write(buffer)
     // appending those bytes should not change the contents
-    checkEquals(messages.iterator, messageSet.iterator)
+    checkEquals(messages.iterator, messageSet.map(m => m.message).iterator)
     assertEquals("Unexpected number of bytes truncated", size.longValue, messageSet.recover())
     assertEquals("File pointer should now be at the end of the file.", originalPosition, messageSet.channel.position)
     // nor should recovery change the contents
-    checkEquals(messages.iterator, messageSet.iterator)
+    checkEquals(messages.iterator, messageSet.map(m => m.message).iterator)
   }
   
   @Test
   def testIterationDoesntChangePosition() {
     val position = messageSet.channel.position
-    checkEquals(messages.iterator, messageSet.iterator)
+    checkEquals(messages.iterator, messageSet.map(m => m.message).iterator)
     assertEquals(position, messageSet.channel.position)
   }
   
@@ -79,7 +79,7 @@ class FileMessageSetTest extends BaseMessageSetTestCases {
     checkEquals(messageSet.iterator, read.iterator)
     val items = read.iterator.toList
     val first = items.head
-    val read2 = messageSet.read(MessageSet.entrySize(first), messageSet.sizeInBytes)
+    val read2 = messageSet.read(first.offset, messageSet.sizeInBytes)
     checkEquals(items.tail.iterator, read2.iterator)
   }
   

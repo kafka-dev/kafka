@@ -17,7 +17,6 @@
 package kafka.producer
 
 import async._
-import kafka.message.ByteBufferMessageSet
 import java.util.Properties
 import kafka.serializer.Encoder
 import org.apache.log4j.Logger
@@ -26,6 +25,7 @@ import kafka.cluster.{Partition, Broker}
 import kafka.api.ProducerRequest
 import kafka.common.{UnavailableProducerException, InvalidConfigException}
 import kafka.utils.Utils
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet}
 
 class ProducerPool[V](private val config: ProducerConfig,
                       private val serializer: Encoder[V],
@@ -37,7 +37,7 @@ class ProducerPool[V](private val config: ProducerConfig,
   private val logger = Logger.getLogger(classOf[ProducerPool[V]])
   private var eventHandler = inputEventHandler
   if(eventHandler == null)
-    eventHandler = new DefaultEventHandler(cbkHandler)
+    eventHandler = new DefaultEventHandler(config, cbkHandler)
 
   if(serializer == null)
     throw new InvalidConfigException("serializer passed in is null!")
@@ -113,15 +113,21 @@ class ProducerPool[V](private val config: ProducerConfig,
 
       if(sync) {
         val producerRequests = requestsForThisBid._1.map(req => new ProducerRequest(req.getTopic, req.getBidPid.partId,
-          new ByteBufferMessageSet(req.getData.map(d => serializer.toMessage(d)): _*)))
+          new ByteBufferMessageSet(compressionCodec = config.compressionCodec,
+                                   messages = req.getData.map(d => serializer.toMessage(d)): _*)))
         logger.debug("Fetching sync producer for broker id: " + bid)
         val producer = syncProducers.get(bid)
         if(producer != null) {
           if(producerRequests.size > 1)
             producer.multiSend(producerRequests.toArray)
           else
-            producer.send(producerRequests(0).topic, producerRequests(0).partition, producerRequests(0).messages)
-          logger.debug("Sending message to broker " + bid)
+            producer.send(topic = producerRequests(0).topic,
+                          partition = producerRequests(0).partition,
+                          messages = producerRequests(0).messages)
+          config.compressionCodec match {
+            case NoCompressionCodec => logger.debug("Sending message to broker " + bid)
+            case _ => logger.debug("Sending compressed messages to broker " + bid)
+          }
         }else
           throw new UnavailableProducerException("Producer pool has not been initialized correctly. " +
             "Sync Producer for broker " + bid + " does not exist in the pool")
@@ -132,6 +138,11 @@ class ProducerPool[V](private val config: ProducerConfig,
           requestsForThisBid._1.foreach { req =>
             req.getData.foreach(d => producer.send(req.getTopic, d, req.getBidPid.partId))
           }
+          if(logger.isDebugEnabled)
+            config.compressionCodec match {
+              case NoCompressionCodec => logger.debug("Sending message")
+              case _ => logger.debug("Sending compressed messages")
+            }
         }
         else
           throw new UnavailableProducerException("Producer pool has not been initialized correctly. " +

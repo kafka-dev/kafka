@@ -19,8 +19,8 @@ package kafka.server
 import org.apache.log4j.Logger
 import kafka.consumer.{Consumer, ConsumerConnector, ConsumerConfig}
 import kafka.utils.{SystemTime, Utils}
-import kafka.message.ByteBufferMessageSet
 import kafka.api.RequestKeys
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet}
 
 class KafkaServerStartable(val serverConfig: KafkaConfig, val consumerConfig: ConsumerConfig) {
   private var server : KafkaServer = null
@@ -72,7 +72,9 @@ class EmbeddedConsumer(private val consumerConfig: ConsumerConfig,
               for (message <- streamList(i)) {
                 val partition = logManager.chooseRandomPartition(topic)
                 val start = SystemTime.nanoseconds
-                logManager.getOrCreateLog(topic, partition).append(new ByteBufferMessageSet(message))
+                logManager.getOrCreateLog(topic, partition).append(
+                                                          new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                          messages = message))
                 stats.recordRequest(RequestKeys.Produce, SystemTime.nanoseconds - start)
               }
             }

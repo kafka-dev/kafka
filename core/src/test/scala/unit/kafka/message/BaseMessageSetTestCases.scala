@@ -31,7 +31,7 @@ trait BaseMessageSetTestCases extends JUnitSuite {
   @Test
   def testWrittenEqualsRead {
     val messageSet = createMessageSet(messages)
-    checkEquals(messages.iterator, messageSet.iterator)
+    checkEquals(messages.iterator, messageSet.map(m => m.message).iterator)
   }
 
   @Test

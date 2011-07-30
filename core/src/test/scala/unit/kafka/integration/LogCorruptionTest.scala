@@ -8,18 +8,19 @@ import kafka.api.FetchRequest
 import kafka.common.InvalidMessageSizeException
 import kafka.zk.ZooKeeperTestHarness
 import kafka.utils.{TestZKUtils, TestUtils}
-import kafka.message.{Message, ByteBufferMessageSet}
 import kafka.consumer.{ZookeeperConsumerConnector, ConsumerConfig}
 import org.scalatest.junit.JUnit3Suite
 import kafka.integration.ProducerConsumerTestHarness
 import kafka.integration.KafkaServerTestHarness
 import org.apache.log4j.{Logger, Level}
+import kafka.message.{NoCompressionCodec, Message, ByteBufferMessageSet}
 
 class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness with KafkaServerTestHarness with ZooKeeperTestHarness {
   val zkConnect = TestZKUtils.zookeeperConnect  
   val port = 9999
   val props = TestUtils.createBrokerConfig(0, port)
   val config = new KafkaConfig(props) {
+                 override val hostName = "localhost"
                  override val enableZookeeper = true
                }
   val configs = List(config)
@@ -34,7 +35,7 @@ class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness wit
     fetcherLogger.setLevel(Level.FATAL)
 
     // send some messages
-    val sent1 = new ByteBufferMessageSet(new Message("hello".getBytes()))
+    val sent1 = new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message("hello".getBytes()))
     producer.send(topic, sent1)
     Thread.sleep(200)
 
@@ -48,6 +49,7 @@ class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness wit
     channel.force(true)
     channel.close
 
+    Thread.sleep(500)
     // test SimpleConsumer
     val messageSet = consumer.fetch(new FetchRequest(topic, partition, 0, 10000))
     try {
@@ -59,9 +61,19 @@ class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness wit
       case e: InvalidMessageSizeException => "This is good"
     }
 
+    val messageSet2 = consumer.fetch(new FetchRequest(topic, partition, 0, 10000))
+    try {
+      for (msg <- messageSet2)
+        fail("shouldn't reach here in SimpleConsumer since log file is corrupted.")
+      fail("shouldn't reach here in SimpleConsumer since log file is corrupted.")
+    }
+    catch {
+      case e: InvalidMessageSizeException => println("This is good")
+    }
+
     // test ZookeeperConsumer
     val consumerConfig1 = new ConsumerConfig(
-      TestUtils.createConsumerProperties(zkConnect, "group1", "consumer1"))
+      TestUtils.createConsumerProperties(zkConnect, "group1", "consumer1", 10000))
     val zkConsumerConnector1 = new ZookeeperConsumerConnector(consumerConfig1)
     val topicMessageStreams1 = zkConsumerConnector1.createMessageStreams(Predef.Map(topic -> 1))
     try {
@@ -72,6 +84,7 @@ class LogCorruptionTest extends JUnit3Suite with ProducerConsumerTestHarness wit
     }
     catch {
       case e: InvalidMessageSizeException => "This is good"
+      case e: Exception => "This is not bad too !"
     }
 
     zkConsumerConnector1.shutdown

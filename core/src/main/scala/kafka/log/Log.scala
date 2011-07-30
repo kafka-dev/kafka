@@ -29,7 +29,7 @@ import kafka.api.OffsetRequest
 import java.util._
 
 private[log] object Log {
-  val FILE_SUFFIX = ".kafka"
+  val FileSuffix = ".kafka"
 
   /**
    * Find a given range object in a list of ranges by a value in that range. Does a binary search over the ranges
@@ -77,7 +77,7 @@ private[log] object Log {
     nf.setMinimumIntegerDigits(20)
     nf.setMaximumFractionDigits(0)
     nf.setGroupingUsed(false)
-    nf.format(offset) + Log.FILE_SUFFIX
+    nf.format(offset) + Log.FileSuffix
   }
 }
 
@@ -124,11 +124,11 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
     val accum = new ArrayList[LogSegment]
     val ls = dir.listFiles()
     if(ls != null) {
-      for(file <- ls if file.isFile && file.toString.endsWith(Log.FILE_SUFFIX)) {
+      for(file <- ls if file.isFile && file.toString.endsWith(Log.FileSuffix)) {
         if(!file.canRead)
           throw new IOException("Could not read file " + file)
         val filename = file.getName()
-        val start = filename.substring(0, filename.length - Log.FILE_SUFFIX.length).toLong
+        val start = filename.substring(0, filename.length - Log.FileSuffix.length).toLong
         val messageSet = new FileMessageSet(file, false)
         accum.add(new LogSegment(file, messageSet, start))
       }
@@ -198,8 +198,8 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
   def append(messages: MessageSet): Unit = {
     // validate the messages
     var numberOfMessages = 0
-    for(message <- messages) {
-      if(!message.isValid)
+    for(messageAndOffset <- messages) {
+      if(!messageAndOffset.message.isValid)
         throw new InvalidMessageException()
       numberOfMessages += 1;
     }
@@ -323,12 +323,15 @@ private[log] class Log(val dir: File, val maxSize: Long, val flushInterval: Int,
 
     var startIndex = -1
     request.time match {
-      case OffsetRequest.LATEST_TIME =>
+      case OffsetRequest.LatestTime =>
         startIndex = offsetTimeArray.length - 1
-      case OffsetRequest.EARLIEST_TIME =>
+      case OffsetRequest.EarliestTime =>
         startIndex = 0
       case _ =>
           var isFound = false
+          if(logger.isDebugEnabled) {
+            logger.debug("Offset time array = " + offsetTimeArray.foreach(o => "%d, %d".format(o._1, o._2)))
+          }
           startIndex = offsetTimeArray.length - 1
           while (startIndex >= 0 && !isFound) {
             if (offsetTimeArray(startIndex)._2 <= request.time)

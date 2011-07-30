@@ -25,8 +25,8 @@ import kafka.api.OffsetRequest
  *  A utility that updates the offset of every broker partition to the offset of latest log segment file, in ZK.
  */
 object UpdateOffsetsInZK {
-  val EARLIEST = "earliest"
-  val LATEST = "latest"
+  val Earliest = "earliest"
+  val Latest = "latest"
 
   def main(args: Array[String]) {
     if(args.length < 3)
@@ -35,8 +35,8 @@ object UpdateOffsetsInZK {
     val zkClient = new ZkClient(config.zkConnect, config.zkSessionTimeoutMs,
         config.zkConnectionTimeoutMs, StringSerializer)
     args(0) match {
-      case EARLIEST => getAndSetOffsets(zkClient, OffsetRequest.EARLIEST_TIME, config, args(2))
-      case LATEST => getAndSetOffsets(zkClient, OffsetRequest.LATEST_TIME, config, args(2))
+      case Earliest => getAndSetOffsets(zkClient, OffsetRequest.EarliestTime, config, args(2))
+      case Latest => getAndSetOffsets(zkClient, OffsetRequest.LatestTime, config, args(2))
       case _ => usage
     }
   }

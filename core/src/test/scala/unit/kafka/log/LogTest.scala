@@ -24,7 +24,7 @@ import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
 import kafka.utils.{Utils, TestUtils, Range}
 import kafka.common.OffsetOutOfRangeException
-import kafka.message.{MessageSet, ByteBufferMessageSet, Message}
+import kafka.message.{NoCompressionCodec, MessageSet, ByteBufferMessageSet, Message}
 
 class LogTest extends JUnitSuite {
   
@@ -42,7 +42,7 @@ class LogTest extends JUnitSuite {
   
   def createEmptyLogs(dir: File, offsets: Int*) = {
     for(offset <- offsets)
-    	new File(dir, Integer.toString(offset) + Log.FILE_SUFFIX).createNewFile()
+    	new File(dir, Integer.toString(offset) + Log.FileSuffix).createNewFile()
   }
   
   @Test
@@ -67,12 +67,12 @@ class LogTest extends JUnitSuite {
     val log = new Log(logDir, 1024, 1000, false)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 10)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
     val messages = log.read(0, 1024)
     var current = 0
     for(curr <- messages) {
-      assertEquals("Read message should equal written", message, curr)
+      assertEquals("Read message should equal written", message, curr.message)
       current += 1
     }
     assertEquals(10, current)
@@ -113,12 +113,11 @@ class LogTest extends JUnitSuite {
     var reads = 0
     var current = 0
     var offset = 0L
+    var readOffset = 0L
     while(current < numMessages) {
-      val messages = log.read(offset, 1024*1024)
-      for(message <- messages) {
-        current += 1
-        offset += MessageSet.entrySize(message)
-      }
+      val messages = log.read(readOffset, 1024*1024)
+      readOffset += messages.last.offset
+      current += messages.size
       if(reads > 2*numMessages)
         fail("Too many read attempts.")
       reads += 1

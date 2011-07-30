@@ -17,35 +17,60 @@ package kafka.javaapi.message
 
 import java.nio.ByteBuffer
 import kafka.common.ErrorMapping
-import kafka.message.Message
-import java.nio.channels.WritableByteChannel
+import org.apache.log4j.Logger
+import kafka.message._
 
-class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends MessageSet {
-  val underlying = new kafka.message.ByteBufferMessageSet(buffer, errorCode)
+class ByteBufferMessageSet(private val buffer: ByteBuffer,
+                           private val initialOffset: Long = 0L,
+                           private val errorCode: Int = ErrorMapping.NoError) extends MessageSet {
+  private val logger = Logger.getLogger(getClass())
+  val underlying: kafka.message.ByteBufferMessageSet = new kafka.message.ByteBufferMessageSet(buffer,
+                                                                                              initialOffset,
+                                                                                              errorCode)
+  def this(buffer: ByteBuffer) = this(buffer, 0L, ErrorMapping.NoError)
 
-  def this(buffer: ByteBuffer) = this(buffer,ErrorMapping.NO_ERROR)
-
-  def this(messages: java.util.List[Message]) {
-    this(ByteBuffer.allocate(kafka.message.MessageSet.messageSetSize(messages)))
-    val iter = messages.iterator
-    while(iter.hasNext) {
-      val message = iter.next
-      buffer.putInt(message.size)
-      buffer.put(message.buffer)
-      message.buffer.rewind()
-    }
-    buffer.rewind()
+  def this(compressionCodec: CompressionCodec, messages: java.util.List[Message]) {
+    this(compressionCodec match {
+      case NoCompressionCodec =>
+        val buffer = ByteBuffer.allocate(MessageSet.messageSetSize(messages))
+        val messageIterator = messages.iterator
+        while(messageIterator.hasNext) {
+          val message = messageIterator.next
+          message.serializeTo(buffer)
+        }
+        buffer.rewind
+        buffer
+      case _ =>
+        import scala.collection.JavaConversions._
+        val message = CompressionUtils.compress(asBuffer(messages), compressionCodec)
+        val buffer = ByteBuffer.allocate(message.serializedSize)
+        message.serializeTo(buffer)
+        buffer.rewind
+        buffer
+    }, 0L, ErrorMapping.NoError)
   }
 
-  def validBytes: Int = underlying.validBytes
+  def this(messages: java.util.List[Message]) {
+    this(NoCompressionCodec, messages)
+  }
 
-  override def iterator: java.util.Iterator[Message] = new java.util.Iterator[Message] {
+  def validBytes: Long = underlying.validBytes
+
+  def serialized():ByteBuffer = underlying.serialized
+
+  def getInitialOffset = initialOffset
+
+  def getBuffer = buffer
+
+  def getErrorCode = errorCode
+
+  override def iterator: java.util.Iterator[MessageAndOffset] = new java.util.Iterator[MessageAndOffset] {
     val underlyingIterator = underlying.iterator
     override def hasNext(): Boolean = {
       underlyingIterator.hasNext
     }
 
-    override def next(): Message = {
+    override def next(): MessageAndOffset = {
       underlyingIterator.next
     }
 
@@ -59,13 +84,13 @@ class ByteBufferMessageSet(val buffer: ByteBuffer, val errorCode: Int) extends M
   override def equals(other: Any): Boolean = {
     other match {
       case that: ByteBufferMessageSet =>
-        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer)
+        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) && initialOffset == that.initialOffset
       case _ => false
     }
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode
+  override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode + initialOffset.hashCode
 
 }

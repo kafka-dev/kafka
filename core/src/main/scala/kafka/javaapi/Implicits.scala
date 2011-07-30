@@ -15,11 +15,11 @@
 */
 package kafka.javaapi
 
-import kafka.producer.ProducerPool
-import kafka.producer.async.QueueItem
 import java.nio.ByteBuffer
 import org.apache.log4j.Logger
 import kafka.serializer.Encoder
+import kafka.producer.{ProducerConfig, ProducerPool}
+import kafka.producer.async.{AsyncProducerConfig, QueueItem}
 
 private[javaapi] object Implicits {
   private val logger = Logger.getLogger(getClass())
@@ -29,16 +29,19 @@ private[javaapi] object Implicits {
 
   implicit def scalaMessageSetToJavaMessageSet(messageSet: kafka.message.ByteBufferMessageSet):
      kafka.javaapi.message.ByteBufferMessageSet = {
-    new kafka.javaapi.message.ByteBufferMessageSet(messageSet.buffer, messageSet.errorCOde)
+    new kafka.javaapi.message.ByteBufferMessageSet(messageSet.getBuffer, messageSet.getInitialOffset,
+                                                   messageSet.getErrorCode)
   }
 
   implicit def toJavaSyncProducer(producer: kafka.producer.SyncProducer): kafka.javaapi.producer.SyncProducer = {
-    logger.debug("Implicit instantiation of Java Sync Producer")
+    if(logger.isDebugEnabled)
+      logger.debug("Implicit instantiation of Java Sync Producer")
     new kafka.javaapi.producer.SyncProducer(producer)
   }
 
   implicit def toSyncProducer(producer: kafka.javaapi.producer.SyncProducer): kafka.producer.SyncProducer = {
-    logger.debug("Implicit instantiation of Sync Producer")
+    if(logger.isDebugEnabled)
+      logger.debug("Implicit instantiation of Sync Producer")
     producer.underlying
   }
 
@@ -121,5 +124,5 @@ private[javaapi] object Implicits {
     response.underlying
 
   implicit def toJavaMultiFetchResponse(response: kafka.api.MultiFetchResponse): kafka.javaapi.MultiFetchResponse =
-    new kafka.javaapi.MultiFetchResponse(response.buffer, response.numSets)
+    new kafka.javaapi.MultiFetchResponse(response.buffer, response.numSets, response.offsets)
 }

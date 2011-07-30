@@ -27,6 +27,7 @@ import javax.management._
 import java.util.Properties
 import scala.collection._
 import scala.collection.mutable
+import kafka.message.{NoCompressionCodec, CompressionCodec}
 
 /**
  * Helper functions!
@@ -433,8 +434,8 @@ object Utils {
   /**
    * Compute the CRC32 of the segment of the byte array given by the specificed size and offset
    * @param bytes The bytes to checksum
-   * @param offset the offset at which to begin checksumming
-   * @param size the number of bytes to checksum
+   * @param the offset at which to begin checksumming
+   * @param the number of bytes to checksum
    * @return The CRC32
    */
   def crc32(bytes: Array[Byte], offset: Int, size: Int): Long = {
@@ -532,6 +533,14 @@ object Utils {
     map
   }
 
+  def getCSVList(csvList: String): Seq[String] = {
+    if(csvList == null)
+      Seq.empty[String]
+    else {
+      csvList.split(",").filter(v => !v.equals(""))
+    }
+  }
+
   def getTopicRentionHours(retentionHours: String) : Map[String, Int] = {
     val exceptionMsg = "Malformed token for topic.log.retention.hours in server.properties: "
     val successMsg =  "The retention hour for "
@@ -605,6 +614,14 @@ println("Called with params = " + params);
     else if(prop.compareTo("") == 0)
       false
     else true
+  }
+
+  def getCompressionCodec(props: Properties, codec: String): CompressionCodec = {
+    val codecValueString = props.getProperty(codec)
+    if(codecValueString == null)
+      NoCompressionCodec
+    else
+      CompressionCodec.getCompressionCodec(codecValueString.toInt)
   }
 }
 
