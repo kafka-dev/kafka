@@ -31,7 +31,7 @@ class MultiFetchResponse(val buffer: ByteBuffer, val numSets: Int, val offsets: 
     val payloadSize = size - 2
     copy.limit(payloadSize)
     buffer.position(buffer.position + payloadSize)
-    messageSets += new ByteBufferMessageSet(copy, offsets(i), errorCode, true)
+    messageSets += new ByteBufferMessageSet(copy, offsets(i), errorCode)
   }
  
   def iterator : Iterator[ByteBufferMessageSet] = {

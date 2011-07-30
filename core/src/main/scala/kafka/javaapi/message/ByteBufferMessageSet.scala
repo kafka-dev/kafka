@@ -22,13 +22,12 @@ import kafka.message._
 
 class ByteBufferMessageSet(private val buffer: ByteBuffer,
                            private val initialOffset: Long = 0L,
-                           private val errorCode: Int = ErrorMapping.NoError,
-                           private val deepIterate: Boolean = true) extends MessageSet {
+                           private val errorCode: Int = ErrorMapping.NoError) extends MessageSet {
   private val logger = Logger.getLogger(getClass())
   val underlying: kafka.message.ByteBufferMessageSet = new kafka.message.ByteBufferMessageSet(buffer,
                                                                                               initialOffset,
-                                                                                              errorCode, deepIterate)
-  def this(buffer: ByteBuffer) = this(buffer, 0L, ErrorMapping.NoError, true)
+                                                                                              errorCode)
+  def this(buffer: ByteBuffer) = this(buffer, 0L, ErrorMapping.NoError)
 
   def this(compressionCodec: CompressionCodec, messages: java.util.List[Message]) {
     this(compressionCodec match {
@@ -48,7 +47,7 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
         message.serializeTo(buffer)
         buffer.rewind
         buffer
-    }, 0L, ErrorMapping.NoError, true)
+    }, 0L, ErrorMapping.NoError)
   }
 
   def this(messages: java.util.List[Message]) {
@@ -60,8 +59,6 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
   def serialized():ByteBuffer = underlying.serialized
 
   def getInitialOffset = initialOffset
-
-  def getDeepIterate = deepIterate
 
   def getBuffer = buffer
 
@@ -87,14 +84,13 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
   override def equals(other: Any): Boolean = {
     other match {
       case that: ByteBufferMessageSet =>
-        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) &&
-                                             deepIterate == that.deepIterate && initialOffset == that.initialOffset
+        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) && initialOffset == that.initialOffset
       case _ => false
     }
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode + deepIterate.hashCode + initialOffset.hashCode
+  override def hashCode: Int = 31 * (17 + errorCode) + buffer.hashCode + initialOffset.hashCode
 
 }

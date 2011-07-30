@@ -35,8 +35,7 @@ import kafka.utils.IteratorTemplate
  */
 class ByteBufferMessageSet(private val buffer: ByteBuffer,
                            private val initialOffset: Long = 0L,
-                           private val errorCode: Int = ErrorMapping.NoError,
-                           private val deepIterate: Boolean = true) extends MessageSet {
+                           private val errorCode: Int = ErrorMapping.NoError) extends MessageSet {
   private val logger = Logger.getLogger(getClass())  
   private var validByteCount = -1L
   private var shallowValidByteCount = -1L
@@ -58,7 +57,7 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
           message.serializeTo(buffer)
           buffer.rewind
           buffer
-      }, 0L, ErrorMapping.NoError, true)
+      }, 0L, ErrorMapping.NoError)
   }
 
   def this(messages: Message*) {
@@ -67,18 +66,13 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
 
   def getInitialOffset = initialOffset
 
-  def getDeepIterate = deepIterate
-
   def getBuffer = buffer
 
   def getErrorCode = errorCode
 
   def serialized(): ByteBuffer = buffer
 
-  def validBytes: Long = deepIterate match {
-    case true => deepValidBytes
-    case false => shallowValidBytes
-  }
+  def validBytes: Long = deepValidBytes
   
   def shallowValidBytes: Long = {
     if(shallowValidByteCount < 0) {
@@ -104,49 +98,7 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
   def writeTo(channel: WritableByteChannel, offset: Long, size: Long): Long =
     channel.write(buffer.duplicate)
   
-  override def iterator: Iterator[MessageAndOffset] = deepIterate match {
-    case true => deepIterator
-    case false => shallowIterator
-  }
-
-  /**
-   * Applications won't require to use this API for shallow iteration
-   * of compressed message sets. But unit tests might want it. So we
-   * cannot get rid of this API all together.
-   */
-  private def shallowIterator(): Iterator[MessageAndOffset] = {
-    ErrorMapping.maybeThrowException(errorCode)
-    new IteratorTemplate[MessageAndOffset] {
-      var iter = buffer.slice()
-      var currValidBytes = initialOffset
-
-      override def makeNext(): MessageAndOffset = {
-        // read the size of the item
-        if(iter.remaining < 4) {
-          shallowValidByteCount = currValidBytes
-          return allDone()
-        }
-
-        val size = iter.getInt()
-        if(size < 0 || iter.remaining < size) {
-          shallowValidByteCount = currValidBytes
-          if (currValidBytes == 0 || size < 0)
-            throw new InvalidMessageSizeException("invalid message size: %d only received bytes: %d " +
-              " at %d possible causes (1) a single message larger than the fetch size; (2) log corruption "
-                .format(size, iter.remaining, currValidBytes))
-          return allDone()
-        }
-
-        currValidBytes += 4 + size
-        val message = iter.slice()
-        message.limit(size)
-
-        iter.position(iter.position + size)
-        new MessageAndOffset(new Message(message), currValidBytes)
-      }
-    }
-  }
-
+  override def iterator: Iterator[MessageAndOffset] = deepIterator
 
   private def deepIterator(): Iterator[MessageAndOffset] = {
     ErrorMapping.maybeThrowException(errorCode)
@@ -229,13 +181,12 @@ class ByteBufferMessageSet(private val buffer: ByteBuffer,
   override def equals(other: Any): Boolean = {
     other match {
       case that: ByteBufferMessageSet =>
-        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) &&
-                deepIterate == that.deepIterate && initialOffset == that.initialOffset
+        (that canEqual this) && errorCode == that.errorCode && buffer.equals(that.buffer) && initialOffset == that.initialOffset
       case _ => false
     }
   }
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[ByteBufferMessageSet]
 
-  override def hashCode: Int = 31 + (17 * errorCode) + buffer.hashCode + deepIterate.hashCode + initialOffset.hashCode
+  override def hashCode: Int = 31 + (17 * errorCode) + buffer.hashCode + initialOffset.hashCode
 }
