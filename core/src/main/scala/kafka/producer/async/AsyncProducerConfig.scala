@@ -38,6 +38,9 @@ trait AsyncProducerConfigShared {
   /** the serializer class for events */
   val serializerClass = Utils.getString(props, "serializer.class", "kafka.serializer.DefaultEncoder")
 
+  /** the schema defining events */
+  val schema = Utils.getString(props, "schema", null)
+
   /** the callback handler for one or multiple events */
   val cbkHandler = Utils.getString(props, "callback.handler", null)
 

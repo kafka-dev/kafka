@@ -36,8 +36,9 @@ class Producer[K,V](config: ProducerConfig,
    * ProducerConfig object
    * @param config Producer Configuration object
    */
-  def this(config: ProducerConfig) = this(config, Utils.getObject(config.partitionerClass),
-    new ProducerPool[V](config, Utils.getObject(config.serializerClass)))
+  def this(config: ProducerConfig) =
+    this(config, Utils.getObject(config.partitionerClass), new ProducerPool[V](config, 
+			Utils.callInitIfExists(Utils.getObject(config.serializerClass), config.props)))
 
   /**
    * This constructor can be used to provide pre-instantiated objects for all config parameters

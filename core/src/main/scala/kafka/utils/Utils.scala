@@ -563,10 +563,41 @@ object Utils {
         val clazz = Class.forName(className)
         val clazzT = clazz.asInstanceOf[Class[T]]
         val constructors = clazzT.getConstructors
-        require(constructors.length == 1)
-        constructors.head.newInstance().asInstanceOf[T]
+        val candidates = constructors filter {cons => matchingTypes(cons.getParameterTypes, Array())}
+        require(candidates.length == 1)
+        candidates.head.newInstance().asInstanceOf[T]
     }
   }
+
+  def getObject[T<:AnyRef](className: String, params: Array[Object]): T = {
+    className match {
+      case null => null.asInstanceOf[T]
+      case _ =>
+        val clazz = Class.forName(className)
+        val clazzT = clazz.asInstanceOf[Class[T]]
+        val constructors = clazzT.getConstructors
+println("Called with params = " + params);
+        val candidates = constructors filter {cons => matchingTypes(cons.getParameterTypes, params map {_.getClass} toArray)}
+        require(candidates.length == 1)
+        candidates.head.newInstance(params: _*).asInstanceOf[T]
+    }
+  }
+
+  def callInitIfExists[T<:AnyRef](obj: T, props: Properties): T = {
+    val method = obj.getClass.getMethod("init", {props.getClass})
+    if (method != null) {
+      method.invoke(obj, props);
+    }
+		obj
+  }
+
+  private def matchingTypes(declared: Array[Class[_]], actual: Array[Class[_]]): Boolean = {
+    declared.length == actual.length && (
+      (declared zip actual) forall {
+        case (declared, actual) => declared.isAssignableFrom(actual)
+      })
+  }
+
 
   def propertyExists(prop: String): Boolean = {
     if(prop == null)
