@@ -72,8 +72,8 @@ class KafkaServer(val config: KafkaConfig) {
       socketServer.startup
       /**
        *  Registers this broker in ZK. After this, consumers can connect to broker.
-        *  So this should happen after socket server start.
-        */
+       *  So this should happen after socket server start.
+       */
       logManager.startup
       logger.info("Server started.")
     }

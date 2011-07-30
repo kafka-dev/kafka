@@ -119,7 +119,7 @@ object ConsoleConsumer {
     })
     
     var stream: KafkaMessageStream = connector.createMessageStreams(Map(topic -> 1)).get(topic).get.get(0)
-    val iter = 
+    val iter =
       if(maxMessages >= 0)
         stream.slice(0, maxMessages)
       else
@@ -144,7 +144,7 @@ object ConsoleConsumer {
       case e => logger.error("error processing message, stop consuming: " + e)
     }
       
-  System.out.flush()
+    System.out.flush()
     formatter.close()
     connector.shutdown()
   }
@@ -163,7 +163,7 @@ object ConsoleConsumer {
   def checkRequiredArgs(parser: OptionParser, options: OptionSet, required: OptionSpec[_]*) {
     for(arg <- required) {
     	if(!options.has(arg)) {
-        System.err.println("Missing required argument \"" + arg + "\"") 
+        logger.error("Missing required argument \"" + arg + "\"")
     		parser.printHelpOn(System.err)
         System.exit(1)
       }

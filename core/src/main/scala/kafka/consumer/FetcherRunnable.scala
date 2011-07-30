@@ -55,18 +55,19 @@ class FetcherRunnable(val name: String,
     try {
       while (!stopped) {
         val fetches = partitionTopicInfos.map(info =>
-               new FetchRequest(info.topic, info.partition.partId, info.getFetchOffset, config.fetchSize))
+          new FetchRequest(info.topic, info.partition.partId, info.getFetchOffset, config.fetchSize))
 
         if (logger.isTraceEnabled)
           logger.trace("fetch request: " + fetches.toString)
 
         val response = simpleConsumer.multifetch(fetches : _*)
 
-        var read = 0
+        var read = 0L
+
         for((messages, info) <- response.zip(partitionTopicInfos)) {
           try {
             var done = false
-            if(messages.errorCOde == ErrorMapping.OFFSET_OUT_OF_RANGE_CODE) {
+            if(messages.getErrorCode == ErrorMapping.OffsetOutOfRangeCode) {
               logger.info("offset " + info.getFetchOffset + " out of range")
               // see if we can fix this error
               val resetOffset = resetConsumerOffsets(info.topic, info.partition)
@@ -93,6 +94,7 @@ class FetcherRunnable(val name: String,
               throw e2
           }
         }
+
         if (logger.isTraceEnabled)
           logger.trace("fetched bytes: " + read)
         if(read == 0) {
@@ -123,17 +125,17 @@ class FetcherRunnable(val name: String,
                                    partition: Partition) : Long = {
     var offset : Long = 0
     config.autoOffsetReset match {
-      case OffsetRequest.SMALLEST_TIME_STRING => offset = OffsetRequest.EARLIEST_TIME
-      case OffsetRequest.LARGEST_TIME_STRING => offset = OffsetRequest.LATEST_TIME
+      case OffsetRequest.SmallestTimeString => offset = OffsetRequest.EarliestTime
+      case OffsetRequest.LargestTimeString => offset = OffsetRequest.LatestTime
       case _ => return -1
     }
 
     // get mentioned offset from the broker
     val offsets = simpleConsumer.getOffsetsBefore(topic, partition.partId, offset, 1)
     val topicDirs = new ZKGroupTopicDirs(config.groupId, topic)
-    
+
     // reset manually in zookeeper
-    logger.info("updating partition " + partition.name + " with " + (if(offset == OffsetRequest.EARLIEST_TIME) "earliest " else " latest ") + "offset " + offsets(0))
+    logger.info("updating partition " + partition.name + " with " + (if(offset == OffsetRequest.EarliestTime) "earliest " else " latest ") + "offset " + offsets(0))
     ZkUtils.updatePersistentPath(zkClient, topicDirs.consumerOffsetDir + "/" + partition.name, offsets(0).toString)
 
     offsets(0)

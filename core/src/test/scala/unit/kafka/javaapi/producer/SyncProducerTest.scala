@@ -16,7 +16,6 @@
 
 package kafka.javaapi.producer
 
-import kafka.message.Message
 import junit.framework.{Assert, TestCase}
 import kafka.utils.SystemTime
 import kafka.utils.TestUtils
@@ -28,6 +27,7 @@ import java.util.Properties
 import kafka.producer.SyncProducerConfig
 import kafka.javaapi.message.ByteBufferMessageSet
 import kafka.javaapi.ProducerRequest
+import kafka.message.{NoCompressionCodec, Message}
 
 class SyncProducerTest extends JUnitSuite {
   private var messageBytes =  new Array[Byte](2);
@@ -62,7 +62,8 @@ class SyncProducerTest extends JUnitSuite {
     //temporarily increase log4j level to avoid error in output
     simpleProducerLogger.setLevel(Level.FATAL)
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                        messages = getMessageList(new Message(messageBytes))))
     }catch {
       case e: Exception => failed = true
     }
@@ -74,7 +75,8 @@ class SyncProducerTest extends JUnitSuite {
 
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                        messages = getMessageList(new Message(messageBytes))))
     }catch {
       case e: Exception => failed = true
 
@@ -97,7 +99,8 @@ class SyncProducerTest extends JUnitSuite {
     var failed = false
     val firstStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                        messages = getMessageList(new Message(messageBytes))))
     }catch {
       case e: Exception => failed=true
     }
@@ -107,7 +110,8 @@ class SyncProducerTest extends JUnitSuite {
     Assert.assertTrue((firstEnd-firstStart) < 500)
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                        messages = getMessageList(new Message(messageBytes))))
     }catch {
       case e: Exception => failed = true
     }
@@ -117,7 +121,8 @@ class SyncProducerTest extends JUnitSuite {
 
     try {
       producer.multiSend(Array(new ProducerRequest("test", 0,
-        new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))))
+        new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                 messages = getMessageList(new Message(messageBytes))))))
     }catch {
       case e: Exception => failed=true
     }
@@ -138,7 +143,8 @@ class SyncProducerTest extends JUnitSuite {
     //temporarily increase log4j level to avoid error in output
     simpleProducerLogger.setLevel(Level.FATAL)
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                        messages = getMessageList(new Message(messageBytes))))
     }catch {
       case e: Exception => failed = true
     }
@@ -148,7 +154,8 @@ class SyncProducerTest extends JUnitSuite {
     Assert.assertTrue((firstEnd-firstStart) < 300)
     val secondStart = SystemTime.milliseconds
     try {
-      producer.send("test", 0, new ByteBufferMessageSet(getMessageList(new Message(messageBytes))))
+      producer.send("test", 0, new ByteBufferMessageSet(compressionCodec = NoCompressionCodec,
+                                                        messages = getMessageList(new Message(messageBytes))))
     }catch {
       case e: Exception => failed = true
     }

@@ -110,6 +110,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
   private def readMessageSet(fetchRequest: FetchRequest): MessageSetSend = {
     var  response: MessageSetSend = null
     try {
+      logger.trace("Fetching log segment for topic = " + fetchRequest.topic + " and partition = " + fetchRequest.partition)
       val log = logManager.getOrCreateLog(fetchRequest.topic, fetchRequest.partition)
       response = new MessageSetSend(log.read(fetchRequest.offset, fetchRequest.maxSize))
     }

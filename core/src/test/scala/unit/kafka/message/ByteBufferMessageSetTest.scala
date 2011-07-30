@@ -17,20 +17,19 @@
 package kafka.message
 
 import java.nio._
-import junit.framework.TestCase
 import junit.framework.Assert._
 import org.junit.Test
 
 class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
 
   override def createMessageSet(messages: Seq[Message]): ByteBufferMessageSet = 
-    new ByteBufferMessageSet(messages: _*)
+    new ByteBufferMessageSet(NoCompressionCodec, messages: _*)
   
   @Test
   def testValidBytes() {
-    val messages = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    val messages = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
     val buffer = ByteBuffer.allocate(messages.sizeInBytes.toInt + 2)
-    buffer.put(messages.buffer)
+    buffer.put(messages.serialized)
     buffer.putShort(4)
     val messagesPlus = new ByteBufferMessageSet(buffer)
     assertEquals("Adding invalid bytes shouldn't change byte count", messages.validBytes, messagesPlus.validBytes)
@@ -38,8 +37,13 @@ class ByteBufferMessageSetTest extends BaseMessageSetTestCases {
 
   @Test
   def testEquals() {
-    val messages = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
-    val moreMessages = new ByteBufferMessageSet(new Message("hello".getBytes()), new Message("there".getBytes()))
+    var messages = new ByteBufferMessageSet(DefaultCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
+    var moreMessages = new ByteBufferMessageSet(DefaultCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
+
+    assertTrue(messages.equals(moreMessages))
+
+    messages = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
+    moreMessages = new ByteBufferMessageSet(NoCompressionCodec, new Message("hello".getBytes()), new Message("there".getBytes()))
 
     assertTrue(messages.equals(moreMessages))
   }

@@ -25,22 +25,22 @@ import java.lang.Throwable
  * A bi-directional mapping between error codes and exceptions x  
  */
 object ErrorMapping {
-  val EMPTY_BYTEBUFFER = ByteBuffer.allocate(0)
+  val EmptyByteBuffer = ByteBuffer.allocate(0)
 
-  val UNKNOWN_CODE = -1
-  val NO_ERROR = 0
-  val OFFSET_OUT_OF_RANGE_CODE = 1
-  val INVALID_MESSAGE_CODE = 2
-  val WRONG_PARTITION_CODE = 3
-  val INVALID_RETCH_SIZE_CODE = 4
+  val UnknownCode = -1
+  val NoError = 0
+  val OffsetOutOfRangeCode = 1
+  val InvalidMessageCode = 2
+  val WrongPartitionCode = 3
+  val InvalidFetchSizeCode = 4
 
   private val exceptionToCode = 
     Map[Class[Throwable], Int](
-      classOf[OffsetOutOfRangeException].asInstanceOf[Class[Throwable]] -> OFFSET_OUT_OF_RANGE_CODE,
-      classOf[InvalidMessageException].asInstanceOf[Class[Throwable]] -> INVALID_MESSAGE_CODE,
-      classOf[InvalidPartitionException].asInstanceOf[Class[Throwable]] -> WRONG_PARTITION_CODE,
-      classOf[InvalidMessageSizeException].asInstanceOf[Class[Throwable]] -> INVALID_RETCH_SIZE_CODE
-    ).withDefaultValue(UNKNOWN_CODE)
+      classOf[OffsetOutOfRangeException].asInstanceOf[Class[Throwable]] -> OffsetOutOfRangeCode,
+      classOf[InvalidMessageException].asInstanceOf[Class[Throwable]] -> InvalidMessageCode,
+      classOf[InvalidPartitionException].asInstanceOf[Class[Throwable]] -> WrongPartitionCode,
+      classOf[InvalidMessageSizeException].asInstanceOf[Class[Throwable]] -> InvalidFetchSizeCode
+    ).withDefaultValue(UnknownCode)
   
   /* invert the mapping */
   private val codeToException = 

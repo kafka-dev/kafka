@@ -82,8 +82,8 @@ object SimpleConsumerShell {
 	      for (messages <- messageSets) {
 	        println("multi fetched " + messages.sizeInBytes + " bytes from offset " + offset)
             var consumed = 0
-            for(message <- messages) {
-              println("consumed: " + Utils.toString(message.payload, "UTF-8"))
+            for(messageAndOffset <- messages) {
+              println("consumed: " + Utils.toString(messageAndOffset.message.payload, "UTF-8"))
               consumed += 1
 	        }
 	        if(consumed > 0)

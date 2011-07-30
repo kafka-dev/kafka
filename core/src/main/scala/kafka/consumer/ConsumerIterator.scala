@@ -19,8 +19,8 @@ package kafka.consumer
 import kafka.utils.IteratorTemplate
 import org.apache.log4j.Logger
 import java.util.concurrent.{TimeUnit, BlockingQueue}
-import kafka.message.{MessageSet, Message}
 import kafka.cluster.Partition
+import kafka.message.{MessageAndOffset, MessageSet, Message}
 
 /**
  * An iterator that blocks until a value can be read from the supplied queue.
@@ -31,43 +31,50 @@ class ConsumerIterator(private val channel: BlockingQueue[FetchedDataChunk], con
         extends IteratorTemplate[Message] {
   
   private val logger = Logger.getLogger(classOf[ConsumerIterator])
-  private var current: Iterator[Message] = null
+  private var current: Iterator[MessageAndOffset] = null
+  private var currentDataChunk: FetchedDataChunk = null
   private var currentTopicInfo: PartitionTopicInfo = null
+  private var consumedOffset: Long = -1L
 
   override def next(): Message = {
     val message = super.next
-    currentTopicInfo.consumed(MessageSet.entrySize(message))
+    if(consumedOffset < 0)
+      throw new IllegalStateException("Offset returned by the message set is invalid %d".format(consumedOffset))
+    currentTopicInfo.resetConsumeOffset(consumedOffset)
+    if(logger.isTraceEnabled)
+      logger.trace("Setting consumed offset to %d".format(consumedOffset))
     message
   }
 
   protected def makeNext(): Message = {
     // if we don't have an iterator, get one
     if(current == null || !current.hasNext) {
-      var found: FetchedDataChunk = null
       if (consumerTimeoutMs < 0)
-        found = channel.take
+        currentDataChunk = channel.take
       else {
-        found = channel.poll(consumerTimeoutMs, TimeUnit.MILLISECONDS)
-        if (found == null) {
-          logger.debug("Consumer iterator timing out..")
+        currentDataChunk = channel.poll(consumerTimeoutMs, TimeUnit.MILLISECONDS)
+        if (currentDataChunk == null) {
           throw new ConsumerTimeoutException
         }
       }
-      if(found eq ZookeeperConsumerConnector.shutdownCommand) {
-        logger.debug("Received the shutdown command")
-    	  channel.offer(found)
+      if(currentDataChunk eq ZookeeperConsumerConnector.shutdownCommand) {
+        if(logger.isDebugEnabled)
+          logger.debug("Received the shutdown command")
+    	  channel.offer(currentDataChunk)
         return allDone
       } else {
-        currentTopicInfo = found.topicInfo
-        if (currentTopicInfo.getConsumeOffset != found.fetchOffset) {
-          logger.error("consumed offset: " + currentTopicInfo.getConsumeOffset + " doesn't match fetch offset: " +
-            found.fetchOffset + " for " + currentTopicInfo + "; consumer may lose data")
-          currentTopicInfo.resetConsumeOffset(found.fetchOffset)
+        currentTopicInfo = currentDataChunk.topicInfo
+        if (currentTopicInfo.getConsumeOffset != currentDataChunk.fetchOffset) {
+          logger.error("consumed offset: %d doesn't match fetch offset: %d for %s;\n Consumer may lose data"
+                        .format(currentTopicInfo.getConsumeOffset, currentDataChunk.fetchOffset, currentTopicInfo))
+          currentTopicInfo.resetConsumeOffset(currentDataChunk.fetchOffset)
         }
-        current = found.messages.iterator
+        current = currentDataChunk.messages.iterator
       }
     }
-    current.next
+    val item = current.next
+    consumedOffset = item.offset
+    item.message
   }
   
 }

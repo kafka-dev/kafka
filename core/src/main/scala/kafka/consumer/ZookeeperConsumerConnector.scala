@@ -176,7 +176,7 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
       logger.debug("adding topic " + topic + " and stream to map..")
 
       // register on broker partition path changes
-      val partitionPath = ZkUtils.brokerTopicsPath + "/" + topic
+      val partitionPath = ZkUtils.BrokerTopicsPath + "/" + topic
       ZkUtils.makeSurePersistentPathExists(zkClient, partitionPath)
       zkClient.subscribeChildChanges(partitionPath, loadBalancerListener)
     }
@@ -296,10 +296,10 @@ private[kafka] class ZookeeperConsumerConnector(val config: ConsumerConfig,
     try {
       val cluster = ZkUtils.getCluster(zkClient)
       val broker = cluster.getBroker(brokerId)
-      simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SOCKET_TIMEOUT,
-                                            ConsumerConfig.SOCKET_BUFFER_SIZE)
+      simpleConsumer = new SimpleConsumer(broker.host, broker.port, ConsumerConfig.SocketTimeout,
+                                            ConsumerConfig.SocketBufferSize)
       val latestOffset = simpleConsumer.getOffsetsBefore(topic, partitionId,
-                                                       OffsetRequest.LATEST_TIME, 1)
+                                                       OffsetRequest.LatestTime, 1)
       producedOffset = latestOffset(0)
     }
     catch {

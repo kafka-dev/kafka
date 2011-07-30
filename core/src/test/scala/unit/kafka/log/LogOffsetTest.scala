@@ -20,7 +20,6 @@ import junit.framework.TestCase
 import java.io.File
 import kafka.utils.TestUtils
 import kafka.utils.Utils
-import kafka.message.{ByteBufferMessageSet, Message}
 import kafka.server.{KafkaConfig, KafkaServer}
 import junit.framework.Assert._
 import java.util.{Random, Properties}
@@ -29,6 +28,7 @@ import collection.mutable.WrappedArray
 import kafka.consumer.SimpleConsumer
 import org.scalatest.junit.JUnitSuite
 import org.junit.{After, Before, Test}
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet, Message}
 
 object LogOffsetTest {
   val random = new Random()  
@@ -66,12 +66,12 @@ class LogOffsetTest extends JUnitSuite {
     assertFalse(messageSet.iterator.hasNext)
 
     {
-      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.LATEST_TIME, 10)
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.LatestTime, 10)
       assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
     }
 
     {
-      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.EARLIEST_TIME, 10)
+      val offsets = simpleConsumer.getOffsetsBefore("test", 0, OffsetRequest.EarliestTime, 10)
       assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
     }
 
@@ -94,21 +94,19 @@ class LogOffsetTest extends JUnitSuite {
 
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
 
     Thread.sleep(100)
 
-    val offsetRequest = new OffsetRequest(topic, part,
-                                          OffsetRequest.LATEST_TIME, 10)
+    val offsetRequest = new OffsetRequest(topic, part, OffsetRequest.LatestTime, 10)
 
     val offsets = log.getOffsetsBefore(offsetRequest)
-
-    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
+    assertTrue((Array(240L, 216L, 108L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-                                                          OffsetRequest.LATEST_TIME, 10)
-    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
+                                                          OffsetRequest.LatestTime, 10)
+    assertTrue((Array(240L, 216L, 108L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
 
     // try to fetch using latest offset
     val messageSet: ByteBufferMessageSet = simpleConsumer.fetch(
@@ -129,7 +127,7 @@ class LogOffsetTest extends JUnitSuite {
     var offsetChanged = false
     for(i <- 1 to 14) {
       val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-        OffsetRequest.EARLIEST_TIME, 1)
+        OffsetRequest.EarliestTime, 1)
 
       if(consumerOffsets(0) == 1) {
         offsetChanged = true
@@ -137,7 +135,7 @@ class LogOffsetTest extends JUnitSuite {
     }
     assertFalse(offsetChanged)
   }
-  
+
   @Test
   def testGetOffsetsBeforeNow() {
     val topicPartition = "kafka-" + LogOffsetTest.random.nextInt(10)
@@ -149,19 +147,18 @@ class LogOffsetTest extends JUnitSuite {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
 
+    val now = System.currentTimeMillis
     Thread.sleep(100)
 
-    val offsetRequest = new OffsetRequest(topic, part,
-                                           System.currentTimeMillis, 10)
+    val offsetRequest = new OffsetRequest(topic, part, now, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
-    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
+    assertTrue((Array(216L, 108L, 0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]))
 
-    val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-                                                          System.currentTimeMillis, 10)
-    assertTrue((Array(220L, 110L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
+    val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part, now, 10)
+    assertTrue((Array(216L, 108L, 0L): WrappedArray[Long]) == (consumerOffsets: WrappedArray[Long]))
   }
 
   @Test
@@ -175,19 +172,19 @@ class LogOffsetTest extends JUnitSuite {
     val log = logManager.getOrCreateLog(topic, part)
     val message = new Message(Integer.toString(42).getBytes())
     for(i <- 0 until 20)
-      log.append(new ByteBufferMessageSet(message))
+      log.append(new ByteBufferMessageSet(NoCompressionCodec, message))
     log.flush()
 
     Thread.sleep(100)
 
     val offsetRequest = new OffsetRequest(topic, part,
-                                          OffsetRequest.EARLIEST_TIME, 10)
+                                          OffsetRequest.EarliestTime, 10)
     val offsets = log.getOffsetsBefore(offsetRequest)
 
     assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
 
     val consumerOffsets = simpleConsumer.getOffsetsBefore(topic, part,
-                                                          OffsetRequest.EARLIEST_TIME, 10)
+                                                          OffsetRequest.EarliestTime, 10)
     assertTrue( (Array(0L): WrappedArray[Long]) == (offsets: WrappedArray[Long]) )
   }
 

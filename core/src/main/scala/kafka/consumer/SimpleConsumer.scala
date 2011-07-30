@@ -103,7 +103,7 @@ class SimpleConsumer(val host: String,
       val endTime = SystemTime.nanoseconds
       SimpleConsumerStats.recordFetchRequest(endTime - startTime)
       SimpleConsumerStats.recordConsumptionThroughput(response._1.buffer.limit)
-      new ByteBufferMessageSet(response._1.buffer, response._2)
+      new ByteBufferMessageSet(response._1.buffer, request.offset, response._2)
     }
   }
 
@@ -139,7 +139,7 @@ class SimpleConsumer(val host: String,
       SimpleConsumerStats.recordConsumptionThroughput(response._1.buffer.limit)
 
       // error code will be set on individual messageset inside MultiFetchResponse
-      new MultiFetchResponse(response._1.buffer, fetches.length)
+      new MultiFetchResponse(response._1.buffer, fetches.length, fetches.toArray.map(f => f.offset))
     }
   }
 

@@ -142,7 +142,7 @@ class KafkaLog4jAppenderTest extends JUnitSuite {
     var count = 0
     for(message <- messages) {
       count = count + 1
-      offset += MessageSet.entrySize(message)
+      offset += message.offset
     }
 
     assertEquals(5, count)

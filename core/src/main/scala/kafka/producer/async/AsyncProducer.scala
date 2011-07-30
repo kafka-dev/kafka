@@ -16,20 +16,20 @@
 
 package kafka.producer.async
 
-import java.util.concurrent.{LinkedBlockingQueue, ScheduledThreadPoolExecutor, ScheduledExecutorService}
+import java.util.concurrent.LinkedBlockingQueue
 import kafka.utils.Utils
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.log4j.{Level, Logger}
 import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
-import kafka.producer.SyncProducer
 import java.lang.management.ManagementFactory
-import javax.management.{MBeanServer, ObjectName}
+import javax.management.ObjectName
 import java.util.{Random, Properties}
+import kafka.producer.{ProducerConfig, SyncProducer}
 
 object AsyncProducer {
-  val shutdown = new Object
-  val random = new Random
+  val Shutdown = new Object
+  val Random = new Random
   val ProducerMBeanName = "kafka.producer.Producer:type=AsyncProducerStats"
 }
 
@@ -48,10 +48,10 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
     eventHandler.init(eventHandlerProps)
   if(cbkHandler != null)
     cbkHandler.init(cbkHandlerProps)
-  private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.random.nextInt, queue,
+  private val sendThread = new ProducerSendThread("ProducerSendThread-" + AsyncProducer.Random.nextInt, queue,
     serializer, producer,
-    if(eventHandler != null) eventHandler else new DefaultEventHandler[T](cbkHandler),
-    cbkHandler, config.queueTime, config.batchSize, AsyncProducer.shutdown)
+    if(eventHandler != null) eventHandler else new DefaultEventHandler[T](new ProducerConfig(config.props), cbkHandler),
+    cbkHandler, config.queueTime, config.batchSize, AsyncProducer.Shutdown)
   sendThread.setDaemon(false)
 
   val asyncProducerStats = new AsyncProducerStats[T](queue)
@@ -110,7 +110,7 @@ private[kafka] class AsyncProducer[T](config: AsyncProducerConfig,
       cbkHandler.close
       logger.info("Closed the callback handler")
     }
-    queue.put(new QueueItem(AsyncProducer.shutdown.asInstanceOf[T], null, -1))
+    queue.put(new QueueItem(AsyncProducer.Shutdown.asInstanceOf[T], null, -1))
     sendThread.shutdown
     sendThread.awaitShutdown
     producer.close

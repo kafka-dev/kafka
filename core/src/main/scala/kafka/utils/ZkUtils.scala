@@ -25,9 +25,9 @@ import org.I0Itec.zkclient.exception.{ZkNodeExistsException, ZkNoNodeException, 
 import org.apache.log4j.Logger
 
 object ZkUtils {
-  val consumersPath = "/consumers"
-  val brokerIdsPath = "/brokers/ids"
-  val brokerTopicsPath = "/brokers/topics"
+  val ConsumersPath = "/consumers"
+  val BrokerIdsPath = "/brokers/ids"
+  val BrokerTopicsPath = "/brokers/topics"
   private val logger = Logger.getLogger(getClass())  
 
   /**
@@ -199,9 +199,9 @@ object ZkUtils {
 
   def getCluster(zkClient: ZkClient) : Cluster = {
     val cluster = new Cluster
-    val nodes = getChildrenParentMayNotExist(zkClient, brokerIdsPath)
+    val nodes = getChildrenParentMayNotExist(zkClient, BrokerIdsPath)
     for (node <- nodes) {
-      val brokerZKString = readData(zkClient, brokerIdsPath + "/" + node)
+      val brokerZKString = readData(zkClient, BrokerIdsPath + "/" + node)
       cluster.add(Broker.createBroker(node.toInt, brokerZKString))
     }
     cluster
@@ -211,9 +211,9 @@ object ZkUtils {
     val ret = new mutable.HashMap[String, List[String]]()
     for (topic <- topics) {
       var partList: List[String] = Nil
-      val brokers = getChildrenParentMayNotExist(zkClient, brokerTopicsPath + "/" + topic)
+      val brokers = getChildrenParentMayNotExist(zkClient, BrokerTopicsPath + "/" + topic)
       for (broker <- brokers) {
-        val nParts = readData(zkClient, brokerTopicsPath + "/" + topic + "/" + broker).toInt
+        val nParts = readData(zkClient, BrokerTopicsPath + "/" + topic + "/" + broker).toInt
         for (part <- 0 until nParts)
           partList ::= broker + "-" + part
       }
@@ -224,17 +224,17 @@ object ZkUtils {
   }
 
   def setupPartition(zkClient : ZkClient, brokerId: Int, host: String, port: Int, topic: String, nParts: Int) {
-    val brokerIdPath = brokerIdsPath + "/" + brokerId
+    val brokerIdPath = BrokerIdsPath + "/" + brokerId
     val broker = new Broker(brokerId, brokerId.toString, host, port)
     createEphemeralPathExpectConflict(zkClient, brokerIdPath, broker.getZKString)
-    val brokerPartTopicPath = brokerTopicsPath + "/" + topic + "/" + brokerId
+    val brokerPartTopicPath = BrokerTopicsPath + "/" + topic + "/" + brokerId
     createEphemeralPathExpectConflict(zkClient, brokerPartTopicPath, nParts.toString)    
   }
 
   def deletePartition(zkClient : ZkClient, brokerId: Int, topic: String) {
-    val brokerIdPath = brokerIdsPath + "/" + brokerId
+    val brokerIdPath = BrokerIdsPath + "/" + brokerId
     zkClient.delete(brokerIdPath)
-    val brokerPartTopicPath = brokerTopicsPath + "/" + topic + "/" + brokerId
+    val brokerPartTopicPath = BrokerTopicsPath + "/" + topic + "/" + brokerId
     zkClient.delete(brokerPartTopicPath)
   }
 }
@@ -254,7 +254,7 @@ object StringSerializer extends ZkSerializer {
 }
 
 class ZKGroupDirs(val group: String) {
-  def consumerDir = ZkUtils.consumersPath
+  def consumerDir = ZkUtils.ConsumersPath
   def consumerGroupDir = consumerDir + "/" + group
   def consumerRegistryDir = consumerGroupDir + "/ids"
 }

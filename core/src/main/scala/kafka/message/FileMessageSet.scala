@@ -34,10 +34,10 @@ import kafka.utils._
  */
 @nonthreadsafe
 class FileMessageSet private[kafka](private[message] val channel: FileChannel,
-                                      private[message] val offset: Long,
-                                      private[message] val limit: Long,
-                                      val mutable: Boolean,
-                                      val needRecover: AtomicBoolean) extends MessageSet {
+                                    private[message] val offset: Long,
+                                    private[message] val limit: Long,
+                                    val mutable: Boolean,
+                                    val needRecover: AtomicBoolean) extends MessageSet {
   
   private val setSize = new AtomicLong()
   private val setHighWaterMark = new AtomicLong()
@@ -95,7 +95,8 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
    * Return a message set which is a view into this set starting from the given offset and with the given size limit.
    */
   def read(readOffset: Long, size: Long): MessageSet = {
-    new FileMessageSet(channel, this.offset + readOffset, scala.math.min(this.offset + readOffset + size, highWaterMark), false, new AtomicBoolean(false))
+    new FileMessageSet(channel, this.offset + readOffset, scala.math.min(this.offset + readOffset + size, highWaterMark),
+      false, new AtomicBoolean(false))
   }
   
   /**
@@ -107,11 +108,11 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
   /**
    * Get an iterator over the messages in the set
    */
-  override def iterator: Iterator[Message] = {
-    new IteratorTemplate[Message] {
+  override def iterator: Iterator[MessageAndOffset] = {
+    new IteratorTemplate[MessageAndOffset] {
       var location = offset
       
-      override def makeNext(): Message = {
+      override def makeNext(): MessageAndOffset = {
         // read the size of the item
         val sizeBuffer = ByteBuffer.allocate(4)
         channel.read(sizeBuffer, location)
@@ -120,7 +121,7 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
         
         sizeBuffer.rewind()
         val size: Int = sizeBuffer.getInt()
-        if (size < Message.HeaderSize)
+        if (size < Message.MinHeaderSize)
           return allDone()
         
         // read the item itself
@@ -132,7 +133,7 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
         
         // increment the location and return the item
         location += size + 4
-        new Message(buffer)
+        new MessageAndOffset(new Message(buffer), location)
       }
     }
   }
@@ -225,7 +226,7 @@ class FileMessageSet private[kafka](private[message] val channel: FileChannel,
     
     // check that we have sufficient bytes left in the file
     val size = buffer.getInt(0)
-    if (size < Message.HeaderSize)
+    if (size < Message.MinHeaderSize)
       return -1
     
     val next = start + 4 + size

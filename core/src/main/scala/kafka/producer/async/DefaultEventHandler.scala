@@ -16,16 +16,17 @@
 
 package kafka.producer.async
 
-import kafka.message.ByteBufferMessageSet
 import collection.mutable.HashMap
 import collection.mutable.Map
 import org.apache.log4j.Logger
 import kafka.api.ProducerRequest
 import kafka.serializer.Encoder
-import kafka.producer.SyncProducer
 import java.util.Properties
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet}
+import kafka.producer.{ProducerConfig, SyncProducerConfigShared, SyncProducerConfig, SyncProducer}
 
-private[kafka] class DefaultEventHandler[T](val cbkHandler: CallbackHandler[T] = null) extends EventHandler[T] {
+private[kafka] class DefaultEventHandler[T](val config: ProducerConfig,
+                                            val cbkHandler: CallbackHandler[T]) extends EventHandler[T] {
 
   private val logger = Logger.getLogger(classOf[DefaultEventHandler[T]])
 
@@ -42,8 +43,8 @@ private[kafka] class DefaultEventHandler[T](val cbkHandler: CallbackHandler[T] =
     if(messagesPerTopic.size > 0) {
       val requests = messagesPerTopic.map(f => new ProducerRequest(f._1._1, f._1._2, f._2)).toArray
       syncProducer.multiSend(requests)
-      if(logger.isDebugEnabled)
-        logger.debug("kafka producer sent messages for topics " + messagesPerTopic)
+      if(logger.isTraceEnabled)
+        logger.trace("kafka producer sent messages for topics " + messagesPerTopic)
     }
   }
 
@@ -51,7 +52,41 @@ private[kafka] class DefaultEventHandler[T](val cbkHandler: CallbackHandler[T] =
                         serializer: Encoder[T]): Map[(String, Int), ByteBufferMessageSet] = {
     import scala.collection.JavaConversions._
     val eventsPerTopicMap = eventsPerTopic.map(e => ((e._1._1, e._1._2) , e._2.map(l => serializer.toMessage(l))))
-    eventsPerTopicMap.map(e => ((e._1._1, e._1._2) , new ByteBufferMessageSet(e._2: _*)))
+    val topicsAndPartitions = eventsPerTopic.map(e => e._1)
+    /** enforce the compressed.topics config here.
+     *  If the compression codec is anything other than NoCompressionCodec,
+     *    Enable compression only for specified topics if any
+     *    If the list of compressed topics is empty, then enable the specified compression codec for all topics
+     *  If the compression codec is NoCompressionCodec, compression is disabled for all topics
+     */
+    val messages = eventsPerTopicMap.map(e => {
+      config.compressionCodec match {
+        case NoCompressionCodec =>
+          if(logger.isDebugEnabled)
+            logger.debug("Sending %d messages with no compression".format(e._2.size))
+          new ByteBufferMessageSet(NoCompressionCodec, e._2: _*)
+        case _ =>
+          config.compressedTopics.size match {
+            case 0 =>
+              if(logger.isDebugEnabled)
+                logger.debug("Sending %d messages with compression %d".format(e._2.size, config.compressionCodec.codec))
+              new ByteBufferMessageSet(config.compressionCodec, e._2: _*)
+            case _ =>
+              if(config.compressedTopics.contains(e._1._1)) {
+                if(logger.isDebugEnabled)
+                  logger.debug("Sending %d messages with compression %d".format(e._2.size, config.compressionCodec.codec))
+                new ByteBufferMessageSet(config.compressionCodec, e._2: _*)
+              }
+              else {
+                if(logger.isDebugEnabled)
+                  logger.debug("Sending %d messages with no compression as %s is not in compressed.topics - %s"
+                    .format(e._2.size, e._1._1, config.compressedTopics.toString))
+                new ByteBufferMessageSet(NoCompressionCodec, e._2: _*)
+              }
+          }
+      }
+    })
+    topicsAndPartitions.zip(messages)
   }
 
   private def collate(events: Seq[QueueItem[T]]): Map[(String,Int), Seq[T]] = {

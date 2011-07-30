@@ -34,7 +34,7 @@ class KafkaZooKeeper(config: KafkaConfig, logManager: LogManager) {
   
   private val logger = Logger.getLogger(classOf[KafkaZooKeeper])
   
-  val brokerIdPath = ZkUtils.brokerIdsPath + "/" + config.brokerId
+  val brokerIdPath = ZkUtils.BrokerIdsPath + "/" + config.brokerId
   var zkClient: ZkClient = null
   var topics: List[String] = Nil
   val lock = new Object()
@@ -63,7 +63,7 @@ class KafkaZooKeeper(config: KafkaConfig, logManager: LogManager) {
   }
 
   def registerTopicInZkInternal(topic: String) {
-    val brokerTopicPath = ZkUtils.brokerTopicsPath + "/" + topic + "/" + config.brokerId
+    val brokerTopicPath = ZkUtils.BrokerTopicsPath + "/" + topic + "/" + config.brokerId
     val numParts = logManager.getTopicPartitionsMap.getOrElse(topic, config.numPartitions)
     logger.info("Begin registering broker topic " + brokerTopicPath + " with " + numParts.toString + " partitions")
     ZkUtils.createEphemeralPathExpectConflict(zkClient, brokerTopicPath, numParts.toString)

@@ -50,28 +50,22 @@ private[consumer] class PartitionTopicInfo(val topic: String,
   def resetFetchOffset(newFetchOffset: Long) = {
     fetchedOffset.set(newFetchOffset)
     if (logger.isDebugEnabled)
-      logger.debug("reset fetch offset of " + this + " to " + newFetchOffset)    
-  }
-
-  /**
-   * Record the given number of bytes as having been consumed
-   */
-  def consumed(messageSize: Int): Unit = {
-    val newOffset = consumedOffset.addAndGet(messageSize)
-    if (logger.isDebugEnabled)
-      logger.debug("updated consume offset of " + this + " to " + newOffset)
+      logger.debug("reset fetch offset of ( %s ) to %d".format(this, newFetchOffset))
   }
 
   /**
    * Enqueue a message set for processing
    * @return the number of valid bytes
    */
-  def enqueue(messages: ByteBufferMessageSet, fetchOffset: Long): Int = {
-    val size = messages.validBytes
+  def enqueue(messages: ByteBufferMessageSet, fetchOffset: Long): Long = {
+    val size = messages.shallowValidBytes
     if(size > 0) {
+      // update fetched offset to the compressed data chunk size, not the decompressed message set size
+      if(logger.isTraceEnabled)
+        logger.trace("Updating fetch offset = " + fetchedOffset.get + " with size = " + size)
       val newOffset = fetchedOffset.addAndGet(size)
       if (logger.isDebugEnabled)
-        logger.debug("updated fetch offset of " + this + " to " + newOffset)
+        logger.debug("updated fetch offset of ( %s ) to %d".format(this, newOffset))
       chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))
     }
     size
@@ -81,9 +75,10 @@ private[consumer] class PartitionTopicInfo(val topic: String,
    *  add an empty message with the exception to the queue so that client can see the error
    */
   def enqueueError(e: Throwable, fetchOffset: Long) = {
-    val messages = new ByteBufferMessageSet(ErrorMapping.EMPTY_BYTEBUFFER, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Throwable]]))
+    val messages = new ByteBufferMessageSet(ErrorMapping.EmptyByteBuffer, ErrorMapping.codeFor(e.getClass.asInstanceOf[Class[Throwable]]))
     chunkQueue.put(new FetchedDataChunk(messages, this, fetchOffset))
   }
 
-  override def toString(): String = topic + ":" + partition.toString
+  override def toString(): String = topic + ":" + partition.toString + ": fetched offset = " + fetchedOffset.get +
+    ": consumed offset = " + consumedOffset.get
 }

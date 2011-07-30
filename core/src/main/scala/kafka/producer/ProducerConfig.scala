@@ -39,9 +39,22 @@ class ProducerConfig(val props: Properties) extends ZKConfig(props)
    *                            sync for synchronous send                   */
   val producerType = Utils.getString(props, "producer.type", "sync")
 
+  /**
+   * This parameter allows you to specify the compression codec for all data generated *
+   * by this producer. The default is NoCompressionCodec
+   */
+  val compressionCodec = Utils.getCompressionCodec(props, "compression.codec")
 
-  /** To enable zookeeper based auto partition discovery, specify the ZK    *
-   * connection string. This will override the brokerPartitionInfo, in case *
-   * both are specified by the user                                         */
-
+  /** This parameter allows you to set whether compression should be turned *
+   *  on for particular topics
+   *
+   *  If the compression codec is anything other than NoCompressionCodec,
+   *
+   *    Enable compression only for specified topics if any
+   *
+   *    If the list of compressed topics is empty, then enable the specified compression codec for all topics
+   *
+   *  If the compression codec is NoCompressionCodec, compression is disabled for all topics
+   */
+  val compressedTopics = Utils.getCSVList(Utils.getString(props, "compressed.topics", null))
 }

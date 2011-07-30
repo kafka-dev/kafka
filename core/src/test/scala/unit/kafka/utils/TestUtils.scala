@@ -119,11 +119,13 @@ object TestUtils {
   /**
    * Create a test config for a consumer
    */
-  def createConsumerProperties(zkConnect: String, groupId: String, consumerId: String): Properties = {
+  def createConsumerProperties(zkConnect: String, groupId: String, consumerId: String,
+                               consumerTimeout: Long = -1): Properties = {
     val props = new Properties
     props.put("zk.connect", zkConnect)
     props.put("groupid", groupId)
     props.put("consumerid", consumerId)
+    props.put("consumer.timeout.ms", consumerTimeout.toString)
     props.put("zk.sessiontimeout.ms", "400")
     props.put("zk.synctime.ms", "200")
     props.put("autocommit.interval.ms", "1000")
@@ -136,7 +138,7 @@ object TestUtils {
    * @param payload The bytes of the message
    */
   def singleMessageSet(payload: Array[Byte]) = 
-    new ByteBufferMessageSet(new Message(payload))
+    new ByteBufferMessageSet(compressionCodec = NoCompressionCodec, messages = new Message(payload))
   
   /**
    * Generate an array of random bytes
@@ -173,11 +175,47 @@ object TestUtils {
    * Throw an exception if the two iterators are of differing lengths or contain
    * different messages on their Nth element
    */
-  def checkEquals[T](s1: Iterator[T], s2: Iterator[T]) {
-    while(s1.hasNext && s2.hasNext)
-      assertEquals(s1.next, s2.next)
-    assertFalse("Iterators have uneven length--first has more", s1.hasNext)
-    assertFalse("Iterators have uneven length--second has more", s2.hasNext)
+  def checkEquals[T](expected: Iterator[T], actual: Iterator[T]) {
+    var length = 0
+    while(expected.hasNext && actual.hasNext) {
+      length += 1
+      assertEquals(expected.next, actual.next)
+    }
+    
+    if (expected.hasNext)
+    {
+     var length1 = length;
+     while (expected.hasNext)
+     {
+       expected.next
+       length1 += 1
+     }
+     assertFalse("Iterators have uneven length-- first has more: "+length1 + " > " + length, true);
+    }
+    
+    if (actual.hasNext)
+    {
+     var length2 = length;
+     while (actual.hasNext)
+     {
+       actual.next
+       length2 += 1
+     }
+     assertFalse("Iterators have uneven length-- second has more: "+length2 + " > " + length, true);
+    }
+  }
+
+  /**
+   *  Throw an exception if an iterable has different length than expected
+   *  
+   */
+  def checkLength[T](s1: Iterator[T], expectedLength:Integer) {
+    var n = 0
+    while (s1.hasNext) {
+      n+=1
+      s1.next
+    }
+    assertEquals(expectedLength, n)
   }
 
   /**

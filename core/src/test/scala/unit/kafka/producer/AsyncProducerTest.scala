@@ -16,7 +16,6 @@
 
 package kafka.producer
 
-import kafka.message.{ByteBufferMessageSet, Message}
 import junit.framework.{Assert, TestCase}
 import java.util.Properties
 import org.easymock.EasyMock
@@ -26,6 +25,7 @@ import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import kafka.producer.async._
 import kafka.serializer.Encoder
+import kafka.message.{NoCompressionCodec, ByteBufferMessageSet, Message}
 
 class AsyncProducerTest extends JUnitSuite {
 
@@ -249,7 +249,7 @@ class AsyncProducerTest extends JUnitSuite {
         messageList(i) = message
       }
     }
-    new ByteBufferMessageSet(messageList: _*)
+    new ByteBufferMessageSet(NoCompressionCodec, messageList: _*)
   }
 
   class StringSerializer extends Encoder[String] {
