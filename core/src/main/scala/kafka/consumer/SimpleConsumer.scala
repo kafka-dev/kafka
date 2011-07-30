@@ -40,6 +40,7 @@ class SimpleConsumer(val host: String,
   private val lock = new Object()
 
   private def connect(): SocketChannel = {
+    close
     val address = new InetSocketAddress(host, port)
 
     val channel = SocketChannel.open
@@ -48,6 +49,7 @@ class SimpleConsumer(val host: String,
     channel.configureBlocking(true)
     channel.socket.setReceiveBufferSize(bufferSize)
     channel.socket.setSoTimeout(soTimeout)
+    channel.socket.setKeepAlive(true)
     channel.connect(address)
     if(logger.isTraceEnabled) {
       logger.trace("requested receive buffer size=" + bufferSize + " actual receive buffer size= " + channel.socket.getReceiveBufferSize)

@@ -67,10 +67,11 @@ class AsyncProducerTest extends JUnitSuite {
       Assert.fail("Queue should be full")
     }
     catch {
-      case e: QueueFullException =>
+      case e: QueueFullException => println("Queue is full..")
     }
     producer.start
     producer.close
+    Thread.sleep(2000)
     EasyMock.verify(basicProducer)
     producer.setLoggerLevel(Level.ERROR)
   }
@@ -177,7 +178,7 @@ class AsyncProducerTest extends JUnitSuite {
       producer.send(serializer.getTopic(messageContent1), messageContent1, ProducerRequest.RandomPartition)
     }
 
-    Thread.sleep(500)
+    Thread.sleep(300)
     producer.close
     EasyMock.verify(basicProducer)
   }

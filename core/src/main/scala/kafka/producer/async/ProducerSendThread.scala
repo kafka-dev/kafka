@@ -34,7 +34,6 @@ private[async] class ProducerSendThread[T](val threadName: String,
                                            val shutdownCommand: Any) extends Thread(threadName) {
 
   private val logger = Logger.getLogger(classOf[ProducerSendThread[T]])
-  private var running: Boolean = true
   private val shutdownLatch = new CountDownLatch(1)
 
   override def run {
@@ -46,7 +45,7 @@ private[async] class ProducerSendThread[T](val threadName: String,
       // handle remaining events
       if(remainingEvents.size > 0) {
         if(logger.isDebugEnabled)
-           logger.debug("Dispatching last batch of events to the event handler")
+           logger.debug("Dispatching last batch of %d events to the event handler".format(remainingEvents.size))
         tryToHandle(remainingEvents)
       }
     }catch {
@@ -59,43 +58,50 @@ private[async] class ProducerSendThread[T](val threadName: String,
   def awaitShutdown = shutdownLatch.await
 
   def shutdown = {
-    running = false
     handler.close
     logger.info("Shutdown thread complete")
   }
 
   private def processEvents(): Seq[QueueItem[T]] = {
-    var now = SystemTime.milliseconds
-    var lastSend = now
-
+    var lastSend = SystemTime.milliseconds
     var events = new ListBuffer[QueueItem[T]]
-    while(running) {
-      val current: QueueItem[T] = queue.poll(scala.math.max(0, queueTime - (lastSend - now)), TimeUnit.MILLISECONDS)
-      if(current != null && current.getData == shutdownCommand)
-        return events
+    var full: Boolean = false
 
-      if(current != null && current.getData != null) {
-        if(cbkHandler != null)
-          events = events ++ cbkHandler.afterDequeuingExistingData(current)
-        else
-          events += current
-      }
+    // drain the queue until you get a shutdown command
+    Stream.continually(queue.poll(scala.math.max(0, queueTime - (lastSend - SystemTime.milliseconds)), TimeUnit.MILLISECONDS))
+                      .takeWhile(item => if(item != null) item.getData != shutdownCommand else true).foreach {
+      currentQueueItem =>
+        val elapsed = (SystemTime.milliseconds - lastSend)
+        // check if the queue time is reached. This happens when the poll method above returns after a timeout and
+        // returns a null object
+        val expired = currentQueueItem == null
+        if(currentQueueItem != null) {
+          // handle the dequeued current item
+          if(cbkHandler != null)
+            events = events ++ cbkHandler.afterDequeuingExistingData(currentQueueItem)
+          else
+            events += currentQueueItem
 
-      now = SystemTime.milliseconds
-
-      // time to send messages
-      val expired: Boolean = (now - lastSend) > queueTime
-      val full: Boolean = events.size >= batchSize
-      if(expired || full) {
-        if(logger.isDebugEnabled && full) logger.debug("Batch full. Sending..")
-        if(logger.isDebugEnabled && expired) logger.debug("Queue time reached. Sending..")
-        tryToHandle(events)
-        lastSend = now
-        events = new ListBuffer[QueueItem[T]]
-      }
+          // check if the batch size is reached
+          full = events.size >= batchSize
+        }
+        if(full || expired) {
+          if(logger.isDebugEnabled) {
+            if(expired) logger.debug(elapsed + " ms elapsed. Queue time reached. Sending..")
+            if(full) logger.debug("Batch full. Sending..")
+          }
+          // if either queue time has reached or batch size has reached, dispatch to event handler
+          tryToHandle(events)
+          lastSend = SystemTime.milliseconds
+          events = new ListBuffer[QueueItem[T]]
+        }
     }
-    if(cbkHandler != null)
-      events = events ++ cbkHandler.lastBatchBeforeClose
+    if(cbkHandler != null) {
+      logger.info("Invoking the callback handler before handling the last batch of %d events".format(events.size))
+      val addedEvents = cbkHandler.lastBatchBeforeClose
+      logEvents("last batch before close", addedEvents)
+      events = events ++ addedEvents
+    }
     events
   }
 
@@ -105,6 +111,14 @@ private[async] class ProducerSendThread[T](val threadName: String,
       handler.handle(events, underlyingProducer, serializer)
     }catch {
       case e: Exception => logger.error("Error in handling batch of " + events.size + " events", e)
+    }
+  }
+
+  private def logEvents(tag: String, events: Iterable[QueueItem[T]]) {
+    if(logger.isTraceEnabled) {
+      logger.trace("events for " + tag + ":")
+      for (event <- events)
+        logger.trace(event.getData.toString)
     }
   }
 }

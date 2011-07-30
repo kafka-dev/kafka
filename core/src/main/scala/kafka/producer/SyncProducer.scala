@@ -167,6 +167,7 @@ class SyncProducer(val config: SyncProducerConfig) {
         channel.socket.setSendBufferSize(config.bufferSize)
         channel.configureBlocking(true)
         channel.socket.setSoTimeout(config.socketTimeoutMs)
+        channel.socket.setKeepAlive(true)
         channel.connect(new InetSocketAddress(config.host, config.port))
         logger.info("Connected to " + config.host + ":" + config.port + " for producing")
       }
