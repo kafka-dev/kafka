@@ -16,7 +16,7 @@ import kafka.message.{CompressionCodec, Message, MessageSet, FileMessageSet}
 
 object ReplayLogProducer {
 
-  private val GROUPID: String = "replay-log-producer"
+  private val GroupId: String = "replay-log-producer"
   private val logger = Logger.getLogger(getClass)
 
   def main(args: Array[String]) {
@@ -28,12 +28,12 @@ object ReplayLogProducer {
     val allDone = new CountDownLatch(config.numThreads)
 
     // if there is no group specified then avoid polluting zookeeper with persistent group data, this is a hack
-    tryCleanupZookeeper(config.zkConnect, GROUPID)
+    tryCleanupZookeeper(config.zkConnect, GroupId)
     Thread.sleep(500)
 
     // consumer properties
     val consumerProps = new Properties
-    consumerProps.put("groupid", GROUPID)
+    consumerProps.put("groupid", GroupId)
     consumerProps.put("zk.connect", config.zkConnect)
     consumerProps.put("consumer.timeout.ms", "10000")
     consumerProps.put("autooffset.reset", OffsetRequest.SmallestTimeString)
