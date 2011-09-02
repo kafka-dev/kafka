@@ -1,10 +1,10 @@
 /*
  * Copyright 2010 LinkedIn
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -16,11 +16,20 @@
 
 package kafka.api
 
-object RequestKeys {
-  val Produce: Short = 0
-  val Fetch: Short = 1
-  val MultiFetch: Short = 2
-  val MultiProduce: Short = 3
-  val Offsets: Short = 4
-  val AckedProduce : Short = 5
+import java.nio._
+import java.nio.channels._
+import kafka.network._
+import kafka.utils._
+
+/**
+ * A simple ack to send to producer
+ */
+@threadsafe
+object AckResponse extends Send {
+  def writeTo(channel: WritableByteChannel): Int = channel.write(ByteBuffer.wrap(Array(1)))
+  def complete = true
+  def readFrom(buffer: ByteBuffer) =
+      if (buffer.limit() == 1 && buffer.get() == 1) AckResponse
+      else throw new IllegalArgumentException("Bad AckSend buffer")
+
 }

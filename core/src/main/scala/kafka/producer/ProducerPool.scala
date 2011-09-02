@@ -76,6 +76,7 @@ class ProducerPool[V](private val config: ProducerConfig,
         props.put("buffer.size", config.bufferSize.toString)
         props.put("connect.timeout.ms", config.connectTimeoutMs.toString)
         props.put("reconnect.interval", config.reconnectInterval.toString)
+        props.put("ack.needed", config.ackNeeded.toString)
         val producer = new SyncProducer(new SyncProducerConfig(props))
         logger.info("Creating sync producer for broker id = " + broker.id + " at " + broker.host + ":" + broker.port)
         syncProducers.put(broker.id, producer)
