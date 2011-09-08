@@ -58,7 +58,7 @@ class LogManagerTest extends JUnitSuite {
 
 
   @Test
-  def testCleanup() {
+  def testCleanupExpiredSegments() {
     val log = logManager.getOrCreateLog("cleanup", 0)
     var offset = 0L
     for(i <- 0 until 1000) {
@@ -66,7 +66,6 @@ class LogManagerTest extends JUnitSuite {
       log.append(set)
       offset += set.sizeInBytes
     }
-    log.flush
     // Why this sleep is required ? File system takes some time to update the last modified time for a file.
     // TODO: What is unknown is why 1 second or couple 100 milliseconds didn't work ?
     Thread.sleep(2000)
@@ -74,6 +73,54 @@ class LogManagerTest extends JUnitSuite {
     time.currentMs += maxLogAge + 3000
     logManager.cleanupLogs()
     assertEquals("Now there should only be only one segment.", 1, log.numberOfSegments)
+    assertEquals("Should get empty fetch off new log.", 0L, log.read(offset, 1024).sizeInBytes)
+    try {
+      log.read(0, 1024)
+      fail("Should get exception from fetching earlier.")
+    } catch {
+      case e: OffsetOutOfRangeException => "This is good."
+    }
+    // log should still be appendable
+    log.append(TestUtils.singleMessageSet("test".getBytes()))
+  }
+
+  @Test
+  def testCleanupSegmentsToMaintainSize() {
+    val setSize = TestUtils.singleMessageSet("test".getBytes()).sizeInBytes
+    val retentionHours = 1
+    val retentionMs = 1000 * 60 * 60 * retentionHours
+    val props = TestUtils.createBrokerConfig(0, -1)
+    logManager.close
+    Thread.sleep(100)
+    config = new KafkaConfig(props) {
+      override val logFileSize = (10 * (setSize - 1)).asInstanceOf[Int] // each segment will be 10 messages
+      override val enableZookeeper = false
+      override val logRetentionSize = (5 * 10 * setSize).asInstanceOf[Int] // keep exactly 5 segments
+      override val logRetentionHours = retentionHours
+    }
+    logManager = new LogManager(config, null, time, -1, retentionMs, false)
+    logManager.startup
+
+    // create a log
+    val log = logManager.getOrCreateLog("cleanup", 0)
+    var offset = 0L
+
+    // add a bunch of messages that should be larger than the retentionSize
+    for(i <- 0 until 1000) {
+      val set = TestUtils.singleMessageSet("test".getBytes())
+      log.append(set)
+      offset += set.sizeInBytes
+    }
+    // flush to make sure it's written to disk, then sleep to confirm
+    log.flush
+    Thread.sleep(2000)
+
+    // should be exactly 100 full segments + 1 new empty one
+    assertEquals("There should be example 101 segments.", 100 + 1, log.numberOfSegments)
+
+    // this cleanup shouldn't find any expired segments but should delete some to reduce size
+    logManager.cleanupLogs()
+    assertEquals("Now there should be exactly 7 segments", 6 + 1, log.numberOfSegments)
     assertEquals("Should get empty fetch off new log.", 0L, log.read(offset, 1024).sizeInBytes)
     try {
       log.read(0, 1024)
