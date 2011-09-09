@@ -66,6 +66,7 @@ class LogManagerTest extends JUnitSuite {
       log.append(set)
       offset += set.sizeInBytes
     }
+    log.flush
     // Why this sleep is required ? File system takes some time to update the last modified time for a file.
     // TODO: What is unknown is why 1 second or couple 100 milliseconds didn't work ?
     Thread.sleep(2000)
