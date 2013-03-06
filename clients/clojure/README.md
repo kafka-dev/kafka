@@ -16,22 +16,25 @@ And run the example:
 ## Usage
 
 ### Sending messages
-
-    (with-open [p (producer "localhost" 9092)]
-      (produce p "test" 0 "Message 1")
-      (produce p "test" 0 ["Message 2" "Message 3"]))
+```clojure
+(with-open [p (producer "localhost" 9092)]
+  (produce p "test" 0 "Message 1")
+  (produce p "test" 0 ["Message 2" "Message 3"]))
+```
 
 ### Simple consumer
-
-    (with-open [c (consumer "localhost" 9092)]
-      (let [offs (offsets c "test" 0 -1 10)]
-        (consume c "test" 0 (last offs) 1000000)))
+```clojure
+(with-open [c (consumer "localhost" 9092)]
+  (let [offs (offsets c "test" 0 -1 10)]
+    (consume c "test" 0 (last offs) 1000000)))
+```
 
 ### Consumer sequence
-
-    (with-open [c (consumer "localhost" 9092)]
-      (doseq [m (consume-seq c "test" 0 {:blocking true})]
-        (println m)))
+```clojure
+(with-open [c (consumer "localhost" 9092)]
+  (doseq [m (consume-seq c "test" 0 {:blocking true})]
+    (println m)))
+```
 
 Following options are supported:
 
