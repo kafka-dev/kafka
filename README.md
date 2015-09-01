@@ -1,5 +1,5 @@
 # Kafka has a new home at Apache #
 
-Please go to http://incubator.apache.org/kafka/index.html
+Please go to https://kafka.apache.org/
 
 
