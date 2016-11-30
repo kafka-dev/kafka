@@ -44,6 +44,7 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
       case RequestKeys.MultiFetch => handleMultiFetchRequest _
       case RequestKeys.MultiProduce => handleMultiProducerRequest _
       case RequestKeys.Offsets => handleOffsetRequest _
+      case RequestKeys.AckedProduce => handleAckedProduceRequest _
       case _ => throw new IllegalStateException("No mapping found for handler id " + requestTypeId)
     }
   }
@@ -67,7 +68,13 @@ private[kafka] class KafkaRequestHandlers(val logManager: LogManager) {
     request.produces.map(handleProducerRequest(_, "MultiProducerRequest"))
     None
   }
-
+  def handleAckedProduceRequest(receive: Receive) : Option[Send] = {
+    val request = ProducerRequest.readFrom(receive.buffer)
+    if(requestLogger.isTraceEnabled)
+      requestLogger.trace("Producer acked request " + request.toString)
+    handleProducerRequest(request, "ProducerAckedRequest")
+    Some(AckResponse)
+  }
   private def handleProducerRequest(request: ProducerRequest, requestHandlerName: String) = {
     val partition = request.getTranslatedPartition(logManager.chooseRandomPartition)
     try {

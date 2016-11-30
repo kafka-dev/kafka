@@ -85,6 +85,12 @@ class SyncProducer(val config: SyncProducerConfig) {
 
       try {
         send.writeCompletely(channel)
+        if(config.ackNeeded){
+          if(logger.isDebugEnabled)
+            logger.debug("Waiting for ACK from broker")
+          waitForAck()
+        }
+
       } catch {
         case e : java.io.IOException =>
           // no way to tell if write succeeded. Disconnect and re-throw exception to let client handle retry
@@ -113,9 +119,11 @@ class SyncProducer(val config: SyncProducerConfig) {
     val setSize = messages.sizeInBytes.asInstanceOf[Int]
     if(logger.isTraceEnabled)
       logger.trace("Got message set with " + setSize + " bytes to send")
-    send(new BoundedByteBufferSend(new ProducerRequest(topic, partition, messages)))
+    send(new BoundedByteBufferSend(
+      if(config.ackNeeded) new AckedProducerRequest(topic, partition, messages)
+      else new ProducerRequest(topic, partition, messages)))
   }
- 
+
   def send(topic: String, messages: ByteBufferMessageSet): Unit = send(topic, ProducerRequest.RandomPartition, messages)
 
   def multiSend(produces: Array[ProducerRequest]) {
@@ -133,7 +141,21 @@ class SyncProducer(val config: SyncProducerConfig) {
       shutdown = true
     }
   }
-
+  private def waitForAck() {
+    try {
+      val buff = ByteBuffer.allocate(1)
+      channel.read(buff)
+      buff.flip()
+      AckResponse.readFrom(buff)
+    }catch {
+      case e: SocketTimeoutException =>
+        logger.error("Timeout error while waiting for ack")
+        throw e
+      case e  =>
+        logger.error("Erro while waiting for ack")
+        throw e
+    }
+  }
   private def verifyMessageSize(messages: ByteBufferMessageSet) {
     for (messageAndOffset <- messages)
       if (messageAndOffset.message.payloadSize > config.maxMessageSize)
