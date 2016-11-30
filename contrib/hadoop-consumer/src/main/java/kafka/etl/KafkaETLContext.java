@@ -33,7 +33,7 @@ public class KafkaETLContext {
     final static int DEFAULT_TIMEOUT = 60000; // one minute
 
     final static KafkaETLKey DUMMY_KEY = new KafkaETLKey();
-    
+
     protected int _index; /*index of context*/
     protected String _input = null; /*input string*/
     protected KafkaETLRequest _request = null;
@@ -45,7 +45,7 @@ public class KafkaETLContext {
 
     protected MultiFetchResponse _response = null;  /*fetch response*/
     protected Iterator<MessageAndOffset> _messageIt = null; /*message iterator*/
-    
+    protected Iterator<ByteBufferMessageSet> _respIterator = null;
     protected int _retry = 0;
     protected long _requestTime = 0; /*accumulative request time*/
     protected long _startTime = -1;
@@ -109,7 +109,7 @@ public class KafkaETLContext {
     
     public boolean hasMore () {
         return _messageIt != null && _messageIt.hasNext() 
-                || _response != null && _response.iterator().hasNext()
+                || _response != null && _respIterator.hasNext()
                 || _offset < _offsetRange[1]; 
     }
     
@@ -119,9 +119,9 @@ public class KafkaETLContext {
         boolean gotNext = get(key, value);
 
         if(_response != null) {
-            Iterator<ByteBufferMessageSet> iter = _response.iterator();
-            while ( !gotNext && iter.hasNext()) {
-                ByteBufferMessageSet msgSet = iter.next();
+
+            while ( !gotNext && _respIterator.hasNext()) {
+                ByteBufferMessageSet msgSet = _respIterator.next();
                 if ( hasError(msgSet)) return false;
                 _messageIt =  (Iterator<MessageAndOffset>) msgSet.iterator();
                 gotNext = get(key, value);
@@ -140,6 +140,8 @@ public class KafkaETLContext {
 
         long tempTime = System.currentTimeMillis();
         _response = _consumer.multifetch(array);
+        if(_response != null)
+            _respIterator = _response.iterator();
         _requestTime += (System.currentTimeMillis() - tempTime);
         
         return true;
