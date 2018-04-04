@@ -67,7 +67,7 @@ object ProducerPerformance {
       .withRequiredArg
       .describedAs("broker.list=brokerid:hostname:port or zk.connect=host:port")
       .ofType(classOf[String])
-    val topicOpt = parser.accepts("topic", "REQUIRED: The topic to consume from.")
+    val topicOpt = parser.accepts("topic", "REQUIRED: The topic to produce to.")
       .withRequiredArg
       .describedAs("topic")
       .ofType(classOf[String])
