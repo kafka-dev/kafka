@@ -98,14 +98,18 @@ object Utils {
    
   /**
    * Read a byte array from the given offset and size in the buffer
-   * TODO: Should use System.arraycopy
    */
   def readBytes(buffer: ByteBuffer, offset: Int, size: Int): Array[Byte] = {
     val bytes = new Array[Byte](size)
-    var i = 0
-    while(i < size) {
-      bytes(i) = buffer.get(offset + i)
-      i += 1
+    // Save the current position
+    val oldPosition = buffer.position()
+    try {
+      // Set position to the offset and use bulk get
+      buffer.position(offset)
+      buffer.get(bytes)
+    } finally {
+      // Restore the original position
+      buffer.position(oldPosition)
     }
     bytes
   }
